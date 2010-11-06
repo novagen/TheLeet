@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/connect"
+          android:icon="@drawable/icon_connect"
+          android:title="@string/connect" />
+    <item android:id="@+id/disconnect"
+          android:icon="@drawable/icon_disconnect"
+          android:title="@string/disconnect" />
+    <item android:id="@+id/clear"
+          android:icon="@drawable/icon_clear"
+          android:title="@string/clearLog" />
+    <item android:id="@+id/settings"
+          android:icon="@drawable/icon_settings"
+          android:title="@string/settings" />
+</menu>

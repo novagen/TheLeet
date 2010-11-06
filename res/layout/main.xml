@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout 
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:orientation="vertical"
+android:layout_width="fill_parent"
+android:layout_height="fill_parent"
+android:id="@+id/main"
+>
+	<LinearLayout 
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="64dip"
+	android:id="@+id/headwrap"
+	android:padding="5dip"
+	>
+		<ImageView
+		android:id="@+id/logo"
+		android:layout_height="54dip"
+		android:layout_width="54dip"
+		android:src="@drawable/icon"
+		android:layout_marginBottom="-54dip"
+		/>
+		<TextView
+		android:id="@+id/header"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:textSize="22dip"
+		android:text="@string/app_name"
+		android:layout_marginLeft="60dip"
+		android:layout_marginTop="1dip"
+		android:textStyle="bold"
+		android:layout_alignParentTop="true"
+		android:layout_alignParentLeft="true"
+		android:autoLink="web"
+		/>
+		<TextView
+		android:id="@+id/info"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:textSize="14dip"
+		android:text="@string/info"
+		android:layout_marginLeft="60dip"
+		android:textStyle="normal"
+		android:layout_alignParentTop="true"
+		android:layout_alignParentLeft="true"
+		android:layout_marginTop="-6dip"
+		android:textColor="#777777"
+		/>
+	</LinearLayout>
+	<ScrollView
+	android:id="@+id/scrolltext"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:isScrollContainer="true"
+	android:layout_marginBottom="50dip"
+	android:layout_alignParentTop="true"
+	android:background="#556688"
+	>
+		<TextView
+		android:id="@+id/logtext"
+	    android:layout_width="fill_parent" 
+	    android:layout_height="fill_parent" 
+	    android:padding="10dip"
+	    android:text="@string/welcome"
+	    android:textColor="#FFFFFF"
+	    android:linksClickable="true"
+	    android:autoLink="all"
+	    />
+    </ScrollView>
+    <WebView
+    android:id="@+id/logview"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:layout_marginBottom="50dip"
+	android:layout_alignParentTop="true"
+	android:background="#556688"
+	android:visibility="gone"
+	/>
+	<Button
+	android:id="@+id/msgchannel"
+	android:layout_width="120dip"
+	android:layout_height="wrap_content"
+	android:layout_marginTop="-45dip"
+	android:layout_alignParentBottom="true"
+	android:textSize="12dip"
+	/>
+	<EditText 
+	android:id="@+id/msginput"
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content"
+	android:inputType="text"
+	android:maxLines="1"
+	android:maxLength="1000"
+	android:layout_marginTop="-45dip"
+	android:layout_marginLeft="120dip"
+	android:layout_alignParentBottom="true"
+	/>
+</LinearLayout>
