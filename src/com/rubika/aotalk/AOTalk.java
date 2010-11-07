@@ -31,7 +31,6 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 import ao.chat.AOChatBot;
 import ao.misc.AONameFormat;
 import ao.protocol.AOBot;
@@ -142,7 +141,7 @@ public class AOTalk extends Activity {
 			@Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
 				if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
-					if(aobot.getState() == ao.protocol.AOBot.State.LOGGED_IN) { 
+					if(aobot.getState() == ao.protocol.AOBot.State.LOGGED_IN && msginput.getText().toString().length() > 0) { 
 						//cp.parse(String) adds "\n" and timestamp to the beginning of the string and remove html-tags from it.
 						ChatParser cp = new ChatParser();
 						
@@ -153,13 +152,14 @@ public class AOTalk extends Activity {
 	                		if(CHATCHANNEL == CHANNEL_MSG) { 
 	                			AOTalk.this.aobot.sendTell(MESSAGETO, msginput.getText().toString(), true);
 								AOTalk.this.logtext.append(
-									cp.parse("to [Novagen]: " + msginput.getText().toString())
+									cp.parse("to [" + MESSAGETO + "]: " + msginput.getText().toString())
 								);
+								Log.d(D_STRING, "Sent private message to " + MESSAGETO + ": " + msginput.getText().toString());		
 	                		} else { //Send to group
 	                			AOTalk.this.aobot.sendGMsg(CHATCHANNEL, msginput.getText().toString());
+								Log.d(D_STRING, "Sent message to " + CHATCHANNEL + ": " + msginput.getText().toString());		
 	                		}
 	                		
-							Log.d(D_STRING, "Sent message : " + msginput.getText().toString());		
 							
 							AOTalk.this.msginput.setText("");
 							AOTalk.this.scrollLog();
@@ -168,7 +168,7 @@ public class AOTalk extends Activity {
 						}
 	                	return true;
 					} else {
-                	Log.d(D_STRING, "Not logged in, can't send message");
+						Log.d(D_STRING, "Not logged in or no message, can't send message");
                 	}
                 }
 				
@@ -378,7 +378,9 @@ public class AOTalk extends Activity {
 					Log.d(D_STRING, "Got group : " + group.getGroupName());
 											
 					if(!AOTalk.this.groupIgnore.contains(group.getGroupName())) {
-						AOTalk.this.groupList.add(group.getGroupName());
+						if(!AOTalk.this.groupList.contains(group.getGroupName())) {
+							AOTalk.this.groupList.add(group.getGroupName());
+						}
 					}
 				}
 			}
@@ -625,18 +627,24 @@ public class AOTalk extends Activity {
     
     private void disconnect() {
 	    //Disconnecting from server
-		if(aobot.getState() != ao.protocol.AOBot.State.DISCONNECTED) {
-			try {
-				aobot.disconnect();
-				Log.d(D_STRING, "Disconnected");
-				
-				System.gc();
-			} catch (IOException e) {
-				Log.d(D_STRING, "Failed to disconnect : " + e.getMessage());
-			}
+		if(aobot != null) {
+	    	if(aobot.getState() != ao.protocol.AOBot.State.DISCONNECTED) {
+				try {
+					aobot.disconnect();
+					Log.d(D_STRING, "Disconnected");
+					
+					System.gc();
+				} catch (IOException e) {
+					Log.d(D_STRING, "Failed to disconnect : " + e.getMessage());
+				}
+			} else {
+				Log.d(D_STRING, "Failed to disconnect : Not connected");
+			} 
+	    	aobot = null;
+	    	System.gc();
 		} else {
-			Log.d(D_STRING, "Failed to disconnect : Not connected");
-		}    	
+			Log.d(D_STRING, "Object aobot does not exist");
+		}
     }
     
     private void clearLog() {
@@ -727,6 +735,7 @@ public class AOTalk extends Activity {
     protected void onStop(){
     	super.onStop();
     	
+    	/*
     	if(aobot != null) {
     		if(aobot.getState() != ao.protocol.AOBot.State.DISCONNECTED) {
     			try {
@@ -736,6 +745,7 @@ public class AOTalk extends Activity {
 				}
     		}
     	}
+    	*/
 
 		SharedPreferences settings = getSharedPreferences(PREFSNAME, 0);
 		SharedPreferences.Editor editor = settings.edit();

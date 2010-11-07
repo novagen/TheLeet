@@ -66,6 +66,7 @@ android:id="@+id/main"
 	    android:textColor="#FFFFFF"
 	    android:linksClickable="true"
 	    android:autoLink="all"
+	    android:lineSpacingExtra="2dip"
 	    />
     </ScrollView>
     <WebView
@@ -89,7 +90,7 @@ android:id="@+id/main"
 	android:id="@+id/msginput"
 	android:layout_width="fill_parent"
 	android:layout_height="wrap_content"
-	android:inputType="text"
+	android:inputType="textFilter"
 	android:maxLines="1"
 	android:maxLength="1000"
 	android:layout_marginTop="-45dip"
