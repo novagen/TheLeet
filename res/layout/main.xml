@@ -53,47 +53,37 @@ android:id="@+id/main"
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
 	android:isScrollContainer="true"
-	android:layout_marginBottom="50dip"
+	android:layout_marginBottom="52dip"
 	android:layout_alignParentTop="true"
-	android:background="#556688"
+	android:background="#062c36"
 	>
 		<TextView
 		android:id="@+id/logtext"
 	    android:layout_width="fill_parent" 
 	    android:layout_height="fill_parent" 
 	    android:padding="10dip"
-	    android:text="@string/welcome"
 	    android:textColor="#FFFFFF"
 	    android:linksClickable="true"
 	    android:autoLink="all"
 	    android:lineSpacingExtra="2dip"
 	    />
     </ScrollView>
-    <WebView
-    android:id="@+id/logview"
-	android:layout_width="fill_parent"
-	android:layout_height="fill_parent"
-	android:layout_marginBottom="50dip"
-	android:layout_alignParentTop="true"
-	android:background="#556688"
-	android:visibility="gone"
-	/>
 	<Button
 	android:id="@+id/msgchannel"
 	android:layout_width="120dip"
-	android:layout_height="wrap_content"
-	android:layout_marginTop="-45dip"
+	android:layout_height="49dip"
+	android:layout_marginTop="-49dip"
 	android:layout_alignParentBottom="true"
 	android:textSize="12dip"
 	/>
 	<EditText 
 	android:id="@+id/msginput"
 	android:layout_width="fill_parent"
-	android:layout_height="wrap_content"
+	android:layout_height="50dip"
 	android:inputType="textFilter"
 	android:maxLines="1"
 	android:maxLength="1000"
-	android:layout_marginTop="-45dip"
+	android:layout_marginTop="-50dip"
 	android:layout_marginLeft="120dip"
 	android:layout_alignParentBottom="true"
 	/>

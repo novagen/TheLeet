@@ -11,10 +11,14 @@ import android.app.AlertDialog.Builder;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.DialogInterface.OnCancelListener;
+import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -31,6 +35,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
 import ao.chat.AOChatBot;
 import ao.misc.AONameFormat;
 import ao.protocol.AOBot;
@@ -40,11 +45,12 @@ import ao.protocol.AODimensionAddress;
 import ao.protocol.AOBot.State;
 import ao.protocol.packets.AOPacket;
 import ao.protocol.packets.bi.AOGroupMessagePacket;
+import ao.protocol.packets.bi.AOPrivateGroupInvitePacket;
 import ao.protocol.packets.bi.AOPrivateMessagePacket;
+import ao.protocol.packets.in.AOAnonVicinityMessagePacket;
 import ao.protocol.packets.in.AOCharListPacket;
 import ao.protocol.packets.in.AOChatNoticePacket;
 import ao.protocol.packets.in.AOGroupAnnouncePacket;
-
 
 public class AOTalk extends Activity {
 	private String PASSWORD  = "";
@@ -63,6 +69,8 @@ public class AOTalk extends Activity {
 	protected static final int MSG_DISCONNECTED  = 0x108;
 	protected static final int MSG_AUTHENTICATED = 0x109;
 	protected static final int MSG_LOGGED_IN     = 0x110;
+	protected static final int MSG_SYSTEM        = 0x111;
+	protected static final int MSG_INVITATION    = 0x112;
 
 	private final String SRV_RK1 = "Atlantean";
 	private final String SRV_RK2 = "Rimor";
@@ -70,7 +78,7 @@ public class AOTalk extends Activity {
 	private String CHANNEL_MSG = "Private Message";
 	private String CHATCHANNEL = "";
 	private String MESSAGETO   = "";
-	private String SERVER      = "Atlantean"; //Sets default value
+	private String SERVER      = "Atlantean";
 	
 	private Button channelbutton;
 	private Context context;
@@ -81,11 +89,14 @@ public class AOTalk extends Activity {
 	private AOCharListPacket charpacket;
 	private EditText msginput;
 	
-	private AOPrivateMessagePacket lastmessage  = null;	
-	private AOGroupMessagePacket lastgroupmess  = null;
-	private AOChatNoticePacket lastnotice       = null;
+	private AOPrivateMessagePacket lastmessage     = null;	
+	private AOGroupMessagePacket lastgroupmess     = null;
+	private AOChatNoticePacket lastnotice          = null;
+	private AOAnonVicinityMessagePacket lastsystem = null;
+	private AOPrivateGroupInvitePacket lastinvite  = null;
 	
 	private List<String> groupList;
+	private List<String> groupDisable;
 	private List<String> groupIgnore;
 	
     @Override
@@ -93,6 +104,7 @@ public class AOTalk extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         
+        //Load values that are saved from last time the app was used
         SharedPreferences settings = getSharedPreferences(PREFSNAME, 0);
         SAVEPREF = settings.getBoolean("savepref", SAVEPREF);
         USERNAME = settings.getString("username", USERNAME);
@@ -103,9 +115,11 @@ public class AOTalk extends Activity {
        
         //Disable automatic popup of keyboard at launch
         this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN); 
+
+        groupList    = new ArrayList<String>();
+        groupDisable = new ArrayList<String>();
         
-        groupList   = new ArrayList<String>();
-        
+        //Channels that shouldn't be added to the list of avaliable channels
         groupIgnore = new ArrayList<String>();
         groupIgnore.add("Tower Battle Outcome");
         groupIgnore.add("Tour Announcements");
@@ -113,8 +127,12 @@ public class AOTalk extends Activity {
         groupIgnore.add("Org Msg");
 
         context = this;
-                
-        logtext    = (TextView) findViewById(R.id.logtext);
+        
+        logtext = (TextView) findViewById(R.id.logtext);
+        logtext.setText(Html.fromHtml("<b>" + getString(R.string.welcome) + "</b>"));
+        logtext.append(getString(R.string.about));
+        logtext.setMovementMethod(LinkMovementMethod.getInstance()); 
+
         textscroll = (ScrollView) findViewById(R.id.scrolltext);
 
         channelbutton = (Button) findViewById(R.id.msgchannel);
@@ -142,8 +160,7 @@ public class AOTalk extends Activity {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
 				if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
 					if(aobot.getState() == ao.protocol.AOBot.State.LOGGED_IN && msginput.getText().toString().length() > 0) { 
-						//cp.parse(String) adds "\n" and timestamp to the beginning of the string and remove html-tags from it.
-						ChatParser cp = new ChatParser();
+						ChatParser cp = new ChatParser(AOTalk.this.logtext);
 						
 	                	try {
 	                		Log.d(D_STRING, CHATCHANNEL);
@@ -191,15 +208,15 @@ public class AOTalk extends Activity {
 	        public void run() {
 	        	AOTalk.this.textscroll.fullScroll(ScrollView.FOCUS_DOWN);
 	        }
-	    });    	
+	    });
     }
     
     private void setChannel() {
     	CharSequence[] tempChannels = null;
     	
     	if(AOTalk.this.groupList != null) {
-    		tempChannels = new CharSequence[AOTalk.this.groupList.size()];
-	    	for(int i = 0; i < AOTalk.this.groupList.size(); i++) {
+    		tempChannels = new CharSequence[AOTalk.this.groupList.size() + 1];
+	    	for(int i = 0; i <= AOTalk.this.groupList.size(); i++) {
 	    		if(i == 0) {
 	    			tempChannels[i] = AOTalk.this.CHANNEL_MSG;
 	    		} else {
@@ -264,6 +281,46 @@ public class AOTalk extends Activity {
     	 return cm.getActiveNetworkInfo().isConnectedOrConnecting();
     }
     
+	private void invitation() {
+		/* NOT WORKING!
+		final int groupId = AOTalk.this.lastinvite.getGroupdID();
+		final String groupName = AOTalk.this.aobot.getGroupTable().getName(groupId);
+		
+		AlertDialog inviteDialog = new AlertDialog.Builder(AOTalk.this).create();
+    	
+    	inviteDialog.setTitle("Group invitation");
+    	inviteDialog.setMessage("You have been invited to the group " + groupName + "\n Do you want to join it?");
+    	inviteDialog.setIcon(R.drawable.icon_clear);
+    		            
+    	inviteDialog.setButton("OK", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {				
+				if(!AOTalk.this.groupIgnore.contains(groupName)) {
+					if(!AOTalk.this.groupList.contains(groupName)) {
+						Log.d(D_STRING, "Got new group : " + groupName);
+						AOTalk.this.groupList.add(groupName);
+						
+						try {
+							AOTalk.this.aobot.joinGroup(groupName);
+						} catch (IOException e) {
+							Log.d(D_STRING, "Failed to join group : " + e.getMessage());
+						}
+					}
+				}
+				
+				return;
+			} 
+		});
+    	
+    	inviteDialog.setButton("Cancel", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				return;
+			}
+    	});
+    	
+    	inviteDialog.show();
+    	*/
+	}
+    
     private void selectCharacter() {
     	if(charpacket != null) {
 	    	CharSequence names[] = new CharSequence[charpacket.getNumCharacters()];
@@ -283,7 +340,14 @@ public class AOTalk extends Activity {
 	    	    }
 	    	});
 	    	
-	    	AlertDialog characters = builder.create();
+	    	builder.setOnCancelListener(new OnCancelListener() {
+				@Override
+				public void onCancel(DialogInterface dialog) {
+					disconnect();
+				}}
+	    	);
+	    	
+	    	AlertDialog characters = builder.create();	    	
 	    	characters.show();
     	} else {
     		Log.d(D_STRING, "Packet is NULL");
@@ -291,10 +355,17 @@ public class AOTalk extends Activity {
     }
     
     private void boot() {
-        if(AOTalk.this.aobot != null) {
+    	if(AOTalk.this.aobot != null) {
         	AOTalk.this.aobot = null;
         }
+        
+        if(groupList.size() > 0) {
+        	groupList = null;
+        	groupList = new ArrayList<String>();
+        }
+        
         AOTalk.this.aobot = new AOChatBot();
+        
         AOTalk.this.aobot.addListener(new AOBotListener() {
 			@Override
 			public void authenticated(AOBot bot) {
@@ -356,7 +427,13 @@ public class AOTalk extends Activity {
 				if(packet.getType() == AOGroupMessagePacket.TYPE && packet.getDirection() == AOPacket.Direction.IN) {
 					AOGroupMessagePacket group = (AOGroupMessagePacket) packet;
 					lastgroupmess = group;
-						
+									
+					if(!AOTalk.this.groupIgnore.contains(aobot.getGroupTable().getName(group.getGroupID()))) {
+						if(!AOTalk.this.groupList.contains(aobot.getGroupTable().getName(group.getGroupID()))) {
+							AOTalk.this.groupList.add(aobot.getGroupTable().getName(group.getGroupID()));
+						}
+					}
+					
 					Message m = new Message();
 					m.what = AOTalk.MSG_GROUP; 
 					AOTalk.this.ConnectionLogHandler.sendMessage(m);
@@ -372,16 +449,36 @@ public class AOTalk extends Activity {
 					//AOTalk.this.ConnectionLogHandler.sendMessage(m);
 				}
 				
+				//System message
+				if(packet.getType() == AOAnonVicinityMessagePacket.TYPE) {
+					AOAnonVicinityMessagePacket system = (AOAnonVicinityMessagePacket) packet;
+					lastsystem = system;
+						
+					Message m = new Message();
+					m.what = AOTalk.MSG_SYSTEM; 
+					AOTalk.this.ConnectionLogHandler.sendMessage(m);
+				}
+				
 				//Group announcement
 				if(packet.getType() == AOGroupAnnouncePacket.TYPE) {
 					AOGroupAnnouncePacket group = (AOGroupAnnouncePacket) packet;
-					Log.d(D_STRING, "Got group : " + group.getGroupName());
 											
 					if(!AOTalk.this.groupIgnore.contains(group.getGroupName())) {
 						if(!AOTalk.this.groupList.contains(group.getGroupName())) {
+							Log.d(D_STRING, "Got new group : " + group.getGroupName());
 							AOTalk.this.groupList.add(group.getGroupName());
 						}
 					}
+				}
+				
+				//Group invitation
+				if(packet.getType() == AOPrivateGroupInvitePacket.TYPE) {
+					AOPrivateGroupInvitePacket invite = (AOPrivateGroupInvitePacket) packet;
+					lastinvite = invite;
+					
+					Message m = new Message();
+					m.what = AOTalk.MSG_INVITATION; 
+					AOTalk.this.ConnectionLogHandler.sendMessage(m);
 				}
 			}
 			
@@ -423,7 +520,7 @@ public class AOTalk extends Activity {
 			@SuppressWarnings("unused")
 			State LOGGED_IN = State.LOGGED_IN;
 			
-			ChatParser cp = new ChatParser();
+			ChatParser cp = new ChatParser(AOTalk.this.logtext);
 				        	
 			switch (msg.what) { 				
 				case AOTalk.MSG_CONNECTED:
@@ -432,12 +529,10 @@ public class AOTalk extends Activity {
 					
 				case AOTalk.MSG_AUTHENTICATED:
 					AOTalk.this.logtext.append(cp.parse("AUTHENTICATED"));
-					AOTalk.this.logtext.append(cp.parse("ACCOUNT : " + USERNAME));
 					break;
 					
 				case AOTalk.MSG_LOGGED_IN:
-					AOTalk.this.logtext.append(cp.parse("LOGGED_IN"));
-					AOTalk.this.logtext.append(cp.parse("CHARACTER : " + AOTalk.this.aochar.getName()));
+					AOTalk.this.logtext.append(cp.parse("LOGGED IN"));
 					break;
 					
 				case AOTalk.MSG_DISCONNECTED:
@@ -447,7 +542,11 @@ public class AOTalk extends Activity {
 					break;
 					
 				case AOTalk.MSG_FAILURE:
-					AOTalk.this.logtext.append(cp.parse("FAILURE"));
+					AOTalk.this.logtext.append(cp.parse("ERROR"));
+					break;
+					
+				case AOTalk.MSG_SYSTEM:
+					AOTalk.this.logtext.append(cp.parse(lastsystem.getMessage()));
 					break;
 					
 				case AOTalk.MSG_STARTED:
@@ -475,14 +574,16 @@ public class AOTalk extends Activity {
 					
 				case AOTalk.MSG_GROUP:
 					if(lastgroupmess != null) {
-						AOTalk.this.logtext.append(
-							cp.parse(
-								AOTalk.this.lastgroupmess.display(
-									AOTalk.this.aobot.getCharTable(), 
-									AOTalk.this.aobot.getGroupTable()
+						if(!AOTalk.this.groupDisable.contains(AOTalk.this.aobot.getGroupTable().getName(AOTalk.this.lastgroupmess.getGroupID()))) {
+							AOTalk.this.logtext.append(
+								cp.parse(
+									AOTalk.this.lastgroupmess.display(
+										AOTalk.this.aobot.getCharTable(), 
+										AOTalk.this.aobot.getGroupTable()
+									)
 								)
-							)
-						);
+							);
+						}
 					}
 					break;
 
@@ -490,6 +591,10 @@ public class AOTalk extends Activity {
 					if(lastnotice != null) {
 						AOTalk.this.logtext.append(cp.parse(AOTalk.this.lastnotice.toString()));
 					}
+					break;
+					
+				case AOTalk.MSG_INVITATION:
+					invitation();
 					break;
 			} 
 			
@@ -501,7 +606,27 @@ public class AOTalk extends Activity {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.layout.mainmenu, menu);
+                 
         return true;
+    }
+    
+    public boolean onOptionsItemSelected(MenuItem item) {
+    	switch (item.getItemId()) {
+	        case R.id.connect:
+	        	boot();
+	            return true;
+	        case R.id.disconnect:
+	        	disconnect();
+	        	return true;
+	        case R.id.clear:
+	        	clearLog();
+	        	return true;
+	        case R.id.settings:
+	        	settings();
+	        	return true;
+	        default:
+	            return super.onOptionsItemSelected(item);
+        }
     }
     
     private void connect() {
@@ -647,52 +772,96 @@ public class AOTalk extends Activity {
 		}
     }
     
-    private void clearLog() {
-    	AOTalk.this.logtext.setText("");
+    public void sendMessage(String target, String message) {
+    	ChatParser cp = new ChatParser(AOTalk.this.logtext);
+    	
+    	try {
+			AOTalk.this.aobot.sendTell(target, message, true);
+			AOTalk.this.logtext.append(cp.parse(message));
+		} catch (IOException e) {
+			Log.d(D_STRING, "Failed to send message");
+		}
     }
     
-    private void settings() {
-    	LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
-        final View layout = inflater.inflate(R.layout.settings,(ViewGroup) findViewById(R.layout.settings));
-    	Builder builder = new AlertDialog.Builder(context);
-    	builder.setTitle(getResources().getString(R.string.settings));
-    	builder.setView(layout);
+    private void clearLog() {
+    	AlertDialog clearDialog = new AlertDialog.Builder(AOTalk.this).create();
+    	
+    	clearDialog.setTitle("Clear chat log");
+    	clearDialog.setMessage(getResources().getString(R.string.wantToClear));
+    	clearDialog.setIcon(R.drawable.icon_clear);
+    		            
+    	clearDialog.setButton("OK", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				AOTalk.this.logtext.setText("");
+				return;
+			} 
+		});
+		
+    	clearDialog.setButton2("Cancel", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				return;
+			}
+		}); 
+    	
+    	clearDialog.show();
+    }
+    
+    private void settings() {   	
+    	CharSequence[] tempChannels = null;
+    	boolean[] channelStates = null;
+    	
+    	if(AOTalk.this.groupList != null) {
+    		tempChannels = new CharSequence[AOTalk.this.groupList.size()];
+    		channelStates = new boolean[AOTalk.this.groupList.size()];
+    		
+	    	for(int i = 0; i < AOTalk.this.groupList.size(); i++) {
+	    		tempChannels[i] = AOTalk.this.groupList.get(i);
+				if(AOTalk.this.groupDisable != null ) {
+		    		if(AOTalk.this.groupDisable.contains(AOTalk.this.groupList.get(i))) {
+						channelStates[i] = true;
+					} else {
+						channelStates[i] = false;
+					}
+				} else {
+					channelStates[i] = false;
+				}
+	    	} 
+    	}
+     	
+    	final CharSequence[] channellist = tempChannels;
+
+    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    	builder.setTitle("Disable channels");
+    	
+    	builder.setMultiChoiceItems(channellist, channelStates, new DialogInterface.OnMultiChoiceClickListener() {
+    	    @Override
+			public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+				if(isChecked) {
+					if(AOTalk.this.groupDisable != null) {
+						if(!AOTalk.this.groupDisable.contains(channellist[which].toString())) {
+							AOTalk.this.groupDisable.add(channellist[which].toString());
+						}
+					} else {
+						AOTalk.this.groupDisable.add(channellist[which].toString());
+					}	
+				} else {
+					if(AOTalk.this.groupDisable != null) {
+						if(AOTalk.this.groupDisable.contains(channellist[which].toString())) {
+							AOTalk.this.groupDisable.remove(channellist[which].toString());
+						}
+					}
+				}
+			}
+    	});
     	
     	builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {  	                						
 				return;
 			} 
 		});
-		
-    	/*
-    	builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {
-				return;
-			}
-		}); 
-		*/
     	
     	AlertDialog settingsbox = builder.create();
-    	settingsbox.show();    	
-    }
-    
-    public boolean onOptionsItemSelected(MenuItem item) {
-    	switch (item.getItemId()) {
-	        case R.id.connect:
-	        	boot();
-	            return true;
-	        case R.id.disconnect:
-	        	disconnect();
-	        	return true;
-	        case R.id.clear:
-	        	clearLog();
-	        	return true;
-	        case R.id.settings:
-	        	settings();
-	        	return true;
-	        default:
-	            return super.onOptionsItemSelected(item);
-        }
+    	settingsbox.show();	
     }
     
     @Override
@@ -734,19 +903,7 @@ public class AOTalk extends Activity {
     @Override
     protected void onStop(){
     	super.onStop();
-    	
-    	/*
-    	if(aobot != null) {
-    		if(aobot.getState() != ao.protocol.AOBot.State.DISCONNECTED) {
-    			try {
-					aobot.disconnect();
-				} catch (IOException e) {
-					Log.d(D_STRING, "Failed to disconnect : " + e.getMessage());
-				}
-    		}
-    	}
-    	*/
-
+ 
 		SharedPreferences settings = getSharedPreferences(PREFSNAME, 0);
 		SharedPreferences.Editor editor = settings.edit();
 		
@@ -765,4 +922,8 @@ public class AOTalk extends Activity {
 		
 		editor.commit();
 	}
+    
+    public void onConfigurationChanged(Configuration config) {
+    	super.onConfigurationChanged(config);
+    }
 }

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AnarchyTalk</string>
-    <string name="welcome">Welcome to AnarchyTalk!\nBy Novagen (RK1)\n</string>
+    <string name="welcome">Welcome to AnarchyTalk!</string>
+    <string name="about">\n\nMade by Novagen (RK1)\nBased on the Java AOChat API by Losobie\n</string>
     <string name="connect">Connect</string>
     <string name="authenticate">Authenticate</string>
     <string name="login">Login</string>
@@ -12,10 +13,11 @@
     <string name="authenticating">Authenticating</string>
     <string name="please_wait">Please wait...</string>
     <string name="start">Start</string>
-    <string name="logintitle">Log in</string>
+    <string name="logintitle">Login</string>
     <string name="logintext">Please log in</string>
     <string name="info">AO Chat Client</string>
     <string name="sendtotitle">Select target</string>
     <string name="settings">Settings</string>
     <string name="clearLog">Clear</string>
+    <string name="wantToClear">Do you want to clear the chat log?</string>
 </resources>
