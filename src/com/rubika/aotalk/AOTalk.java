@@ -10,6 +10,7 @@ import android.app.ProgressDialog;
 import android.app.AlertDialog.Builder;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.res.Configuration;
@@ -355,6 +356,11 @@ public class AOTalk extends Activity {
     }
     
     private void boot() {
+    	Log.d(D_STRING, "Loading service");
+    	Intent botservice = new Intent();
+    	botservice.setClassName("com.rubika.aotalk", "com.rubika.aotalk.AOBotService");
+    	startService(botservice);
+    	    	
     	if(AOTalk.this.aobot != null) {
         	AOTalk.this.aobot = null;
         }
@@ -770,6 +776,12 @@ public class AOTalk extends Activity {
 		} else {
 			Log.d(D_STRING, "Object aobot does not exist");
 		}
+		
+		
+    	Log.d(D_STRING, "Killing service");
+		Intent botservice = new Intent();
+    	botservice.setClassName("com.rubika.aotalk", "com.rubika.aotalk.AOBotService");
+    	stopService(botservice);
     }
     
     public void sendMessage(String target, String message) {
