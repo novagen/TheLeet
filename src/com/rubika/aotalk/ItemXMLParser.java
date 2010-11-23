@@ -14,6 +14,8 @@ import org.xml.sax.XMLReader;
 import android.util.Log;
 
 public class ItemXMLParser {
+	protected static final String APPTAG = "--> AOTalk::ItemXMLParser";
+	
 	private ArrayList<String[]> points = new ArrayList<String[]>();
 	private String xmlpath = "";
 	
@@ -22,7 +24,7 @@ public class ItemXMLParser {
 			URL url = new URL(xmlpath);
 			ReadXML(url);
 		} catch (MalformedURLException e) {
-			Log.d("ParseXML", "Bad URL");
+			Log.d("ItemXMLParser::getArray", "Bad URL");
 		}
 		
 		return points;
@@ -53,7 +55,8 @@ public class ItemXMLParser {
 			
 	        points = parsedXMLDataSet.getPoints();
 	    } catch (Exception e) {
-	    	Log.d("ReadXML", "Error parsing : " + e.getMessage());
+	    	Log.d("ItemXMLParser::ReadXML", "Error parsing : " + e.getMessage());
+	    	e.printStackTrace();
 		}
 	}
 }

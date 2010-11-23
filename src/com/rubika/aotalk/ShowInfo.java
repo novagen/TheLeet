@@ -6,10 +6,15 @@ import java.util.regex.Pattern;
 import java.net.URL;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
 import android.text.Html;
 import android.text.Html.ImageGetter;
 import android.text.method.LinkMovementMethod;
@@ -17,11 +22,43 @@ import android.util.Log;
 import android.widget.TextView;
 
 public class ShowInfo extends Activity {
+	protected static final String APPTAG    = "--> AOTalk::ShowInfo";
 	protected static final String CMD_START = "/start";
 	protected static final String CMD_TELL  = "/tell";
-	protected static final String SDPATH    = "/aotalk/icons/";
 
-        
+	private ServiceConnection conn;
+	private AOBotService bot;
+	
+	private String chatcmd;
+	private String target;
+	private String message;
+	private String resultData;
+	
+	private ProgressDialog loader;
+	private TextView info;
+	
+	final Handler resultHandler = new Handler();
+	
+	final Runnable outputResult = new Runnable() {
+        public void run() {
+           	updateResultsInUi();
+           	Log.d(APPTAG, "Thread finished, outputting result");
+        }
+    };
+    
+    private void updateResultsInUi() {
+        if(resultData != null) {
+        	if(resultData.length() > 0) {
+        		ShowInfo.this.info.setText(Html.fromHtml(resultData, imageLoader, null));
+        	} else {
+        		ShowInfo.this.info.setText("Sorry, no data could be found");
+        	}
+        } else {
+        	ShowInfo.this.info.setText("Error while downloading data");
+        	Log.d(APPTAG, "ResultData IS NULL");
+        }
+    }
+    
 	static ImageGetter imageLoader = new Html.ImageGetter() {
         @Override
         public Drawable getDrawable(String source) {
@@ -44,9 +81,13 @@ public class ShowInfo extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.showinfo);
         
-    	final TextView info = (TextView) findViewById(R.id.showinfo);
-        
-        if(getIntent().getData().toString().startsWith("text://")) {
+        info = (TextView) findViewById(R.id.showinfo);
+        attachToService();
+                
+        if(
+        	getIntent().getData().toString().startsWith("text://") || 
+        	getIntent().getData().toString().startsWith("charref://")
+        ) {
 	        String text = getIntent().getData().toString().replace("\n", "<br />").replaceFirst("text://", "");
 	                
 	        //Removes all images until cache has been coded, takes too long to load them every time
@@ -54,12 +95,12 @@ public class ShowInfo extends Activity {
 	        Matcher matcher = pattern.matcher(text);
 	        while(matcher.find()) {
 	        	text = text.replace(
-	        		"<img src=rdb://" + matcher.group(1) + ">", ""
-	        		//"<img src=http://www.rubi-ka.com/image/icon/" + matcher.group(1) + ".gif>"
+		        	"<img src=rdb://" + matcher.group(1) + ">", ""
+	        		//"rdb://" + matcher.group(1), ""
+	        		//"http://www.rubi-ka.com/image/icon/" + matcher.group(1) + ".gif"
 	        	);
 	        	text = text.replace(
 		        	"<img src='rdb://" + matcher.group(1) + "'>", ""
-		        	//"<img src=http://www.rubi-ka.com/image/icon/" + matcher.group(1) + ".gif>"
 		        );
 	        }
 	        
@@ -75,19 +116,17 @@ public class ShowInfo extends Activity {
         
         if(getIntent().getData().toString().startsWith("chatcmd://")) {
 	        String command = getIntent().getData().toString().replace("chatcmd://", "");
-	        String chatcmd = command.substring(0, command.indexOf(" ")).trim();
+	        chatcmd = command.substring(0, command.indexOf(" ")).trim();
 	        
 	        if(chatcmd.equals(CMD_START)) {
 	        	String url = command.replace(chatcmd, "").trim();
 	        	Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
 	        	startActivity(i);
+	        	
 	        	this.finish();
 	        } else if(chatcmd.equals(CMD_TELL)) {
-	        	String target = command.replace(chatcmd, "").trim().substring(0, command.indexOf(" ")).trim();
-	        	String message = command.replace(chatcmd, "").trim().replace(target, "").trim();
-	        	
-		        info.setText("this chatcmd is not implemented yet");
-		        info.append("\n'" + chatcmd + " " + target + " " + message + "'");	        	
+	        	target  = command.replace(chatcmd, "").trim().substring(0, command.trim().indexOf(" ") + 1).trim();
+	        	message = command.replace(chatcmd, "").trim().replace(target, "").trim();
 	        } else {
 		        info.setText("this chatcmd is not implemented yet");
 		        info.append("\n'" + chatcmd + "'");
@@ -95,174 +134,68 @@ public class ShowInfo extends Activity {
         }
         
         if(getIntent().getData().toString().startsWith("itemref://")) {
-	        String itemref = getIntent().getData().toString().replace("itemref://", "").trim();
-        	String lowid = itemref.substring(0, itemref.indexOf("/"));
+        	String values[] = getIntent().getData().toString().replace("itemref://", "").trim().split("/");
         	
-        	String ql = "";
+        	final String lowid  = values[0];
+        	final String itemql = values[2];
         	
-        	itemref = itemref.replace(lowid + "/", "");
-        	if(itemref.indexOf("/") >= 0) {
-        		String highid = itemref.substring(0, itemref.indexOf("/"));
-        		ql = itemref.replace(highid + "/", "");
-        	}
+        	final ItemRef iref = new ItemRef();
         	
-        	if(ql.equals("")) {
-        		ql = "1";
-        	}
-       	
-        	ItemRef iref = new ItemRef();
-        	String text = iref.getData(lowid, ql);
-	        
-	        info.setText(Html.fromHtml(text, imageLoader, null));
-        }        
+        	Log.d(APPTAG, "DATA : " + itemql + ", " + lowid);
+        	
+        	loader = new ProgressDialog(this);
+	    	loader.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+	    	loader.setTitle(getResources().getString(R.string.loading_data));
+			loader.setMessage(getResources().getString(R.string.please_wait));
+			loader.show();
+			
+			new Thread() {
+	            public void run() {
+	            	ShowInfo.this.resultData = iref.getData(lowid, itemql);
+	                resultHandler.post(outputResult);
+			        
+			        ShowInfo.this.loader.dismiss();
+	        	}
+			}.start();
+        }
+	}
+    
+	private void attachToService() {
+		Intent serviceIntent = new Intent(this, AOBotService.class);
+	    
+	    conn = new ServiceConnection() {
+			@Override
+			public void onServiceConnected(ComponentName name, IBinder service) {
+				ShowInfo.this.bot = ((AOBotService.ListenBinder) service).getService();
+				
+				if(chatcmd != null) {
+					if(chatcmd.equals(CMD_TELL) && target != null && message != null) {
+						bot.sendTell(target, message, true);
+						Log.d(APPTAG, "Sent /tell " + target + " " + message);
+						
+						finish();
+					}
+				}
+			}
+		
+			@Override
+			public void onServiceDisconnected(ComponentName name) {
+				ShowInfo.this.bot = null;
+			}
+	    };
+
+	    this.getApplicationContext().startService(serviceIntent);
+	    this.getApplicationContext().bindService(serviceIntent, conn, 0);
 	}
     
     @Override
     protected void onPause(){
     	super.onPause();
-    	this.finish();
+    	finish();
 	} 
     
     @Override
     protected void onStop(){
     	super.onStop();
-    	this.finish();
 	}
-    
-    /*
-	public boolean makeNomedia(String path) {
-		boolean retval = false;
-		
-		File imageNomedia = new File(path + "/.nomedia");
-    	if(!imageNomedia.exists()) {
-    		try {
-				Log.d("makeNomedia", "Created .nomedia : " + imageNomedia.toString());
-				imageNomedia.createNewFile();
-				retval = true;
-			} catch (IOException e) {
-				Log.d("makeNomedia", "Unable to save .nomedia");
-				retval = false;
-			}
-    	}
-    	
-    	return retval;
-   	}
-	
-	public static Drawable getIcon(String icon) {
-		if (icon.length() > 1) {
-			boolean mExternalStorageAvailable = false;
-			boolean mExternalStorageWriteable = false;
-	
-			String state = Environment.getExternalStorageState();
-			if (Environment.MEDIA_MOUNTED.equals(state)) {
-			    mExternalStorageAvailable = mExternalStorageWriteable = true;
-			} else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-			    mExternalStorageAvailable = true;
-			    mExternalStorageWriteable = false;
-			} else {
-			    mExternalStorageAvailable = mExternalStorageWriteable = false;
-			}
-	
-			Drawable bitmap = null;
-			String fileName = icon + ".gif";
-			
-			if(mExternalStorageAvailable && mExternalStorageWriteable) {
-				File image = new File(Environment.getExternalStorageDirectory().toString() + SDPATH + fileName);
-				
-				if (!image.exists()) {
-		    		downloadImage("http://www.rubi-ka.com/image/icon/" + fileName, fileName);
-		    	}
-			}
-	        
-			//bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory().toString() + SDPATH + fileName);
-			bitmap = BitmapDrawable.createFromPath(Environment.getExternalStorageDirectory().toString() + SDPATH + fileName);
-	        
-	        return bitmap;
-		} else {
-			return null;
-		}
-    }
-	
-	public static boolean downloadImage(String URL, String fileName) {        
-	    Bitmap bitmap = null;
-	       
-	    boolean fetched = false;
-		boolean mExternalStorageAvailable = false;
-		boolean mExternalStorageWriteable = false;
-	    
-		String state = Environment.getExternalStorageState();
-		if (Environment.MEDIA_MOUNTED.equals(state)) {
-		    mExternalStorageAvailable = mExternalStorageWriteable = true;
-		} else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-		    mExternalStorageAvailable = true;
-		    mExternalStorageWriteable = false;
-		} else {
-		    mExternalStorageAvailable = mExternalStorageWriteable = false;
-		}
-		
-	    InputStream in = null;
-		
-	    try {
-	    	in = OpenHttpConnection(URL);
-	    	if (in != null) {
-	    		bitmap = BitmapFactory.decodeStream(in);
-	    		in.close();
-		    	fetched = true;
-	    	}
-	    } catch (IOException e1) {
-	    	e1.printStackTrace();
-	    }
-	        
-	    if (fetched && mExternalStorageAvailable && mExternalStorageWriteable) {
-	    	File imageDirectory = new File(Environment.getExternalStorageDirectory().toString() + SDPATH);
-	    	imageDirectory.mkdirs();
-	    	
-	    	OutputStream outStream = null;
-		    File file = new File(Environment.getExternalStorageDirectory().toString() + SDPATH, fileName);
-		    try {
-				outStream = new FileOutputStream(file);
-				bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
-				outStream.flush();
-				outStream.close();	    	   
-		    } catch (FileNotFoundException e) {
-				e.printStackTrace();
-		    } catch (IOException e) {
-				e.printStackTrace();
-		    }
-	    }
-
-	    System.gc();
-	    return true;             
-	}
-	
-	private static InputStream OpenHttpConnection(String urlString) throws IOException {
-		InputStream in = null;
-		int response = -1;
-	               
-		URL url = new URL(urlString); 
-		URLConnection conn = url.openConnection();
-	                 
-		if(!(conn instanceof HttpURLConnection)) {
-			Log.d("OpenHttpConnection", "Not an HTTP connection");
-		}
-		
-		try {
-			HttpURLConnection httpConn = (HttpURLConnection) conn;
-			httpConn.setAllowUserInteraction(false);
-			httpConn.setInstanceFollowRedirects(true);
-			httpConn.setRequestMethod("GET");
-			httpConn.connect();
-
-			response = httpConn.getResponseCode();
-			
-			if (response == HttpURLConnection.HTTP_OK) {
-				in = httpConn.getInputStream();
-			}
-		} catch (Exception ex) {
-			Log.d("OpenHttpConnection", "Error connecting");
-		}
-		
-		return in;     
-	}
-	*/
 }

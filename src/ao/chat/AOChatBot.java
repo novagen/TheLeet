@@ -40,6 +40,7 @@ import java.util.Vector;
 import ao.event.EventListenerList;
 
 public class AOChatBot implements AOBot {
+
     //Base variables
     private AOPacketFactory m_packetFactory;
     private Thread m_thread = null;
@@ -57,7 +58,7 @@ public class AOChatBot implements AOBot {
     private final Object m_readLock = new Object();
     private final Object m_writeLock = new Object();
     private final Object m_stateLock = new Object();
-    private Vector<Object[]> lookupQueue = new Vector();
+    private Vector<Object[]> lookupQueue = new Vector<Object[]>();
     //Chat related
     private AOCharacterIDTable chartable = new AOCharacterIDTable();
     private AOGroupTable grouptable = new AOGroupTable();
@@ -72,6 +73,11 @@ public class AOChatBot implements AOBot {
     /** Creates a new instance of AOSimpleBot */
     public AOChatBot() {
         this(60000, new AOSimplePacketFactory());
+    }   // end AOSimpleBot
+
+    /** Creates a new instance of AOSimpleBot */
+    public AOChatBot(int pingDelay) {
+        this(pingDelay, new AOSimplePacketFactory());
     }   // end AOSimpleBot
 
     /** Creates a new instance of AOSimpleBot */
@@ -294,6 +300,9 @@ public class AOChatBot implements AOBot {
         synchronized (m_stateLock) {
             if (m_state != State.DISCONNECTED) {
                 if (m_socket != null) {
+                    if (m_thread != null) {
+                        stopThread();//m_thread.stop();
+                    }
                     m_socket.close();
                     m_in.close();
                     m_out.close();
@@ -301,12 +310,9 @@ public class AOChatBot implements AOBot {
                     m_socket = null;
                     m_in = null;
                     m_out = null;
-                    
-                    if (m_thread != null) {
-                       //m_thread.stop();
-                       m_thread.interrupt();
-                    }
-                }   // end if
+                } else {
+                    System.err.println("Socket is null when disconnecting");
+                }// end if
 
                 m_loginSeed = null;
                 m_character = null;
@@ -346,6 +352,14 @@ public class AOChatBot implements AOBot {
         }   // end synchronized
     }   // end start()
 
+    private void stopThread(){
+        if(m_thread != null){
+            Thread temp = m_thread;
+            m_thread = null;
+            temp.interrupt();
+        }
+    }
+
     public void run() {
         if (m_state != State.LOGGED_IN) {
             throw new AOBotStateException("This bot is not currently logged in.", getState(), State.LOGGED_IN);
@@ -382,6 +396,9 @@ public class AOChatBot implements AOBot {
                 }
                 firePacket(packet);
                 Thread.sleep(1);
+            } catch (InterruptedException ie) {
+                fireException(ie);
+                return;
             } catch (Exception e) {
                 fireException(e);
             }

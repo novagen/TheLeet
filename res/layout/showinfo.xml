@@ -8,6 +8,7 @@
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
 	android:isScrollContainer="true"
+	android:background="#062c36"
 	>
 	    <TextView
 	  	android:id="@+id/showinfo"

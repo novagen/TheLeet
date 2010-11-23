@@ -7,6 +7,8 @@ import org.xml.sax.helpers.DefaultHandler;
 import android.util.Log;
 
 public class ItemXMLHandler extends DefaultHandler {
+	protected static final String APPTAG = "--> AOTalk::ItemXMLHandler";
+	
 	private boolean in_outertag    = false;
 	private boolean in_innertag    = false;
     private boolean in_name        = false;
@@ -20,15 +22,15 @@ public class ItemXMLHandler extends DefaultHandler {
 
     @Override
     public void startDocument() throws SAXException {
-        this.myParsedDataSet = new ItemXMLData();
+    	this.myParsedDataSet = new ItemXMLData();
     }
 
     @Override
-    public void endDocument() throws SAXException {	}
+    public void endDocument() throws SAXException {}
 
     @Override
-    public void startElement(String namespaceURI, String localName, String qName, Attributes atts) throws SAXException {
-        if (localName.equals("item")) {
+    public void startElement(String namespaceURI, String localName, String qName, Attributes atts) throws SAXException {   	
+    	if (localName.equals("item")) {
             this.in_outertag = true;
         } else if (localName.equals("attributes")) {
             this.in_innertag = true;
@@ -47,6 +49,16 @@ public class ItemXMLHandler extends DefaultHandler {
         	if(atts.getValue("name").equals("Icon")) {
         		myParsedDataSet.setIcon(atts.getValue("value"));
         		Log.d("XMLPARSER", "Found an icon-attribute : " + atts.getValue("value"));
+        	}
+        	
+        	if(atts.getValue("name").equals("EquipmentPage")) {
+        		myParsedDataSet.setType(atts.getValue("extra"));
+        		Log.d("XMLPARSER", "Found an type-attribute : " + atts.getValue("extra"));
+        	}
+        	
+        	if(atts.getValue("name").equals("Flags")) {
+        		myParsedDataSet.setFlags(atts.getValue("extra"));
+        		Log.d("XMLPARSER", "Found an flags-attribute : " + atts.getValue("extra"));
         	}
         }
    	}
@@ -69,8 +81,18 @@ public class ItemXMLHandler extends DefaultHandler {
     @Override
     public void characters(char ch[], int start, int length) {
     	if (this.in_name) {
-        	myParsedDataSet.setName(new String(ch, start, length));
+        	String tempname = new String();
+        	tempname = "";
+        	
+        	if (myParsedDataSet.getName() != null) {
+        		tempname = myParsedDataSet.getName();
+        	}
+        	
+        	myParsedDataSet.setName(tempname + new String(ch, start, length));
+	    	Log.d("XMLPARSER", "ITEM : " + myParsedDataSet.getName());
+
         }
+    	
         if (this.in_description) {
         	String tempdesc = new String();
         	tempdesc = "";

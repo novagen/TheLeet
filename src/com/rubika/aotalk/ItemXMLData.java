@@ -7,15 +7,19 @@ public class ItemXMLData {
 	private String description = null;
 	private String quality	   = null;
 	private String icon  	   = null;
+	private String type        = null;
+	private String flags	   = null;
 
 	private ArrayList<String[]> pointlist = new ArrayList<String[]>();
 	
 	public void createPoint() {
-		String[] point = new String[4];
+		String[] point = new String[6];
 		point[0] = this.name;
 		point[1] = this.description;
 		point[2] = this.quality;
 		point[3] = this.icon;
+		point[4] = this.type;
+		point[5] = this.flags;
 		
 		this.pointlist.add(point);
 	}
@@ -40,6 +44,14 @@ public class ItemXMLData {
 		this.icon = icon;
 	}
 	
+	public void setType(String type) {
+		this.type = type;
+	}
+	
+	public void setFlags(String flags) {
+		this.flags = flags;
+	}
+	
 	public String getName() {
 		return this.name;
 	}
@@ -54,5 +66,13 @@ public class ItemXMLData {
 	
 	public String getIcon() {
 		return this.icon;
+	}
+	
+	public String getType() {
+		return this.type;
+	}
+	
+	public String getFlags() {
+		return this.flags;
 	}
 }
