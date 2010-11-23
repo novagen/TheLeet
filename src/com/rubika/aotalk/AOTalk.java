@@ -368,19 +368,19 @@ public class AOTalk extends Activity {
     	final AOPrivateGroupInvitePacket invitation = AOTalk.this.bot.getInvitation();
     	
     	AlertDialog joinGroupDialog = new AlertDialog.Builder(AOTalk.this).create();
-    	joinGroupDialog.setTitle(AOTalk.this.bot.getCharTable().getName(invitation.getGroupdID()));
+    	joinGroupDialog.setTitle(AOTalk.this.bot.getCharTable().getName(invitation.getGroupID()));
     	joinGroupDialog.setMessage(AOTalk.this.getString(R.string.join_group));
     		            
     	joinGroupDialog.setButton(AOTalk.this.getString(R.string.ok), new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
-		    	AOTalk.this.bot.acceptInvitation(invitation.getGroupdID());
+		    	AOTalk.this.bot.acceptInvitation(invitation.getGroupID());
 				return;
 			} 
 		});
 		
     	joinGroupDialog.setButton2(AOTalk.this.getString(R.string.cancel), new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
-				AOTalk.this.bot.rejectInvitation(invitation.getGroupdID());
+				AOTalk.this.bot.rejectInvitation(invitation.getGroupID());
 				return;
 			}
 		}); 
@@ -488,16 +488,25 @@ public class AOTalk extends Activity {
     private void setChannel() {
     	CharSequence[] tempChannels = null;
     	List<String> groupList = AOTalk.this.bot.getGroupList();
+    	int add = 0;
+    	
+    	if(AOTalk.this.bot.getState().equals(AOBot.State.LOGGED_IN)) {
+    		add++;
+    	}
+    	
+    	if(!AOTalk.this.bot.getFriends().isEmpty()) {
+    		add++;
+    	}
     	
     	if(groupList != null) {
-    		tempChannels = new CharSequence[groupList.size() + 1]; //groupList.size() + 2
-	    	for(int i = 0; i <= groupList.size(); i++) {
-	    		if(i == 0) {
+    		tempChannels = new CharSequence[groupList.size() + add]; //groupList.size() + 2
+	    	for(int i = 0; i < (groupList.size() + add); i++) {
+	    		if(i == 0 && add > 0) {
 	    			tempChannels[i] = AOTalk.this.CHANNEL_MSG;
-	    		}/* else if(i == 1) {
+	    		} else if(i == 1 && add == 2) {
 	    			tempChannels[i] = AOTalk.this.CHANNEL_FRIEND;
-	    		}*/ else {
-	    			tempChannels[i] = groupList.get(i - 1);
+	    		} else {
+	    			tempChannels[i] = groupList.get(i - add);
 	    		}
 	    	} 
     	}
@@ -535,7 +544,7 @@ public class AOTalk extends Activity {
     	        	AlertDialog targetbox = builder.create();
     	        	targetbox.show();    	    		
     	    	} else if(channellist[item].toString().equals(AOTalk.this.CHANNEL_FRIEND)) {
-    	    		//Friend selected...
+    	    		showFriends();
     	    	} else {
     	    		setButtonText();
     	    	}
@@ -698,6 +707,38 @@ public class AOTalk extends Activity {
 				return;
 			} 
 		});
+    	
+    	AlertDialog settingsbox = builder.create();
+    	settingsbox.show();	
+    }
+    
+    
+    private void showFriends() {   	
+    	final List<Friend> friendList = AOTalk.this.bot.getFriends();
+    	
+    	CharSequence[] tempList = null;
+    	
+    	if(friendList != null) {
+    		tempList = new CharSequence[friendList.size()];
+    		
+	    	for(int i = 0; i < friendList.size(); i++) {
+	    		tempList[i] = friendList.get(i).getName();
+	    	}
+    	}
+     	
+    	final CharSequence[] flist = tempList;
+
+    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    	builder.setTitle(AOTalk.this.getString(R.string.friends_online));
+    	
+    	builder.setItems(flist, new DialogInterface.OnClickListener() {
+    	    @Override
+			public void onClick(DialogInterface dialog, int which) {
+				AOTalk.this.CHATCHANNEL = AOTalk.this.CHANNEL_MSG;
+				AOTalk.this.MESSAGETO = flist[which].toString();
+				setButtonText();
+			}
+    	});
     	
     	AlertDialog settingsbox = builder.create();
     	settingsbox.show();	
@@ -958,6 +999,9 @@ public class AOTalk extends Activity {
 		            AOTalk.this.FULLSCRN = false;
 	        	}
 	        	
+	        	return true;
+	        case R.id.friends:
+	        	showFriends();
 	        	return true;
 	        */
 	        case R.id.settings:

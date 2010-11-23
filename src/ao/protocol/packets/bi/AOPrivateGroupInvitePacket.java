@@ -63,7 +63,7 @@ public class AOPrivateGroupInvitePacket extends AOPacket  {
         }   // end catch
     }   // end AOGroupAnnouncePacket()
 
-    public int getGroupdID(){
+    public int getGroupID(){
         return m_id;
     }
 

@@ -32,6 +32,8 @@
     <string name="select_server">Select server</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+    <string name="friends">Friends</string>
+    <string name="friends_online">Friends Online</string>
     <string name="join_group">Do you want to join this group?</string>
     <string name="select_message">Select a message</string>
     <string name="select_channel">Select channel</string>
@@ -45,4 +47,7 @@
     <string name="logged_off">logged off</string>
     <string name="logged_in">is logged in</string>
     <string name="to">to</string>
+    <string name="group_kicked">You left the group</string>
+    <string name="group_joined">joined the group</string>
+    <string name="group_left">left the group</string>
 </resources>

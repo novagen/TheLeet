@@ -3,8 +3,8 @@
 xmlns:android="http://schemas.android.com/apk/res/android"
 package="com.rubika.aotalk"
 android:installLocation="internalOnly"
-android:versionName="1.3.0"
-android:versionCode="12">
+android:versionName="1.3.1"
+android:versionCode="13">
     <application
     android:icon="@drawable/icon"
     android:description="@string/app_description"
