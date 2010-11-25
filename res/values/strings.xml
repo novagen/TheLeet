@@ -41,7 +41,7 @@
     <string name="private_message_to">Private message to</string>
     <string name="group_message_to">Group message to</string>
     <string name="clear_chat_log">Clear chat log</string>
-    <string name="disable_channels">Disable channels</string>
+    <string name="disable_channels">Mute channels</string>
     <string name="could_not_log_in">Could not log in, check your password</string>
     <string name="could_not_connect">Could not connect</string>
     <string name="logged_off">logged off</string>

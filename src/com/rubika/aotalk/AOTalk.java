@@ -1,3 +1,21 @@
+/*
+ * AOTalk.java
+ *
+ *************************************************************************
+ * Copyright 2010 Christofer Engel
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.rubika.aotalk;
 
 import java.util.ArrayList;
@@ -19,6 +37,7 @@ import android.content.SharedPreferences;
 import android.content.DialogInterface.OnCancelListener;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.Selection;
 import android.util.Log;
@@ -57,7 +76,6 @@ public class AOTalk extends Activity {
 	private AOBotService bot;
 	private ChatParser chat;
 	
-	private String PREFSNAME = "AOTALK";
 	private String PASSWORD  = "";
 	private String USERNAME  = "";
 	private boolean SAVEPREF = false;
@@ -82,13 +100,18 @@ public class AOTalk extends Activity {
 	private ChatMessageAdapter msgadapter;
 	
 	private boolean welcome = true;
+	
+	private SharedPreferences settings;
+	private SharedPreferences.Editor editor;
 			
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        settings = PreferenceManager.getDefaultSharedPreferences(this);
+        editor = settings.edit();
+        
         //Load values that are saved from last time the app was used
-        SharedPreferences settings = getSharedPreferences(PREFSNAME, 0);
         SAVEPREF = settings.getBoolean("savepref", SAVEPREF);
         USERNAME = settings.getString("username", USERNAME);
         PASSWORD = settings.getString("password", PASSWORD);
@@ -99,6 +122,9 @@ public class AOTalk extends Activity {
         if(AOTalk.this.FULLSCRN) {
         	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);	
+        } else {
+        	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);	
         }
         
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -494,7 +520,7 @@ public class AOTalk extends Activity {
     		add++;
     	}
     	
-    	if(!AOTalk.this.bot.getFriends().isEmpty()) {
+    	if(!AOTalk.this.bot.getOnlineFriends().isEmpty()) {
     		add++;
     	}
     	
@@ -654,67 +680,8 @@ public class AOTalk extends Activity {
     }
     
     
-    private void settings() {   	
-    	final List<String> groupDisable = AOTalk.this.bot.getDisabledGroups();
-    	final List<String> groupList = AOTalk.this.bot.getGroupList();
-    	
-    	CharSequence[] tempChannels = null;
-    	boolean[] channelStates = null;
-    	
-    	if(groupList != null) {
-    		tempChannels = new CharSequence[groupList.size()];
-    		channelStates = new boolean[groupList.size()];
-    		
-	    	for(int i = 0; i < groupList.size(); i++) {
-	    		tempChannels[i] = groupList.get(i);
-				if(groupDisable != null ) {
-		    		if(groupDisable.contains(groupList.get(i))) {
-						channelStates[i] = true;
-					} else {
-						channelStates[i] = false;
-					}
-				} else {
-					channelStates[i] = false;
-				}
-	    	} 
-    	}
-     	
-    	final CharSequence[] channellist = tempChannels;
-
-    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    	builder.setTitle(AOTalk.this.getString(R.string.disable_channels));
-    	
-    	builder.setMultiChoiceItems(channellist, channelStates, new DialogInterface.OnMultiChoiceClickListener() {
-    	    @Override
-			public void onClick(DialogInterface dialog, int which, boolean isChecked) {
-				if(isChecked) {
-					if(!groupDisable.contains(channellist[which].toString())) {
-						groupDisable.add(channellist[which].toString());
-					}
-				} else {
-					if(groupDisable.contains(channellist[which].toString())) {
-						groupDisable.remove(channellist[which].toString());
-					}
-				}
-				
-				AOTalk.this.bot.setDisabledGroups(groupDisable);
-			}
-    	});
-    	
-    	builder.setPositiveButton(AOTalk.this.getString(R.string.ok), new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {  	                						
-				AOTalk.this.bot.setDisabledGroups(groupDisable);
-				return;
-			} 
-		});
-    	
-    	AlertDialog settingsbox = builder.create();
-    	settingsbox.show();	
-    }
-    
-    
     private void showFriends() {   	
-    	final List<Friend> friendList = AOTalk.this.bot.getFriends();
+    	final List<Friend> friendList = AOTalk.this.bot.getOnlineFriends();
     	
     	CharSequence[] tempList = null;
     	
@@ -750,14 +717,21 @@ public class AOTalk extends Activity {
     	super.onResume();
     	
         //Load values that are saved from last time the app was used
-        SharedPreferences settings = getSharedPreferences(PREFSNAME, 0);
         SAVEPREF = settings.getBoolean("savepref", SAVEPREF);
         USERNAME = settings.getString("username", USERNAME);
         PASSWORD = settings.getString("password", PASSWORD);
         CHATCHANNEL = settings.getString("chatchannel", CHATCHANNEL);
         MESSAGETO = settings.getString("messageto", MESSAGETO);
         FULLSCRN = settings.getBoolean("fullscreen", FULLSCRN);
-    	
+         
+        if(AOTalk.this.FULLSCRN) {
+        	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);	
+        } else {
+        	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);	
+        }
+        
         String temp[] = settings.getString("disabledchannels", "").split(",");
         
         for(int i = 0; i < temp.length; i++) {
@@ -796,10 +770,7 @@ public class AOTalk extends Activity {
     }
     
     
-    private void savePreferences() {
-		SharedPreferences settings = getSharedPreferences(PREFSNAME, 0);
-		SharedPreferences.Editor editor = settings.edit();
-		
+    private void savePreferences() {	
 		editor.putBoolean("savepref", SAVEPREF);
 		editor.putString("chatchannel", CHATCHANNEL);
 		editor.putString("messageto", MESSAGETO);
@@ -968,6 +939,11 @@ public class AOTalk extends Activity {
     }
     
     
+    private void showSettings() {
+    	Intent intent = new Intent(this, Settings.class);
+        startActivity(intent);
+    }
+    
     public boolean onOptionsItemSelected(MenuItem item) {
     	switch (item.getItemId()) {
 	        case R.id.connect:
@@ -982,30 +958,8 @@ public class AOTalk extends Activity {
 	        case R.id.clear:
 	        	clearLog();
 	        	return true;
-	        /*
-	        case R.id.fullscreen:
-	        	LinearLayout titlebar = (LinearLayout) findViewById(R.id.headwrap);
-	        	
-	        	//Toggle fullscreen
-	        	if(titlebar.getVisibility() != View.GONE) {
-		        	titlebar.setVisibility(View.GONE);
-		        	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-		            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-		            AOTalk.this.FULLSCRN = true;
-	        	} else {
-		        	titlebar.setVisibility(View.VISIBLE);
-		        	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-		            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);	        		
-		            AOTalk.this.FULLSCRN = false;
-	        	}
-	        	
-	        	return true;
-	        case R.id.friends:
-	        	showFriends();
-	        	return true;
-	        */
 	        case R.id.settings:
-	        	settings();
+	        	showSettings();
 	        	return true;
 	        default:
 	            return super.onOptionsItemSelected(item);
