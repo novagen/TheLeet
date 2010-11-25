@@ -129,7 +129,7 @@ public class AOTalk extends Activity {
         
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
-        
+                
         if(AOTalk.this.FULLSCRN) {
         	LinearLayout titlebar = (LinearLayout) findViewById(R.id.headwrap);
         	titlebar.setVisibility(View.GONE);
@@ -150,7 +150,7 @@ public class AOTalk extends Activity {
         messages = new ArrayList<ChatMessage>();
         
         messagelist = (ListView)findViewById(R.id.messagelist);
-        messagelist.setTranscriptMode(ListView.TRANSCRIPT_MODE_ALWAYS_SCROLL);
+        messagelist.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);
         
         //Disable automatic pop up of keyboard at launch
         this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
@@ -914,6 +914,7 @@ public class AOTalk extends Activity {
 					@Override
 					public void run() {
 						AOTalk.this.msgadapter.notifyDataSetChanged();
+			    		AOTalk.this.messagelist.setSelection(AOTalk.this.messages.size()-1);
 					}
 				});
 			}
