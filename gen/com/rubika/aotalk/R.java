@@ -16,12 +16,13 @@ public final class R {
         public static final int icon_connect=0x7f020002;
         public static final int icon_disconnect=0x7f020003;
         public static final int icon_notification=0x7f020004;
-        public static final int icon_settings=0x7f020005;
-        public static final int widget_bg=0x7f020006;
-        public static final int widget_button=0x7f020007;
-        public static final int widget_button_down=0x7f020008;
-        public static final int widget_button_focus=0x7f020009;
-        public static final int widget_button_up=0x7f02000a;
+        public static final int icon_notification_old=0x7f020005;
+        public static final int icon_settings=0x7f020006;
+        public static final int widget_bg=0x7f020007;
+        public static final int widget_button=0x7f020008;
+        public static final int widget_button_down=0x7f020009;
+        public static final int widget_button_focus=0x7f02000a;
+        public static final int widget_button_up=0x7f02000b;
     }
     public static final class id {
         public static final int addfriendbutton=0x7f060001;
