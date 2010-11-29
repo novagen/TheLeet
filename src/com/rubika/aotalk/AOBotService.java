@@ -240,23 +240,25 @@ public class AOBotService extends Service {
 					//Chat group message
 					if(packet.getType() == AOGroupMessagePacket.TYPE && packet.getDirection() == AOPacket.Direction.IN) {
 						AOGroupMessagePacket groupmsg = (AOGroupMessagePacket) packet;
-										
+						
+						//Don't add groups that's in the groupIgnore list 
 						if(!AOBotService.this.groupIgnore.contains(aobot.getGroupTable().getName(groupmsg.getGroupID()))) {
-							if(!AOBotService.this.groupDisable.contains(aobot.getGroupTable().getName(groupmsg.getGroupID()))) {
-								if(!AOBotService.this.groupList.contains(aobot.getGroupTable().getName(groupmsg.getGroupID()))) {
-									AOBotService.this.groupList.add(aobot.getGroupTable().getName(groupmsg.getGroupID()));
-								}
-		
-								if(groupmsg != null) {
-									appendToLog(
-										cp.parse(groupmsg.display(
-											AOBotService.this.aobot.getCharTable(), 
-											AOBotService.this.aobot.getGroupTable()
-										), ChatParser.TYPE_GROUP_MESSAGE),
-										AOBotService.this.aobot.getCharTable().getName(groupmsg.getCharID()),
-										AOBotService.this.aobot.getGroupTable().getName(groupmsg.getGroupID())
-									);
-								}
+							if(!AOBotService.this.groupList.contains(aobot.getGroupTable().getName(groupmsg.getGroupID()))) {
+								AOBotService.this.groupList.add(aobot.getGroupTable().getName(groupmsg.getGroupID()));
+							}
+						}
+						
+						//Don't show messages from groups that's in the groupDisable list
+						if(!AOBotService.this.groupDisable.contains(aobot.getGroupTable().getName(groupmsg.getGroupID()))) {
+							if(groupmsg != null) {
+								appendToLog(
+									cp.parse(groupmsg.display(
+										AOBotService.this.aobot.getCharTable(), 
+										AOBotService.this.aobot.getGroupTable()
+									), ChatParser.TYPE_GROUP_MESSAGE),
+									AOBotService.this.aobot.getCharTable().getName(groupmsg.getCharID()),
+									AOBotService.this.aobot.getGroupTable().getName(groupmsg.getGroupID())
+								);
 							}
 						}
 					}
@@ -502,17 +504,31 @@ public class AOBotService extends Service {
  	    //Set text of widget (small)
         RemoteViews remoteViews = new RemoteViews(this.getPackageName(), R.layout.widget_small);
 	    remoteViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
-
-        //Push update for all sized widgets to home screen       
         ComponentName thisWidget = new ComponentName(this, AOTalkWidgetSmall.class);
         manager.updateAppWidget(thisWidget, remoteViews);
         
  	    //Set text of widget (large)
         remoteViews = new RemoteViews(this.getPackageName(), R.layout.widget_large);
 	    remoteViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
-
-        //Push update for all sized widgets to home screen       
         thisWidget = new ComponentName(this, AOTalkWidgetLarge.class);
+        manager.updateAppWidget(thisWidget, remoteViews);
+        
+ 	    //Set text of widget (atrox)
+        remoteViews = new RemoteViews(this.getPackageName(), R.layout.widget_atrox);
+	    remoteViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
+        thisWidget = new ComponentName(this, AOTalkWidgetAtrox.class);
+        manager.updateAppWidget(thisWidget, remoteViews);
+        
+ 	    //Set text of widget (omni)
+        remoteViews = new RemoteViews(this.getPackageName(), R.layout.widget_omni);
+	    remoteViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
+        thisWidget = new ComponentName(this, AOTalkWidgetOmni.class);
+        manager.updateAppWidget(thisWidget, remoteViews);
+        
+ 	    //Set text of widget (clan)
+        remoteViews = new RemoteViews(this.getPackageName(), R.layout.widget_clan);
+	    remoteViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
+        thisWidget = new ComponentName(this, AOTalkWidgetClan.class);
         manager.updateAppWidget(thisWidget, remoteViews);
 	}
 	
@@ -844,10 +860,21 @@ public class AOBotService extends Service {
 		return AOBotService.this.groupDisable;
 	}
 	
+	
+	/**
+	 * Get list of ignored groups
+	 * @return
+	 */
+	public List<String> getGroupIgnoreList() {
+		return AOBotService.this.groupIgnore;
+	}
+	
+	
 	@Override
 	public IBinder onBind(Intent arg0) {
 		return new ListenBinder();
 	}
+	
 	
 	@Override
 	public void onCreate() {	

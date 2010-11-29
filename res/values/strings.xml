@@ -4,6 +4,9 @@
     <string name="app_description">AO Chat Client</string>
     <string name="widget_name_small">AnarchyTalk (4x1)</string>
     <string name="widget_name_large">AnarchyTalk (4x2)</string>
+    <string name="widget_name_atrox">AnarchyTalk (4x1) Atrox!</string>
+    <string name="widget_name_clan">AnarchyTalk (4x1) Clan!</string>
+    <string name="widget_name_omni">AnarchyTalk (4x1) Omni!</string>
     <string name="welcome">Welcome to AnarchyTalk!</string>
     <string name="widget_welcome">AnarchyTalk by Novagen</string>
     <string name="about">\n\nMade by Novagen (RK1)\nBased on the Java AOChat API by Losobie\n</string>

@@ -43,12 +43,17 @@ public class ShowInfo extends Activity {
 	protected static final String APPTAG    = "--> AOTalk::ShowInfo";
 	protected static final String CMD_START = "/start";
 	protected static final String CMD_TELL  = "/tell";
+	protected static final String CMD_CC    = "/cc";
+	
+	protected static final String CC_ADD = "addbuddy";
+	protected static final String CC_REM = "rembuddy";
 
 	private ServiceConnection conn;
 	private AOBotService bot;
 	
 	private String chatcmd;
 	private String target;
+	private String method;
 	private String message;
 	private String resultData;
 	
@@ -145,6 +150,12 @@ public class ShowInfo extends Activity {
 	        } else if(chatcmd.equals(CMD_TELL)) {
 	        	target  = command.replace(chatcmd, "").trim().substring(0, command.trim().indexOf(" ") + 1).trim();
 	        	message = command.replace(chatcmd, "").trim().replace(target, "").trim();
+	        /*
+	        } else if(chatcmd.equals(CMD_CC)) {
+	        	String[] temp = command.replace(chatcmd, "").trim().split(" ");
+	        	method = temp[0].trim();
+	        	target = temp[1].trim();
+	        */
 	        } else {
 		        info.setText("this chatcmd is not implemented yet");
 		        info.append("\n'" + chatcmd + "'");
@@ -191,6 +202,22 @@ public class ShowInfo extends Activity {
 						bot.sendTell(target, message, true);
 						Log.d(APPTAG, "Sent /tell " + target + " " + message);
 						
+						finish();
+					}
+					
+					if(chatcmd.equals(CMD_CC) && target != null && method != null) {
+						if(method.equals(CC_ADD)) {
+							//add a friend
+							bot.addFriend(target);
+							Log.d(APPTAG, "Added a buddy: " + target);
+						}
+						
+						if(method.equals(CC_REM)) {
+							//remove a friend
+							bot.removeFriend(target);
+							Log.d(APPTAG, "Removed a buddy: " + target);
+						}
+
 						finish();
 					}
 				}

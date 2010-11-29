@@ -119,6 +119,7 @@ public class AOTalk extends Activity {
         MESSAGETO = settings.getString("messageto", MESSAGETO);
         FULLSCRN = settings.getBoolean("fullscreen", FULLSCRN);
         
+        /* Not in use as listview bugs in fullscreen
         if(AOTalk.this.FULLSCRN) {
         	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);	
@@ -126,6 +127,7 @@ public class AOTalk extends Activity {
         	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);	
         }
+        */
         
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
@@ -139,9 +141,10 @@ public class AOTalk extends Activity {
         
         //Predefined text string, user can chose between them when long pressing input field
         predefinedText = new ArrayList<String>();
-        predefinedText.add("!afk");
+        predefinedText.add("!afk ");
         predefinedText.add("!online");
         predefinedText.add("!join");
+        predefinedText.add("!leave");
         predefinedText.add("!items ");
 
         chat = new ChatParser();
@@ -188,7 +191,7 @@ public class AOTalk extends Activity {
 		     	
 		     	int countMenuAlts = 0;
 
-		    	if(message.getChannel() != null) {
+		    	if(message.getChannel() != null && !AOTalk.this.bot.getGroupIgnoreList().contains(message.getChannel())) {
 			     	if(message.getChannel().startsWith(AOBotService.PRIVATE_GROUP_PREFIX)) {
 			     		tmpLeaveChannel = "Leave " + message.getChannel();
 			     		tmpOptions[countMenuAlts] = tmpLeaveChannel;
@@ -723,7 +726,8 @@ public class AOTalk extends Activity {
         CHATCHANNEL = settings.getString("chatchannel", CHATCHANNEL);
         MESSAGETO = settings.getString("messageto", MESSAGETO);
         FULLSCRN = settings.getBoolean("fullscreen", FULLSCRN);
-         
+        
+        /* Not in use as listview bugs in fullscreen
         if(AOTalk.this.FULLSCRN) {
         	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);	
@@ -731,6 +735,7 @@ public class AOTalk extends Activity {
         	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);	
         }
+        */
         
         String temp[] = settings.getString("disabledchannels", "").split(",");
         

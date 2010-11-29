@@ -20,5 +20,6 @@
        android:fadingEdge="horizontal"
        android:layout_marginBottom="5dip"
 	   android:inputType="textFilter"
+	   android:selectAllOnFocus="true"
        />
 </LinearLayout>
