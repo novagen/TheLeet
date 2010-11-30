@@ -501,34 +501,15 @@ public class AOBotService extends Service {
 	    
         AppWidgetManager manager = AppWidgetManager.getInstance(this);
 
- 	    //Set text of widget (small)
+ 	    //Set text of the widgets
         RemoteViews remoteViews = new RemoteViews(this.getPackageName(), R.layout.widget_small);
 	    remoteViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
-        ComponentName thisWidget = new ComponentName(this, AOTalkWidgetSmall.class);
+        ComponentName thisWidget = new ComponentName(this, WidgetSmall.class);
         manager.updateAppWidget(thisWidget, remoteViews);
         
- 	    //Set text of widget (large)
         remoteViews = new RemoteViews(this.getPackageName(), R.layout.widget_large);
 	    remoteViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
-        thisWidget = new ComponentName(this, AOTalkWidgetLarge.class);
-        manager.updateAppWidget(thisWidget, remoteViews);
-        
- 	    //Set text of widget (atrox)
-        remoteViews = new RemoteViews(this.getPackageName(), R.layout.widget_atrox);
-	    remoteViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
-        thisWidget = new ComponentName(this, AOTalkWidgetAtrox.class);
-        manager.updateAppWidget(thisWidget, remoteViews);
-        
- 	    //Set text of widget (omni)
-        remoteViews = new RemoteViews(this.getPackageName(), R.layout.widget_omni);
-	    remoteViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
-        thisWidget = new ComponentName(this, AOTalkWidgetOmni.class);
-        manager.updateAppWidget(thisWidget, remoteViews);
-        
- 	    //Set text of widget (clan)
-        remoteViews = new RemoteViews(this.getPackageName(), R.layout.widget_clan);
-	    remoteViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
-        thisWidget = new ComponentName(this, AOTalkWidgetClan.class);
+        thisWidget = new ComponentName(this, WidgetLarge.class);
         manager.updateAppWidget(thisWidget, remoteViews);
 	}
 	

@@ -4,9 +4,6 @@
     <string name="app_description">AO Chat Client</string>
     <string name="widget_name_small">AnarchyTalk (4x1)</string>
     <string name="widget_name_large">AnarchyTalk (4x2)</string>
-    <string name="widget_name_atrox">AnarchyTalk (4x1) Atrox!</string>
-    <string name="widget_name_clan">AnarchyTalk (4x1) Clan!</string>
-    <string name="widget_name_omni">AnarchyTalk (4x1) Omni!</string>
     <string name="welcome">Welcome to AnarchyTalk!</string>
     <string name="widget_welcome">AnarchyTalk by Novagen</string>
     <string name="about">\n\nMade by Novagen (RK1)\nBased on the Java AOChat API by Losobie\n</string>
@@ -22,6 +19,7 @@
     <string name="disconnected">Disconnected</string>
     <string name="please_wait">Please wait...</string>
     <string name="start">Start</string>
+    <string name="save">Save</string>
     <string name="login_title">Login</string>
     <string name="login_text">Please log in</string>
     <string name="info">AO Chat Client</string>
@@ -53,4 +51,5 @@
     <string name="group_kicked">You left the group</string>
     <string name="group_joined">joined the group</string>
     <string name="group_left">left the group</string>
+    <string name="config_icon">Select icon</string>
 </resources>

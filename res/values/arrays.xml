@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string-array name="icons">
+	<item>Default</item>
+	<item>Atrox</item>
+	<item>Clan</item>
+	<item>ICC</item>
+	<item>Omni</item>
+</string-array>
+</resources>

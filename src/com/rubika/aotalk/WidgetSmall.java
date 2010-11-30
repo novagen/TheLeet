@@ -26,7 +26,7 @@ import android.content.Intent;
 import android.util.Log;
 import android.widget.RemoteViews;
 
-public class AOTalkWidgetClan extends AppWidgetProvider {
+public class WidgetSmall extends AppWidgetProvider {
 	private static final String APPTAG = "--> AOTalk::AOTalkWidget";
 	
 	public static String ACTION_WIDGET_LAUNCH   = "ConfigureWidget";
@@ -40,45 +40,21 @@ public class AOTalkWidgetClan extends AppWidgetProvider {
         
 		widgetMngr = appWidgetManager;
 		widgetIds = appWidgetIds;
-		
+		        
 		int N = widgetIds.length;
-
+		
         for (int x = 0; x < N; x++) {
 	        int appWidgetId = appWidgetIds[x];
-	        
-	        Intent appIntent = new Intent(context, AOTalk.class);
-	        appIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-		    PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, appIntent, 0);
-	
-	        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_clan);
-	        views.setOnClickPendingIntent(R.id.widget_button, pendingIntent);
-	
-	        widgetMngr.updateAppWidget(appWidgetId, views);
+
+	        String iconPrefix = WidgetConfig.loadIconPref(context, appWidgetId);
+            updateAppWidget(context, widgetMngr, appWidgetId, iconPrefix);
         }
-        
-		//super.onUpdate(context, appWidgetManager, appWidgetIds);
 	}
 	
 	
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		Log.d(APPTAG, "onReceive");
-		
-		if(widgetIds != null) {
-			int N = widgetIds.length;
-			
-	        for (int x = 0; x < N; x++) {
-		        int appWidgetId = widgetIds[x];
-		                
-		        Intent appIntent = new Intent(context, AOTalk.class);
-		        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, appIntent, Intent.FLAG_ACTIVITY_NEW_TASK);
-		
-		        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_clan);
-		        views.setOnClickPendingIntent(R.id.widget_button, pendingIntent);
-		
-		        widgetMngr.updateAppWidget(appWidgetId, views);
-	        }
-		}
         
 		// v1.5 fix that doesn't call onDelete Action
 		final String action = intent.getAction();	
@@ -103,4 +79,38 @@ public class AOTalkWidgetClan extends AppWidgetProvider {
 		
 		super.onDeleted(context, appWidgetIds);
 	}
+	
+	static void updateAppWidget(Context context, AppWidgetManager widgetManager, int widgetId, String iconPrefix) {
+        String text = WidgetConfig.loadIconPref(context, widgetId);
+        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_small);
+
+        Intent appIntent = new Intent(context, AOTalk.class);
+        appIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+	    PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, appIntent, 0);
+
+        views.setOnClickPendingIntent(R.id.widget_button, pendingIntent);
+        
+        if(text.equals("Default")) {
+        	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button);
+        }
+
+        if(text.equals("Atrox")) {
+        	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button_atrox);
+        }    
+        
+        if(text.equals("Clan")) {
+        	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button_clan);
+        }
+        
+        if(text.equals("ICC")) {
+        	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button_icc);
+        }
+        
+        if(text.equals("Omni")) {
+        	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button_omni);
+        }
+        
+        // Tell the widget manager
+        widgetManager.updateAppWidget(widgetId, views);
+    }
 }
