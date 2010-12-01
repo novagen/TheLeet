@@ -55,6 +55,7 @@ import ao.protocol.packets.bi.AOPrivateGroupMessagePacket;
 import ao.protocol.packets.bi.AOPrivateMessagePacket;
 import ao.protocol.packets.in.AOAnonVicinityMessagePacket;
 import ao.protocol.packets.in.AOCharListPacket;
+import ao.protocol.packets.in.AOChatNoticePacket;
 import ao.protocol.packets.in.AOGroupAnnouncePacket;
 import ao.protocol.packets.in.AOLoginErrorPacket;
 import ao.protocol.packets.in.AOPrivateGroupClientJoinPacket;
@@ -267,11 +268,16 @@ public class AOBotService extends Service {
 					/* Not figured this one out yet..
 					if(packet.getType() == AOChatNoticePacket.TYPE && packet.getDirection() == AOPacket.Direction.IN) {
 						AOChatNoticePacket notice = (AOChatNoticePacket) packet;
-													
-						newMessageBroadcast.putExtra(EXTRA_MESSAGE, MSG_NOTICE);
-					    getApplicationContext().sendBroadcast(newMessageBroadcast);
+											    
+						if(notice != null) {
+							appendToLog(
+								cp.parse("DATA : " + notice.getData().toString(), ChatParser.TYPE_SYSTEM_MESSAGE),
+								null,
+								null
+							);
+						}
 					}
-					*/
+					/**/
 					
 					//System message
 					if(packet.getType() == AOAnonVicinityMessagePacket.TYPE) {
@@ -315,7 +321,8 @@ public class AOBotService extends Service {
 							    	if(tmp.getID() == friend.getCharID()) {
 							    		addOnlineFriend = false;
 							    		
-							    		if(!tmp.isOnline()) {
+							    		//Remove offline friends from online list
+							    		if(!friend.isOnline()) {
 							    			i.remove();
 							    		
 											//Only show logged off message if character is in the friends list
@@ -481,6 +488,7 @@ public class AOBotService extends Service {
 		    }
 		}
 	}
+
 	
 	/**
 	 * Add message to the message log

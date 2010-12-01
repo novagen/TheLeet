@@ -119,7 +119,7 @@ public class WidgetConfig extends Activity {
 	    	ImageView icon=(ImageView)row.findViewById(R.id.icon);
 	
 	    	if (icons[position].equals("Default")) {
-	    		icon.setImageResource(R.drawable.widget_button);
+	    		icon.setImageResource(R.drawable.widget_button_aotalk);
 	    	} else if(icons[position].equals("Atrox")) {
 	    		icon.setImageResource(R.drawable.widget_button_atrox);
 	    	} else if(icons[position].equals("Clan")) {

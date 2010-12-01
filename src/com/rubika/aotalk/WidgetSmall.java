@@ -91,7 +91,7 @@ public class WidgetSmall extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_button, pendingIntent);
         
         if(text.equals("Default")) {
-        	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button);
+        	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button_aotalk);
         }
 
         if(text.equals("Atrox")) {
