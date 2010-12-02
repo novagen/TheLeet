@@ -28,9 +28,7 @@ import android.widget.RemoteViews;
 
 public class WidgetLarge extends AppWidgetProvider {
 	private static final String APPTAG = "--> AOTalk::AOTalkWidget";
-	
-	public static String ACTION_WIDGET_LAUNCH   = "ConfigureWidget";
-	public static String ACTION_WIDGET_RECEIVER = "ActionReceiverWidget";
+
     private int[] widgetIds;
     private AppWidgetManager widgetMngr;
 		

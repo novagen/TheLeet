@@ -61,7 +61,7 @@ public class AOChatNoticePacket extends AOPacket {
     public byte[] getData() { return m_data; }
     public String getMsg() { return m_msg; }
     public int getCharID() { return m_i1; }
-    public int getRaw2() { return m_i2; }
+    public String getMsgData() { return Integer.toHexString(m_i2); }
     public String getMsgType() { return Integer.toHexString(m_i3); }
 
     /** Always returns {@code Direction.IN} */

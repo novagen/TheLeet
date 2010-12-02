@@ -20,7 +20,7 @@ import android.widget.AdapterView.OnItemClickListener;
 
 public class WidgetConfig extends Activity {
 	int widgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
-	private static final String PREFS_NAME = "com.rubika.aotalk.Widget";
+	private static final String PREFS_NAME = "AOTalkWidget";
     private static final String PREF_PREFIX_KEY = "widget_";
     private ListView iconlist;
     

@@ -253,10 +253,14 @@ public class AOBotService extends Service {
 						if(!AOBotService.this.groupDisable.contains(aobot.getGroupTable().getName(groupmsg.getGroupID()))) {
 							if(groupmsg != null) {
 								appendToLog(
+									/* 
+									 * TODO
+									 * Need check to see if its OrgMsg, in that case it needs to be handled differently	
+									 */
 									cp.parse(groupmsg.display(
 										AOBotService.this.aobot.getCharTable(), 
 										AOBotService.this.aobot.getGroupTable()
-									), ChatParser.TYPE_GROUP_MESSAGE),
+									), ChatParser.TYPE_GROUP_MESSAGE).replace("] 0:", "]:"),
 									AOBotService.this.aobot.getCharTable().getName(groupmsg.getCharID()),
 									AOBotService.this.aobot.getGroupTable().getName(groupmsg.getGroupID())
 								);
@@ -264,7 +268,10 @@ public class AOBotService extends Service {
 						}
 					}
 					
-					//Chat notices
+					/*
+					 * Chat notices
+					 * For now only "received offline tell" and "user offline, message buffered"
+					 */
 					if(packet.getType() == AOChatNoticePacket.TYPE && packet.getDirection() == AOPacket.Direction.IN) {
 						AOChatNoticePacket notice = (AOChatNoticePacket) packet;
 						
@@ -273,7 +280,8 @@ public class AOBotService extends Service {
 							if(notice.getMsgType().equals("a460d92")) {
 								appendToLog(
 									cp.parse(
-										"You got an offline message.",
+										"You got an offline message from " +
+										AONameFormat.format(AOBotService.this.aobot.getCharTable().getName(notice.getCharID())),
 										ChatParser.TYPE_SYSTEM_MESSAGE
 									),
 									null,
@@ -286,7 +294,7 @@ public class AOBotService extends Service {
 								appendToLog(
 									cp.parse(
 										AONameFormat.format(AOBotService.this.aobot.getCharTable().getName(notice.getCharID())) +
-										" is offline, your message have been buffered",
+										" is offline, message has been buffered",
 										ChatParser.TYPE_SYSTEM_MESSAGE
 									),
 									null,
@@ -294,23 +302,11 @@ public class AOBotService extends Service {
 								);
 							}
 							
-							//Offline message, inbox full
+							//Offline message, message buffered
 							if(notice.getMsgType().equals("340e245")) {
 								appendToLog(
 									cp.parse(
-										"Message could not be sent, reciever's inbox is full",
-										ChatParser.TYPE_SYSTEM_MESSAGE
-									),
-									null,
-									null
-								);
-							}
-							
-							//Error, message to big
-							if(notice.getMsgType().equals("340e245")) {
-								appendToLog(
-									cp.parse(
-										"Message is too large and could not be sent",
+										"Message could not be sent. The recievers inbox is full or the message is too long",
 										ChatParser.TYPE_SYSTEM_MESSAGE
 									),
 									null,
@@ -537,28 +533,25 @@ public class AOBotService extends Service {
 	 * @param channel
 	 */
 	public void appendToLog(String message, String character, String channel) {
-		messages.add(new ChatMessage(
-			new Date().getTime(), 
-			message,
-			character,
-			channel
-		));
+		messages.add(new ChatMessage(new Date().getTime(), message,	character, channel));
 		
 		newMessageBroadcast.putExtra(EXTRA_MESSAGE, MSG_UPDATE);
 	    getApplicationContext().sendBroadcast(newMessageBroadcast);
 	    
         AppWidgetManager manager = AppWidgetManager.getInstance(this);
-
- 	    //Set text of the widgets
-        RemoteViews remoteViews = new RemoteViews(this.getPackageName(), R.layout.widget_small);
-	    remoteViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
-        ComponentName thisWidget = new ComponentName(this, WidgetSmall.class);
-        manager.updateAppWidget(thisWidget, remoteViews);
         
-        remoteViews = new RemoteViews(this.getPackageName(), R.layout.widget_large);
-	    remoteViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
-        thisWidget = new ComponentName(this, WidgetLarge.class);
-        manager.updateAppWidget(thisWidget, remoteViews);
+ 	    //Set text of the widgets
+        //Small widget
+        RemoteViews smallWidgetViews = new RemoteViews(this.getPackageName(), R.layout.widget_small);
+        smallWidgetViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
+        ComponentName smallWidget = new ComponentName(this, WidgetSmall.class);
+        manager.updateAppWidget(smallWidget, smallWidgetViews);
+        
+        //Large widget
+        RemoteViews largeWidgetViews = new RemoteViews(this.getPackageName(), R.layout.widget_large);
+        largeWidgetViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
+        ComponentName largeWidget = new ComponentName(this, WidgetLarge.class);
+        manager.updateAppWidget(largeWidget, largeWidgetViews);
 	}
 	
 	
