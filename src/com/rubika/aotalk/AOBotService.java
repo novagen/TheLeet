@@ -264,20 +264,61 @@ public class AOBotService extends Service {
 						}
 					}
 					
-					//Chat notice
-					/* Not figured this one out yet..
+					//Chat notices
 					if(packet.getType() == AOChatNoticePacket.TYPE && packet.getDirection() == AOPacket.Direction.IN) {
 						AOChatNoticePacket notice = (AOChatNoticePacket) packet;
-											    
+						
 						if(notice != null) {
-							appendToLog(
-								cp.parse("DATA : " + notice.getData().toString(), ChatParser.TYPE_SYSTEM_MESSAGE),
-								null,
-								null
-							);
+							//Received offline message
+							if(notice.getMsgType().equals("a460d92")) {
+								appendToLog(
+									cp.parse(
+										"You got an offline message.",
+										ChatParser.TYPE_SYSTEM_MESSAGE
+									),
+									null,
+									null
+								);
+							}
+							
+							//Offline message, message buffered
+							if(notice.getMsgType().equals("9740ff4")) {
+								appendToLog(
+									cp.parse(
+										AONameFormat.format(AOBotService.this.aobot.getCharTable().getName(notice.getCharID())) +
+										" is offline, your message have been buffered",
+										ChatParser.TYPE_SYSTEM_MESSAGE
+									),
+									null,
+									null
+								);
+							}
+							
+							//Offline message, inbox full
+							if(notice.getMsgType().equals("340e245")) {
+								appendToLog(
+									cp.parse(
+										"Message could not be sent, reciever's inbox is full",
+										ChatParser.TYPE_SYSTEM_MESSAGE
+									),
+									null,
+									null
+								);
+							}
+							
+							//Error, message to big
+							if(notice.getMsgType().equals("340e245")) {
+								appendToLog(
+									cp.parse(
+										"Message is too large and could not be sent",
+										ChatParser.TYPE_SYSTEM_MESSAGE
+									),
+									null,
+									null
+								);
+							}
 						}
 					}
-					/**/
 					
 					//System message
 					if(packet.getType() == AOAnonVicinityMessagePacket.TYPE) {
@@ -298,18 +339,6 @@ public class AOBotService extends Service {
 
 						if(friend != null) {
 							if(friend.isFriend() && friend.getDirection() == AOPacket.Direction.IN) {
-								//Always show logged in message
-								if(friend.isOnline()) {
-									appendToLog(
-										cp.parse(friend.display(
-											AOBotService.this.aobot.getCharTable(), 
-											AOBotService.this.aobot.getGroupTable()
-										), ChatParser.TYPE_SYSTEM_MESSAGE),
-										null,
-										null
-									);
-								}
-								
 								//Add to online friends list
 								//Step trough the friend list, so we don't add a friend more than once
 								Iterator<Friend> i = AOBotService.this.onlineFriends.iterator();
@@ -345,6 +374,16 @@ public class AOBotService extends Service {
 									tempFriend.setOnline(friend.isOnline());
 									
 									AOBotService.this.onlineFriends.add(tempFriend);
+									
+									//Show log on message when character is added to the online list
+									appendToLog(
+										cp.parse(friend.display(
+											AOBotService.this.aobot.getCharTable(), 
+											AOBotService.this.aobot.getGroupTable()
+										), ChatParser.TYPE_SYSTEM_MESSAGE),
+										null,
+										null
+									);
 								}
 								
 								//Add to all friends list
@@ -472,6 +511,7 @@ public class AOBotService extends Service {
 		    AOBotService.this.messages.clear();
 		}
 	}
+
 	
 	/**
 	 * Disconnect from server
