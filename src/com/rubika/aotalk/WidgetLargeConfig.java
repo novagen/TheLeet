@@ -1,3 +1,21 @@
+/*
+ * WidgetLargeConfig.java
+ *
+ *************************************************************************
+ * Copyright 2010 Christofer Engel
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.rubika.aotalk;
 
 import java.util.ArrayList;
@@ -18,15 +36,15 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
 
-public class WidgetConfig extends Activity {
+public class WidgetLargeConfig extends Activity {
 	int widgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
 	private static final String PREFS_NAME = "AOTalkWidget";
-    private static final String PREF_PREFIX_KEY = "widget_";
+    private static final String PREF_PREFIX_KEY = "widget_large_";
     private ListView iconlist;
     
     private String[] icons = {"Default", "Atrox", "Clan", "ICC", "Omni"};
 	
-	public WidgetConfig() {
+	public WidgetLargeConfig() {
         super();
     }
 	
@@ -41,12 +59,12 @@ public class WidgetConfig extends Activity {
         setContentView(R.layout.widget_config);
 
         iconlist = (ListView) findViewById(R.id.icons);
-        iconlist.setAdapter(new IconAdapter(WidgetConfig.this, R.layout.icon_row, icons));
+        iconlist.setAdapter(new IconAdapter(WidgetLargeConfig.this, R.layout.icon_row, icons));
         
         iconlist.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> arg0, View view, int position, long id) {
-	            final Context context = WidgetConfig.this;
+	            final Context context = WidgetLargeConfig.this;
 
 	            // When the button is clicked, save the string in our prefs and return that they
 	            // clicked OK.
@@ -55,7 +73,7 @@ public class WidgetConfig extends Activity {
 
 	            // Push widget update to surface with newly set prefix
 	            AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-	            WidgetSmall.updateAppWidget(context, appWidgetManager, widgetId, icon);
+	            WidgetLarge.updateWidget(context, appWidgetManager, widgetId, icon);
 
 	            // Make sure we pass back the original appWidgetId
 	            Intent resultValue = new Intent();
@@ -76,8 +94,6 @@ public class WidgetConfig extends Activity {
         if (widgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
             finish();
         }
-
-        //mAppWidgetPrefix.setText(loadTitlePref(ExampleAppWidgetConfigure.this, mAppWidgetId));
     }
 	
 	static void saveIconPref(Context context, int appWidgetId, String text) {

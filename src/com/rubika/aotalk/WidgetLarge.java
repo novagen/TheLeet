@@ -1,5 +1,5 @@
 /*
- * AOTalkWidgetSmall.java
+ * WidgetLarge.java
  *
  *************************************************************************
  * Copyright 2010 Christofer Engel
@@ -44,8 +44,8 @@ public class WidgetLarge extends AppWidgetProvider {
         for (int x = 0; x < N; x++) {
 	        int appWidgetId = appWidgetIds[x];
 
-	        String iconPrefix = WidgetConfig.loadIconPref(context, appWidgetId);
-            updateAppWidget(context, widgetMngr, appWidgetId, iconPrefix);
+	        String iconPrefix = WidgetSmallConfig.loadIconPref(context, appWidgetId);
+            updateWidget(context, widgetMngr, appWidgetId, iconPrefix);
         }
 	}
 	
@@ -53,21 +53,8 @@ public class WidgetLarge extends AppWidgetProvider {
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		Log.d(APPTAG, "onReceive");
-        
-		// v1.5 fix that doesn't call onDelete Action
-		final String action = intent.getAction();	
-		if (AppWidgetManager.ACTION_APPWIDGET_DELETED.equals(action)) {
-			final int appWidgetId = intent.getExtras().getInt(
-				AppWidgetManager.EXTRA_APPWIDGET_ID, 
-				AppWidgetManager.INVALID_APPWIDGET_ID
-			);
-			
-			if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-				this.onDeleted(context, new int[] { appWidgetId });
-			}
-		} else {
-			super.onReceive(context, intent);
-		}
+		
+		super.onReceive(context, intent);
 	}
 	
 	
@@ -78,9 +65,9 @@ public class WidgetLarge extends AppWidgetProvider {
 		super.onDeleted(context, appWidgetIds);
 	}
 	
-	static void updateAppWidget(Context context, AppWidgetManager widgetManager, int widgetId, String iconPrefix) {
-        String text = WidgetConfig.loadIconPref(context, widgetId);
+	static void updateWidget(Context context, AppWidgetManager widgetManager, int widgetId, String iconPrefix) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_large);
+        String text = WidgetLargeConfig.loadIconPref(context, widgetId);
 
         Intent appIntent = new Intent(context, AOTalk.class);
         appIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -90,24 +77,18 @@ public class WidgetLarge extends AppWidgetProvider {
         
         if(text.equals("Default")) {
         	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button_aotalk);
-        }
-
-        if(text.equals("Atrox")) {
+        } else if(text.equals("Atrox")) {
         	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button_atrox);
-        }    
-        
-        if(text.equals("Clan")) {
+        } else if(text.equals("Clan")) {
         	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button_clan);
-        }
-        
-        if(text.equals("ICC")) {
+        } else if(text.equals("ICC")) {
         	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button_icc);
-        }
-        
-        if(text.equals("Omni")) {
+        } else if(text.equals("Omni")) {
         	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button_omni);
+        } else {
+        	views.setImageViewResource(R.id.widget_button, R.drawable.widget_button_aotalk);
         }
-        
+               
         // Tell the widget manager
         widgetManager.updateAppWidget(widgetId, views);
     }

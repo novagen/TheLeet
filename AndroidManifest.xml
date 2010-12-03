@@ -66,9 +66,14 @@ android:versionCode="20"
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_provider_large" />
         </receiver>
-		<activity android:name=".WidgetConfig">
+		<activity android:name=".WidgetSmallConfig">
     		<intent-filter>
-        		<action android:name=".WidgetConfig" />
+        		<action android:name=".WidgetSmallConfig" />
+    		</intent-filter>
+		</activity>
+		<activity android:name=".WidgetLargeConfig">
+    		<intent-filter>
+        		<action android:name=".WidgetLargeConfig" />
     		</intent-filter>
 		</activity>
 		<service android:name=".AOBotService"></service>

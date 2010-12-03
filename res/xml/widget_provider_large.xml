@@ -5,5 +5,5 @@ android:minWidth="292dip"
 android:minHeight="144dip"
 android:updatePeriodMillis="10000"
 android:initialLayout="@layout/widget_large"
-android:configure="com.rubika.aotalk.WidgetConfig" 
+android:configure="com.rubika.aotalk.WidgetLargeConfig" 
 />
