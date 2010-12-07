@@ -3,8 +3,8 @@
 xmlns:android="http://schemas.android.com/apk/res/android"
 package="com.rubika.aotalk"
 android:installLocation="internalOnly"
-android:versionName="1.4.5"
-android:versionCode="20"
+android:versionName="1.4.6"
+android:versionCode="22"
 >
     <application
     android:icon="@drawable/icon"
@@ -80,4 +80,6 @@ android:versionCode="20"
     </application>
     <uses-sdk android:minSdkVersion="4" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.STORAGE" />
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 </manifest> 

@@ -18,10 +18,8 @@
  */
 package com.rubika.aotalk;
 
-import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.net.URL;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -74,10 +72,10 @@ public class ShowInfo extends Activity {
         	if(resultData.length() > 0) {
         		ShowInfo.this.info.setText(Html.fromHtml(resultData, imageLoader, null));
         	} else {
-        		ShowInfo.this.info.setText("Sorry, no data could be found");
+        		ShowInfo.this.info.setText(getString(R.string.no_data));
         	}
         } else {
-        	ShowInfo.this.info.setText("Error while downloading data");
+        	ShowInfo.this.info.setText(getString(R.string.error_data));
         	Log.d(APPTAG, "ResultData IS NULL");
         }
     }
@@ -85,17 +83,10 @@ public class ShowInfo extends Activity {
 	static ImageGetter imageLoader = new Html.ImageGetter() {
         @Override
         public Drawable getDrawable(String source) {
-        	try {
-        		InputStream is = (InputStream) new URL(source).getContent();
-      
-        		Drawable drawable = Drawable.createFromStream(is, "src name");
-        		drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-
-        		return drawable;
-        	} catch (Exception e) {
-        		Log.d("IMAGELOADER", e.getMessage());
-        		return null;
-        	}
+        	Cache cache = new Cache();
+        	Drawable drawable = cache.getIcon(source, 48, 48);
+        	
+        	return drawable;
         }
 	};
     
@@ -199,7 +190,7 @@ public class ShowInfo extends Activity {
 				
 				if(chatcmd != null) {
 					if(chatcmd.equals(CMD_TELL) && target != null && message != null) {
-						bot.sendTell(target, message, true);
+						bot.sendTell(target, message, true, true);
 						Log.d(APPTAG, "Sent /tell " + target + " " + message);
 						
 						finish();

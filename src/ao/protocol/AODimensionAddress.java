@@ -31,7 +31,7 @@ package ao.protocol;
 public enum AODimensionAddress {
     RK1("Atlantean (Rubi-Ka 1)",         "chat.d1.funcom.com", 7101),
     RK2("Rimor (Rubi-Ka 2)",             "chat.d2.funcom.com", 7102),
-    RK3("Die Neue Welt (German Server)", "chat.d3.funcom.com",  7103),
+    //RK3("Die Neue Welt (German Server)", "chat.d3.funcom.com",  7103),
     TEST("Test-Live (Test Server)",      "chat.dt.funcom.com", 7109);
     
     private final String m_name;

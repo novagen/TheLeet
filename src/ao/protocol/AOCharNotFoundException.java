@@ -1,7 +1,7 @@
 /*
- * AONameFormat.java
+ * AOCharNotFoundException.java
  *
- * Created on Sep 19, 2010, 1:53 PM
+ * Created on Nov 24, 2010, 1:43 PM
  *************************************************************************
  * Copyright 2010 Kevin Kendall
  *
@@ -18,16 +18,18 @@
  * limitations under the License.
  */
 
-package ao.misc;
+package ao.protocol;
 
-public class AONameFormat {
-    public static String format(String s) {
-        String[] tokens = s.toLowerCase().split(" ");
-        String temp = "";
-        for(String token : tokens){
-            temp = temp + " " + token.substring(0, 1).toUpperCase() + token.substring(1);
-        }
-        temp = temp.substring(1);
-        return temp;
+public class AOCharNotFoundException  extends RuntimeException {
+
+    private final int charID;
+
+    public AOCharNotFoundException(String message, int id) {
+        super(message);
+        charID = id;
+    }
+
+    public int getCharID(){
+        return charID;
     }
 }

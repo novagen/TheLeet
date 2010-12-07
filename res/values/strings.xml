@@ -52,4 +52,7 @@
     <string name="group_joined">joined the group</string>
     <string name="group_left">left the group</string>
     <string name="config_icon">Select icon</string>
+    <string name="no_data">Sorry!\nNo data could be found, or the data is corrupted</string>
+    <string name="error_data">Error while downloading data</string>
+    <string name="afk">AFK</string>
 </resources>

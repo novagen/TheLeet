@@ -53,6 +53,7 @@ import android.view.WindowManager;
 import android.view.View.OnClickListener;
 import android.view.View.OnKeyListener;
 import android.view.View.OnLongClickListener;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -277,7 +278,7 @@ public class AOTalk extends Activity {
 					if(AOTalk.this.bot.getState() == ao.protocol.AOBot.State.LOGGED_IN && msginput.getText().toString().length() > 0) {				
                 		//Send message
                 		if(CHATCHANNEL.equals(CHANNEL_MSG)) {
-                			AOTalk.this.bot.sendTell(AOTalk.this.MESSAGETO, msginput.getText().toString(), true);
+                			AOTalk.this.bot.sendTell(AOTalk.this.MESSAGETO, msginput.getText().toString(), true, true);
                 			getMessages();
                 			
 							Log.d(APPTAG, "Sent private message to " + MESSAGETO + ": " + msginput.getText().toString());
@@ -322,7 +323,7 @@ public class AOTalk extends Activity {
 			@Override
 			public boolean onLongClick(View v) {
 				showPredefinedText();
-				return false;
+				return true;
 			}
 		});
         
@@ -384,6 +385,10 @@ public class AOTalk extends Activity {
     	    	Editable etext = AOTalk.this.msginput.getText();
     	    	int position = etext.length();
     	    	Selection.setSelection(etext, position);
+    	    	
+    	    	//Force soft keyboard to show after selecting a predefined text
+    	    	InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+    	    	mgr.showSoftInput(AOTalk.this.msginput, InputMethodManager.SHOW_IMPLICIT);
     	    }
     	});
     	
@@ -559,6 +564,13 @@ public class AOTalk extends Activity {
     	        	
     	    		EditText TargetEditText = (EditText) layout.findViewById(R.id.targetname);
     	    		TargetEditText.setText(AOTalk.this.MESSAGETO);
+    	    		
+    	    		//Select text, for easier removal
+    	    		TargetEditText.selectAll();
+    	    		
+    	    		//Force soft keyboard to show after selecting a predefined text
+        	    	InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        	    	mgr.showSoftInput(AOTalk.this.msginput, InputMethodManager.SHOW_IMPLICIT);
     	        	
     	        	builder.setPositiveButton(AOTalk.this.getString(R.string.ok), new DialogInterface.OnClickListener() {
     	    			public void onClick(DialogInterface dialog, int which) {
@@ -935,20 +947,42 @@ public class AOTalk extends Activity {
 	    
 	    registerReceivers();
 	}
-	
-	
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.layout.mainmenu, menu);
-        
-        return true;
-    }
     
     
     private void showSettings() {
     	Intent intent = new Intent(this, Settings.class);
         startActivity(intent);
     }
+    
+	
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.layout.mainmenu, menu);
+		
+		Log.d(APPTAG, "--> onCreateOptionsMenu <--");
+        
+        return true;
+    }
+    
+    
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem afkButton = (MenuItem) menu.findItem(R.id.afk);
+        
+		if (afkButton != null) {
+	    	if(AOTalk.this.bot != null) {
+				if(AOTalk.this.bot.getAFK()) {
+		    		afkButton.setIcon(R.drawable.icon_afk_on);
+		    		Log.d(APPTAG, "IS AFK");
+				} else {
+					afkButton.setIcon(R.drawable.icon_afk_off);
+		    		Log.d(APPTAG, "IS NOT AFK");
+				}
+	    	}
+		}
+		
+		return true;
+    }
+
     
     public boolean onOptionsItemSelected(MenuItem item) {
     	switch (item.getItemId()) {
@@ -966,6 +1000,9 @@ public class AOTalk extends Activity {
 	        	return true;
 	        case R.id.settings:
 	        	showSettings();
+	        	return true;
+	        case R.id.afk:
+	        	AOTalk.this.bot.toggleAFK();
 	        	return true;
 	        default:
 	            return super.onOptionsItemSelected(item);

@@ -28,15 +28,11 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.appwidget.AppWidgetManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
-import android.text.Html;
 import android.util.Log;
-import android.widget.RemoteViews;
 import ao.chat.AOChatBot;
 import ao.misc.AONameFormat;
 import ao.protocol.AOBot;
@@ -108,6 +104,9 @@ public class AOBotService extends Service {
 	private List<Friend> allFriends;
 	
 	private ChatParser cp;
+	
+	private boolean afk = false;
+	private long afktime;
 	
 	private NotificationManager noteManager;
 	private static final int NOTIFICATION_ID = 1;
@@ -227,14 +226,40 @@ public class AOBotService extends Service {
 						AOPrivateMessagePacket privmsg = (AOPrivateMessagePacket) packet;
 						
 						if(privmsg != null) {
+							String message = privmsg.display(
+								AOBotService.this.aobot.getCharTable(), 
+								AOBotService.this.aobot.getGroupTable()
+							);
+							
+							//Add AFK sent to the message when user is AFK, and it's not a AFK message..
+							if(AOBotService.this.afk && !privmsg.getMessage().contains("is AFK (Away from keyboard)")) {
+								message = message + " <font color=#FFFFFF>(AFK reply sent)</font>";
+							}
+							
 							appendToLog(
-								cp.parse(privmsg.display(
-									AOBotService.this.aobot.getCharTable(), 
-									AOBotService.this.aobot.getGroupTable()
-								), ChatParser.TYPE_PRIVATE_MESSAGE),
+								cp.parse(message, ChatParser.TYPE_PRIVATE_MESSAGE),
 								AOBotService.this.aobot.getCharTable().getName(privmsg.getCharID()),
 								null
 							);
+							
+							//Send an AFK message, if the message received is not an AFK message
+							if(AOBotService.this.afk && !privmsg.getMessage().contains("is AFK (Away from keyboard)")) {
+								//Calculate how long user been AFK
+								Date now = new Date();
+								long time = (afktime - now.getTime()) / 1000;
+								
+								String hours   = Integer.toString((int)((time % 3600) / 60));
+								String minutes = Integer.toString((int)(time / 3600));
+								
+								sendTell(
+									AOBotService.this.aobot.getCharTable().getName(privmsg.getCharID()),
+									AONameFormat.format(AOBotService.this.aochar.getName()) + 
+									" is currently AFK (Away From Keyboard)" +
+									" since " + hours + " hours and " + minutes + " minutes ago.", 
+									true,
+									false
+								);
+							}
 						}
 					}
 					
@@ -447,7 +472,7 @@ public class AOBotService extends Service {
 						AOPrivateGroupKickPacket pgkick = (AOPrivateGroupKickPacket) packet;
 						appendToLog(
 							cp.parse(
-								"[" + AOBotService.this.aobot.getCharTable().getName(pgkick.getGroupdID()) + 
+								"[" + AOBotService.this.aobot.getCharTable().getName(pgkick.getGroupID()) + 
 								"] " + getString(R.string.group_kicked) + ".", 
 								ChatParser.TYPE_GROUP_MESSAGE
 							),
@@ -517,6 +542,7 @@ public class AOBotService extends Service {
 			if(AOBotService.this.aobot.getState() != ao.protocol.AOBot.State.DISCONNECTED) {
 		    	try {
 					AOBotService.this.aobot.disconnect();
+					AOBotService.this.afk = false;
 					AOBotService.this.aobot = null;
 				} catch (IOException e) {
 					Log.d(APPTAG, "Failed to disconnect : " + e.getMessage());
@@ -538,20 +564,8 @@ public class AOBotService extends Service {
 		newMessageBroadcast.putExtra(EXTRA_MESSAGE, MSG_UPDATE);
 	    getApplicationContext().sendBroadcast(newMessageBroadcast);
 	    
-        AppWidgetManager manager = AppWidgetManager.getInstance(this);
-        
- 	    //Set text of the widgets
-        //Small widget
-        RemoteViews smallWidgetViews = new RemoteViews(this.getPackageName(), R.layout.widget_small);
-        smallWidgetViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
-        ComponentName smallWidget = new ComponentName(this, WidgetSmall.class);
-        manager.updateAppWidget(smallWidget, smallWidgetViews);
-        
-        //Large widget
-        RemoteViews largeWidgetViews = new RemoteViews(this.getPackageName(), R.layout.widget_large);
-        largeWidgetViews.setTextViewText(R.id.widget_text, Html.fromHtml(message));
-        ComponentName largeWidget = new ComponentName(this, WidgetLarge.class);
-        manager.updateAppWidget(largeWidget, largeWidgetViews);
+	    WidgetController wc = new WidgetController();
+	    wc.setText(message, this);
 	}
 	
 	
@@ -560,23 +574,26 @@ public class AOBotService extends Service {
 	 * @param target
 	 * @param message
 	 * @param lookup
+	 * @param log
 	 */
-	public void sendTell(String target, String message, boolean lookup) {
+	public void sendTell(String target, String message, boolean lookup, boolean log) {
 		try {
 			AOBotService.this.aobot.sendTell(target, message, lookup);
 		} catch (IOException e) {
 			Log.d(APPTAG, "Could not send private message : " + e.getMessage());
 		}
 		
-		appendToLog(
-			AOBotService.this.cp.parse(
-				AOBotService.this.getString(R.string.to) + " [" + 
-				AONameFormat.format(target) + "]: " + message, 
-				ChatParser.TYPE_PRIVATE_MESSAGE
-			),
-			target,
-			null
-		);
+		if(log) {
+			appendToLog(
+				AOBotService.this.cp.parse(
+					AOBotService.this.getString(R.string.to) + " [" + 
+					AONameFormat.format(target) + "]: " + message, 
+					ChatParser.TYPE_PRIVATE_MESSAGE
+				),
+				target,
+				null
+			);
+		}
 	}
 	
 	
@@ -616,6 +633,59 @@ public class AOBotService extends Service {
 		AOBotService.this.groupDisable = groups;
 	}
 	
+	
+	/**
+	 * Check if the user is AFK
+	 * @return
+	 */
+	public boolean getAFK() {
+		return AOBotService.this.afk;
+	}
+	
+	
+	/**
+	 * Toggle the AFK mode
+	 */
+	public void toggleAFK() {
+		AOBotService.this.afktime = System.currentTimeMillis();
+		
+		if(AOBotService.this.aobot != null) {
+			if(AOBotService.this.afk) {
+				//Remove AFK
+				AOBotService.this.afk = false;
+				
+				if(AOBotService.this.aobot.getState() == ao.protocol.AOBot.State.LOGGED_IN) {
+					setNotification(
+					    AOBotService.this.aochar.getName() + " " + 
+					    AOBotService.this.getString(R.string.logged_in),
+					    true
+					);
+					
+					appendToLog(cp.parse(
+							"AFK off.",
+							ChatParser.TYPE_SYSTEM_MESSAGE
+					), null, null);
+				}
+			} else {
+				//Set as AFK
+				AOBotService.this.afk = true;
+				
+				if(AOBotService.this.aobot.getState() == ao.protocol.AOBot.State.LOGGED_IN) {
+					setNotification(
+					    AOBotService.this.aochar.getName() + " " + 
+					    AOBotService.this.getString(R.string.logged_in) +
+					    " (AFK)",
+					    true
+					);
+					
+					appendToLog(cp.parse(
+							"AFK on. All tell messages will be replied with afk.",
+							ChatParser.TYPE_SYSTEM_MESSAGE
+					), null, null);
+				}
+			}
+		}
+	}
 	
 	/**
 	 * Get the list of disabled groups
@@ -909,6 +979,8 @@ public class AOBotService extends Service {
         messages = new ArrayList<ChatMessage>();
         onlineFriends  = new ArrayList<Friend>();
         allFriends  = new ArrayList<Friend>();
+        
+        afktime = System.currentTimeMillis();
         
         //Channels that shouldn't be added to the list of available channels
         groupIgnore = new ArrayList<String>();

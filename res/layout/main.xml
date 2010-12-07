@@ -61,7 +61,7 @@ android:keepScreenOn="true"
 	    <ListView 
 	    android:id="@+id/messagelist"
 	    android:layout_width="fill_parent"
-	    android:layout_height="wrap_content" 
+	    android:layout_height="fill_parent" 
 	    android:scrollingCache="false"
 	    android:divider="#466c76"
 	    />

@@ -27,7 +27,6 @@ import java.util.Vector;
 public class AOModuleList {
 
     public enum Channel {
-
         TELL, PRIVATE, GROUP, CON;
     }
     private Vector<AOModule> modules = new Vector();
@@ -81,7 +80,7 @@ public class AOModuleList {
             }   // end for
             help += "<br>";
         }   // end for
-        help += "\">Help</a>";
+        help += "\">Help Menu</a>";
         return help;
     }
 

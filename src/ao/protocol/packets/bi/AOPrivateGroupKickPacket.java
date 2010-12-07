@@ -63,7 +63,7 @@ public class AOPrivateGroupKickPacket extends AOPacket  {
         }   // end catch
     }   // end AOGroupAnnouncePacket()
 
-    public int getGroupdID(){
+    public int getGroupID(){
         return m_id;
     }
 
@@ -73,6 +73,7 @@ public class AOPrivateGroupKickPacket extends AOPacket  {
     /** Returns whether this message was recieved or sent by the client */
     public Direction getDirection() { return m_direction; }
 
+    @Override
     public String toString() {
         String result = "AOPrivateGroupKickPacket: ";
         result +=  Integer.toHexString( m_id );

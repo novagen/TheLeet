@@ -53,7 +53,7 @@ public class ItemRef {
 			    	}
 			    	
 			    	retval += 
-			    		"<img src=http://www.rubi-ka.com/image/icon/" +  currentstring[3] + ".gif>&nbsp;" +
+			    		"<img src=http://www.rubi-ka.com/image/icon/" +  currentstring[3] + ".gif><br />" +
 			    		"<b>" + currentstring[0] + "</b>" +
 			    		flags +
 			    		"<br /><br />" +

@@ -46,7 +46,7 @@ public class AOChatNoticePacket extends AOPacket {
             m_i1   = parser.parseInt();
             m_i2   = parser.parseInt();
             m_i3   = parser.parseInt();
-            m_msg  = parser.parseString();
+            m_msg = parser.parseString();
         
             parser.close();
         } catch (IOException e) {
@@ -63,7 +63,6 @@ public class AOChatNoticePacket extends AOPacket {
     public int getCharID() { return m_i1; }
     public String getMsgData() { return Integer.toHexString(m_i2); }
     public String getMsgType() { return Integer.toHexString(m_i3); }
-
     /** Always returns {@code Direction.IN} */
     public Direction getDirection() { return Direction.IN; }
     

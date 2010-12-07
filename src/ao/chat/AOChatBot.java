@@ -52,12 +52,14 @@ public class AOChatBot implements AOBot {
     private Socket m_socket = null;
     private DataInputStream m_in = null;
     private DataOutputStream m_out = null;
+    private boolean timingout = false;
     //Events
     private final EventListenerList m_listeners = new EventListenerList();
     // used for synchronization
     private final Object m_readLock = new Object();
     private final Object m_writeLock = new Object();
     private final Object m_stateLock = new Object();
+    private final Object m_timeoutLock = new Object();
     private Vector<Object[]> lookupQueue = new Vector<Object[]>();
     //Chat related
     private AOCharacterIDTable chartable = new AOCharacterIDTable();
@@ -67,6 +69,7 @@ public class AOChatBot implements AOBot {
     private int lastTellIn = -1;
 
     public enum Queue {
+
         TELL, FADD, FREM, FDEL, INVITE, KICK;
     }   // end enum State
 
@@ -118,11 +121,32 @@ public class AOChatBot implements AOBot {
                     // Return the packet
                     return packet;
                 } catch (SocketTimeoutException ex) {
-                    // Send a ping
-                    sendPacket(new AOPingPacket("AOChatBot.java", AOPacket.Direction.OUT));
-                    // Read a ping
-                    AOPacket packet = nextPacket();
-                    return packet;
+                    if (m_state != State.DISCONNECTED) {
+                        synchronized (m_timeoutLock) {
+                            if (!timingout) {
+                                timingout = true;
+                                // Send a ping
+                                sendPacket(new AOPingPacket("AOChatBot.java", AOPacket.Direction.OUT));
+                                // Read a ping
+                                AOPacket packet = nextPacket();
+                                return packet;
+                            } else {
+                                synchronized (m_stateLock) {
+                                    if (m_socket == null || m_socket.isClosed()) {
+                                        println("Connection Lost...");
+                                        disconnect();
+                                        return null;
+                                    } else {
+                                        println("Connection Lost...");
+                                        disconnect();
+                                        throw ex;
+                                    }   // end else
+                                }   // end synchronized
+                            }
+                        }
+                    } else {
+                        return null;
+                    }
                 } catch (SocketException ex) {
                     synchronized (m_stateLock) {
                         if (m_socket == null || m_socket.isClosed()) {
@@ -310,6 +334,7 @@ public class AOChatBot implements AOBot {
                     m_socket = null;
                     m_in = null;
                     m_out = null;
+                    timingout = false;
                 } else {
                     System.err.println("Socket is null when disconnecting");
                 }// end if
@@ -352,8 +377,8 @@ public class AOChatBot implements AOBot {
         }   // end synchronized
     }   // end start()
 
-    private void stopThread(){
-        if(m_thread != null){
+    private void stopThread() {
+        if (m_thread != null) {
             Thread temp = m_thread;
             m_thread = null;
             temp.interrupt();
@@ -369,20 +394,26 @@ public class AOChatBot implements AOBot {
         while (getState() == State.LOGGED_IN) {
             try {
                 packet = nextPacket();
-                if (packet instanceof AOClientNamePacket) {
+                if (packet instanceof AOPingPacket) {
+                    AOPingPacket ping = (AOPingPacket) packet;
+                    synchronized (m_timeoutLock) {
+                        if (ping.getDirection() == AOPacket.Direction.IN) {
+                            timingout = false;
+                        }
+                    }
+                } else if (packet instanceof AOClientNamePacket) {
                     AOClientNamePacket namePacket = (AOClientNamePacket) packet;
                     chartable.add(namePacket.getCharacterID(), namePacket.getCharacterName());
                 } else if (packet instanceof AOClientLookupPacket) {
                     AOClientLookupPacket lookPacket = (AOClientLookupPacket) packet;
                     chartable.add(lookPacket.getCharacterID(), lookPacket.getCharacterName());
                     searchQueue(chartable.getID(lookPacket.getCharacterName()), lookPacket.getCharacterName());
-                    if(lookPacket.getCharacterID() == -1){
-                        println("Character "+ lookPacket.getCharacterName() + " does not exist");
+                    if (lookPacket.getCharacterID() == -1) {
+                        println("Character " + lookPacket.getCharacterName() + " does not exist");
                     }
                 } else if (packet instanceof AOGroupAnnouncePacket) {
                     AOGroupAnnouncePacket msgPacket = (AOGroupAnnouncePacket) packet;
                     grouptable.add(msgPacket.getGroupID(), msgPacket.getGroupName());
-                    //Fire packets off to any Message Packet listeners
                 } else if (packet instanceof AOGroupMessagePacket) {
                     AOGroupMessagePacket msgPacket = (AOGroupMessagePacket) packet;
                     fireGroupMessage(msgPacket);
@@ -416,7 +447,7 @@ public class AOChatBot implements AOBot {
         lookupQueue.add(temp);
     }
 
-    private synchronized void searchQueue(int id, String name) {
+    private synchronized void searchQueue(int id, String name) throws AOCharNotFoundException {
         for (int i = 0; i < lookupQueue.size(); i++) {
             Object[] current = lookupQueue.elementAt(i);
             Queue type = (Queue) current[0];
@@ -452,6 +483,8 @@ public class AOChatBot implements AOBot {
                 }
                 lookupQueue.removeElementAt(i);
                 i--;
+            } else {
+                throw new AOCharNotFoundException("Character lookup failed, character does not exist", id);
             }
         }
     }
@@ -469,7 +502,7 @@ public class AOChatBot implements AOBot {
                 throw new AOBotStateException(
                         "This bot is not currently logged in, it must be logged in before it can send messages.",
                         m_state, State.LOGGED_IN);
-            } else if(msg.compareTo("") != 0) {
+            } else if (msg.compareTo("") != 0) {
                 AOPacket packet = new AOGroupMessagePacket(channel, msg);
                 sendPacket(packet);
             }
@@ -488,7 +521,7 @@ public class AOChatBot implements AOBot {
                 throw new AOBotStateException(
                         "This bot is not currently logged in, it must be logged in before it can send messages.",
                         m_state, State.LOGGED_IN);
-            } else if(msg.compareTo("") != 0) {
+            } else if (msg.compareTo("") != 0) {
                 AOPacket packet = new AOPrivateGroupMessagePacket(channel, msg);
                 sendPacket(packet);
             }
@@ -527,7 +560,9 @@ public class AOChatBot implements AOBot {
                 throw new AOBotStateException(
                         "This bot is not currently logged in, it must be logged in before it can send tells.",
                         m_state, State.LOGGED_IN);
-            } else if(msg.compareTo("") != 0) {
+            } else if (id == -1) {
+                throw new AOCharNotFoundException("Could not send tell to character", id);
+            } else if (msg.compareTo("") != 0) {
                 AOPacket packet = new AOPrivateMessagePacket(id, msg, AOMessagePacket.Direction.OUT);
                 sendPacket(packet);
                 firePacket(packet);
@@ -691,6 +726,7 @@ public class AOChatBot implements AOBot {
                 if (id != -1) {
                     AOPacket packet = new AOPrivateGroupInvitePacket(id);
                     sendPacket(packet);
+                    firePacket(packet);
                 } else if (lookup) {
                     AOPacket packet = new AOClientLookupPacket(name);
                     //Add to group invite queue
@@ -715,6 +751,7 @@ public class AOChatBot implements AOBot {
                 if (id != -1) {
                     AOPacket packet = new AOPrivateGroupKickPacket(id);
                     sendPacket(packet);
+                    firePacket(packet);
                 } else if (lookup) {
                     AOPacket packet = new AOClientLookupPacket(name);
                     //Add to group kick queue
@@ -734,6 +771,7 @@ public class AOChatBot implements AOBot {
             } else {
                 AOPacket packet = new AOPrivateGroupKickAllPacket();
                 sendPacket(packet);
+                firePacket(packet);
             }
         }
     }
@@ -788,11 +826,11 @@ public class AOChatBot implements AOBot {
         return grouptable;
     }
 
-    public int getLastTellIn(){
+    public int getLastTellIn() {
         return lastTellIn;
     }
 
-    public int getLastTellOut(){
+    public int getLastTellOut() {
         return lastTellOut;
     }
 
