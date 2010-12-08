@@ -3,9 +3,9 @@
     <item android:id="@+id/connect"
           android:icon="@drawable/icon_connect"
           android:title="@string/connect" />
-    <item android:id="@+id/disconnect"
+    <!-- item android:id="@+id/disconnect"
           android:icon="@drawable/icon_disconnect"
-          android:title="@string/disconnect" />
+          android:title="@string/disconnect" /-->
     <item android:id="@+id/afk"
           android:icon="@drawable/icon_afk_off"
           android:title="@string/afk" />

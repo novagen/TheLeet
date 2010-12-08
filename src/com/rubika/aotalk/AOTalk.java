@@ -523,6 +523,8 @@ public class AOTalk extends Activity {
     	CharSequence[] tempChannels = null;
     	List<String> groupList = AOTalk.this.bot.getGroupList();
     	int add = 0;
+    	int chn = 0;
+    	int cnt = 0;
     	
     	if(AOTalk.this.bot.getState().equals(AOBot.State.LOGGED_IN)) {
     		add++;
@@ -532,15 +534,27 @@ public class AOTalk extends Activity {
     		add++;
     	}
     	
+    	for(int i = 0; i < groupList.size(); i++) {
+    		if(!AOTalk.this.bot.getGroupIgnoreList().contains(groupList.get(i))) {
+    			chn++;
+    		}
+    	}
+    	    	
     	if(groupList != null) {
-    		tempChannels = new CharSequence[groupList.size() + add]; //groupList.size() + 2
+    		tempChannels = new CharSequence[chn + add];
+    		
 	    	for(int i = 0; i < (groupList.size() + add); i++) {
 	    		if(i == 0 && add > 0) {
-	    			tempChannels[i] = AOTalk.this.CHANNEL_MSG;
+	    			tempChannels[cnt] = AOTalk.this.CHANNEL_MSG;
+	    			cnt++;
 	    		} else if(i == 1 && add == 2) {
-	    			tempChannels[i] = AOTalk.this.CHANNEL_FRIEND;
+	    			tempChannels[cnt] = AOTalk.this.CHANNEL_FRIEND;
+	    			cnt++;
 	    		} else {
-	    			tempChannels[i] = groupList.get(i - add);
+	    			if(!AOTalk.this.bot.getGroupIgnoreList().contains(groupList.get(i - add))) {
+		    			tempChannels[cnt] = groupList.get(i - add);
+		    			cnt++;
+	        		}
 	    		}
 	    	} 
     	}
@@ -885,13 +899,7 @@ public class AOTalk extends Activity {
 		    	}
 	    	}
 	    	
-	    	if(value.equals(AOBotService.CON_DISCONNECTED)) {
-		    	AOTalk.this.bot.appendToLog(
-		    		chat.parse(AOTalk.this.getString(R.string.disconnected), ChatParser.TYPE_CLIENT_MESSAGE),
-		    		null,
-		    		null
-		    	);
-		    	
+	    	if(value.equals(AOBotService.CON_DISCONNECTED)) {    	
 		    	if(AOTalk.this.loader != null) {
 	    			AOTalk.this.loader.dismiss();
 	    			AOTalk.this.loader = null;
@@ -959,25 +967,32 @@ public class AOTalk extends Activity {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.layout.mainmenu, menu);
 		
-		Log.d(APPTAG, "--> onCreateOptionsMenu <--");
-        
         return true;
     }
     
     
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem afkButton = (MenuItem) menu.findItem(R.id.afk);
+        MenuItem conButton = (MenuItem) menu.findItem(R.id.connect);
         
 		if (afkButton != null) {
 	    	if(AOTalk.this.bot != null) {
 				if(AOTalk.this.bot.getAFK()) {
 		    		afkButton.setIcon(R.drawable.icon_afk_on);
-		    		Log.d(APPTAG, "IS AFK");
 				} else {
 					afkButton.setIcon(R.drawable.icon_afk_off);
-		    		Log.d(APPTAG, "IS NOT AFK");
 				}
 	    	}
+		}
+		
+		if(AOTalk.this.bot != null) {
+			if(AOTalk.this.bot.getState() != AOBot.State.DISCONNECTED) {
+				conButton.setIcon(R.drawable.icon_disconnect);
+				conButton.setTitle(getString(R.string.disconnect));
+			} else {
+				conButton.setIcon(R.drawable.icon_connect);
+				conButton.setTitle(getString(R.string.connect));
+			}
 		}
 		
 		return true;
@@ -987,14 +1002,15 @@ public class AOTalk extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
     	switch (item.getItemId()) {
 	        case R.id.connect:
-	        	if(AOTalk.this.bot.getState() == AOBot.State.DISCONNECTED) {
-		        	AOTalk.this.bot.connect();
-		        	AOTalk.this.messages.clear();
+	        	if(AOTalk.this.bot != null) {
+		        	if(AOTalk.this.bot.getState() == AOBot.State.DISCONNECTED) {
+			        	AOTalk.this.bot.connect();
+			        	AOTalk.this.messages.clear();
+		        	} else {
+		        		AOTalk.this.bot.disconnect();
+		        	}
 	        	}
 	            return true;
-	        case R.id.disconnect:
-	        	AOTalk.this.bot.disconnect();
-	        	return true;
 	        case R.id.clear:
 	        	clearLog();
 	        	return true;
@@ -1002,7 +1018,9 @@ public class AOTalk extends Activity {
 	        	showSettings();
 	        	return true;
 	        case R.id.afk:
-	        	AOTalk.this.bot.toggleAFK();
+	        	if(AOTalk.this.bot != null) {
+	        		AOTalk.this.bot.toggleAFK();
+	        	}
 	        	return true;
 	        default:
 	            return super.onOptionsItemSelected(item);

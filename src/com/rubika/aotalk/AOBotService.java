@@ -176,6 +176,12 @@ public class AOBotService extends Service {
 					connectionBroadcast.putExtra(EXTRA_CONNECTION, CON_DISCONNECTED);
 				    getApplicationContext().sendBroadcast(connectionBroadcast);
 				    
+				    appendToLog(
+				    	cp.parse(AOBotService.this.getString(R.string.disconnected), ChatParser.TYPE_CLIENT_MESSAGE),
+				    	null,
+				    	null
+				    );
+				    
 				    if(AOBotService.this.aochar != null) {
 				    	setNotification(
 				    		AOBotService.this.aochar.getName() + " " + 
@@ -436,11 +442,11 @@ public class AOBotService extends Service {
 					if(packet.getType() == AOGroupAnnouncePacket.TYPE) {
 						AOGroupAnnouncePacket group = (AOGroupAnnouncePacket) packet;
 												
-						if(!AOBotService.this.groupIgnore.contains(group.getGroupName())) {
+						//if(!AOBotService.this.groupIgnore.contains(group.getGroupName())) {
 							if(!AOBotService.this.groupList.contains(group.getGroupName())) {
 								AOBotService.this.groupList.add(group.getGroupName());
 							}
-						}
+						//}
 					}
 					
 					//Private group invitation
@@ -969,7 +975,7 @@ public class AOBotService extends Service {
 	
 	
 	@Override
-	public void onCreate() {	
+	public void onCreate() {
 		newMessageBroadcast  = new Intent(INFO_MESSAGE);
 		connectionBroadcast  = new Intent(INFO_CONNECTION);
 		
@@ -994,7 +1000,7 @@ public class AOBotService extends Service {
 	}
 	
 	@Override
-	public void onStart(Intent intent, int startid) {	
+	public void onStart(Intent intent, int startid) {
 	    Log.d(APPTAG, "onStart");
 	}
 	
