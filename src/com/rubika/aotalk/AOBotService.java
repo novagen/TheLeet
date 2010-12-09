@@ -177,7 +177,7 @@ public class AOBotService extends Service {
 				    getApplicationContext().sendBroadcast(connectionBroadcast);
 				    
 				    appendToLog(
-				    	cp.parse(AOBotService.this.getString(R.string.disconnected), ChatParser.TYPE_CLIENT_MESSAGE),
+				    	cp.parse(getString(R.string.disconnected), ChatParser.TYPE_CLIENT_MESSAGE),
 				    	null,
 				    	null
 				    );
@@ -185,7 +185,7 @@ public class AOBotService extends Service {
 				    if(AOBotService.this.aochar != null) {
 				    	setNotification(
 				    		AOBotService.this.aochar.getName() + " " + 
-				    		AOBotService.this.getString(R.string.logged_off),
+				    		getString(R.string.logged_off),
 				    		false
 				    	);
 				    }
@@ -193,7 +193,7 @@ public class AOBotService extends Service {
 
 				@Override
 				public void exception(AOBot bot, Exception e) {
-					Log.d(APPTAG, "BOT ERROR : " + e.getMessage());
+					Log.d(APPTAG, "BOT ERROR : " + e.getMessage());					
 					e.printStackTrace();
 				}
 
@@ -206,7 +206,7 @@ public class AOBotService extends Service {
 				    
 				    setNotification(
 				    	AOBotService.this.aochar.getName() + " " + 
-				    	AOBotService.this.getString(R.string.logged_in),
+				    	getString(R.string.logged_in),
 				    	true
 				    );
 				}
@@ -592,7 +592,7 @@ public class AOBotService extends Service {
 		if(log) {
 			appendToLog(
 				AOBotService.this.cp.parse(
-					AOBotService.this.getString(R.string.to) + " [" + 
+					getString(R.string.to) + " [" + 
 					AONameFormat.format(target) + "]: " + message, 
 					ChatParser.TYPE_PRIVATE_MESSAGE
 				),
@@ -652,25 +652,22 @@ public class AOBotService extends Service {
 	/**
 	 * Toggle the AFK mode
 	 */
-	public void toggleAFK() {
+	public void setAFK(boolean onoff) {
 		AOBotService.this.afktime = System.currentTimeMillis();
 		
 		if(AOBotService.this.aobot != null) {
-			if(AOBotService.this.afk) {
+			if(!onoff) {
 				//Remove AFK
 				AOBotService.this.afk = false;
 				
 				if(AOBotService.this.aobot.getState() == ao.protocol.AOBot.State.LOGGED_IN) {
 					setNotification(
 					    AOBotService.this.aochar.getName() + " " + 
-					    AOBotService.this.getString(R.string.logged_in),
+					    getString(R.string.logged_in),
 					    true
 					);
 					
-					appendToLog(cp.parse(
-							"AFK off.",
-							ChatParser.TYPE_SYSTEM_MESSAGE
-					), null, null);
+					appendToLog(cp.parse("AFK off.", ChatParser.TYPE_SYSTEM_MESSAGE), null, null);
 				}
 			} else {
 				//Set as AFK
@@ -679,8 +676,7 @@ public class AOBotService extends Service {
 				if(AOBotService.this.aobot.getState() == ao.protocol.AOBot.State.LOGGED_IN) {
 					setNotification(
 					    AOBotService.this.aochar.getName() + " " + 
-					    AOBotService.this.getString(R.string.logged_in) +
-					    " (AFK)",
+					    getString(R.string.logged_in) + " (AFK)",
 					    true
 					);
 					

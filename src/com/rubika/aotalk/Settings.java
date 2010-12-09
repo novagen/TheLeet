@@ -132,6 +132,17 @@ public class Settings extends PreferenceActivity {
         root.addPreference(fullscreen);
         */
 	    
+	    //Other settings
+	    PreferenceCategory otherCat = new PreferenceCategory(this);
+	    otherCat.setTitle("Other");
+        root.addPreference(otherCat);
+        
+        CheckBoxPreference autoAFK = new CheckBoxPreference(this);
+        autoAFK.setKey("autoafk");
+        autoAFK.setTitle("Auto AFK");
+        autoAFK.setSummary("Go AFK when the app loses focus");
+        root.addPreference(autoAFK);
+	    
 	    return root; 
 	}
 	

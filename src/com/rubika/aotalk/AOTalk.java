@@ -309,15 +309,6 @@ public class AOTalk extends Activity {
             }
         });
         
-        /* Future calls when clicking on input field
-        msginput.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				...
-			}
-		});
-		*/
-        
         //Long click on input lets user select from last message and predefined texts
         msginput.setOnLongClickListener(new OnLongClickListener() {
 			@Override
@@ -781,7 +772,14 @@ public class AOTalk extends Activity {
     
     @Override
     public void onPause() {
-        super.onPause();      
+        super.onPause();
+        
+        if(AOTalk.this.bot != null) {
+	        if(settings.getBoolean("autoafk", false)) {
+	        	AOTalk.this.bot.setAFK(true);
+	        }
+        }
+        
         savePreferences();
 	}
     
@@ -848,10 +846,12 @@ public class AOTalk extends Activity {
 	    public void onReceive(Context context, Intent intent) {
 	    	String value = intent.getStringExtra(AOBotService.EXTRA_CONNECTION);
 	    	
+	    	//Service wants server
 	    	if(value.equals(AOBotService.CON_SERVER)) {
 	    		setServer();
 	    	}
 	    	
+	    	//Service wants account information
 	    	if(value.equals(AOBotService.CON_ACCOUNT)) {
 		    	if(AOTalk.this.loader != null) {
 		    		AOTalk.this.loader.dismiss();
@@ -861,10 +861,12 @@ public class AOTalk extends Activity {
 	    		setAccount();
 	    	}
 	    	
+	    	//Service wants character
 	    	if(value.equals(AOBotService.CON_CHARACTER)) {
 	    		setCharacter();
 	    	}
 	    	
+	    	//Service failed to log in
 	    	if(value.equals(AOBotService.CON_LFAILURE)) {
 		    	AOTalk.this.bot.appendToLog(
 		    		chat.parse(AOTalk.this.getString(R.string.could_not_log_in), ChatParser.TYPE_CLIENT_MESSAGE),
@@ -873,6 +875,7 @@ public class AOTalk extends Activity {
 		    	);
 		    }
 	    	
+	    	//Service failed to connect
 	    	if(value.equals(AOBotService.CON_CFAILURE)) {
 		    	AOTalk.this.bot.appendToLog(
 		    		chat.parse(AOTalk.this.getString(R.string.could_not_connect), ChatParser.TYPE_CLIENT_MESSAGE),
@@ -886,6 +889,7 @@ public class AOTalk extends Activity {
 		    	}
 	    	}
 	    	
+	    	//Service is connected
 	    	if(value.equals(AOBotService.CON_CONNECTED)) {
 	    		AOTalk.this.bot.appendToLog(
 	    			chat.parse(AOTalk.this.getString(R.string.connected), ChatParser.TYPE_CLIENT_MESSAGE),
@@ -899,6 +903,7 @@ public class AOTalk extends Activity {
 		    	}
 	    	}
 	    	
+	    	//Service is disconnected
 	    	if(value.equals(AOBotService.CON_DISCONNECTED)) {    	
 		    	if(AOTalk.this.loader != null) {
 	    			AOTalk.this.loader.dismiss();
@@ -906,6 +911,7 @@ public class AOTalk extends Activity {
 	    		}
 	    	}
 	    	
+	    	//Service got a channel invite
 	    	if(value.equals(AOBotService.CON_INVITE)) {
 		    	handleInvitation();
 	    	}
@@ -942,6 +948,12 @@ public class AOTalk extends Activity {
 			    		AOTalk.this.messagelist.setSelection(AOTalk.this.messages.size()-1);
 					}
 				});
+				
+		        if(settings.getBoolean("autoafk", false)) {
+		        	if(AOTalk.this.bot.getAFK()) {
+		        		AOTalk.this.bot.setAFK(false);
+		        	}
+		        }
 			}
 			
 			@Override
@@ -1019,7 +1031,11 @@ public class AOTalk extends Activity {
 	        	return true;
 	        case R.id.afk:
 	        	if(AOTalk.this.bot != null) {
-	        		AOTalk.this.bot.toggleAFK();
+	        		if(AOTalk.this.bot.getAFK()) {
+		        		AOTalk.this.bot.setAFK(false);
+	        		} else {
+		        		AOTalk.this.bot.setAFK(true);
+	        		}
 	        	}
 	        	return true;
 	        default:
