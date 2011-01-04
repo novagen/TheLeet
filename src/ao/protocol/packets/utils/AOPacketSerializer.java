@@ -23,6 +23,7 @@ package ao.protocol.packets.utils;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 /**
  * AOPacketSerializer is a utility class for serializing packets for transmission.
@@ -33,6 +34,7 @@ public class AOPacketSerializer {
     
     private ByteArrayOutputStream m_buffer;
     private DataOutputStream      m_output;
+    private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
     
     /** Creates a new instance of AOPacketSerializer */
     public AOPacketSerializer() {
@@ -103,7 +105,10 @@ public class AOPacketSerializer {
      * @see AOPacketParser#parseString()
      */
     public void write(String data) {
-        try { 
+        try {
+            m_output.writeUTF(data);
+            /**
+            byte[] utf8 = data.getBytes(UTF8_CHARSET);
             char[] chars = data.toCharArray();
             int length   = chars.length;
             
@@ -111,6 +116,7 @@ public class AOPacketSerializer {
             for (int i = 0; i < length; ++i) {
                 m_output.writeByte(chars[i]);
             }   // end for
+             */
         } catch (IOException e) { e.printStackTrace(); }
     }   // end write()
     

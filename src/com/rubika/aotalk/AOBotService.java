@@ -58,7 +58,7 @@ import ao.protocol.packets.in.AOPrivateGroupClientJoinPacket;
 import ao.protocol.packets.in.AOPrivateGroupClientPartPacket;
 
 public class AOBotService extends Service {
-	private static final String APPTAG = "--> AOTalk::AOBotService";
+	protected static final String APPTAG = "--> AOTalk::AOBotService";
 	private static final String SERVICE_PREFIX = "com.rubika.aotalk.";
 	
 	private String PASSWORD = "";
@@ -91,6 +91,7 @@ public class AOBotService extends Service {
 	private List<String> groupList;
 	private List<String> groupDisable;
 	private List<String> groupIgnore;
+	private List<String> watchEnable;
 	
 	private AOPrivateGroupInvitePacket invitation = null;
 	private AOCharListPacket charpacket 		  = null;
@@ -104,6 +105,7 @@ public class AOBotService extends Service {
 	private List<Friend> allFriends;
 	
 	private ChatParser cp;
+	private Watch watch;
 	
 	private boolean afk = false;
 	private long afktime;
@@ -179,7 +181,8 @@ public class AOBotService extends Service {
 				    appendToLog(
 				    	cp.parse(getString(R.string.disconnected), ChatParser.TYPE_CLIENT_MESSAGE),
 				    	null,
-				    	null
+				    	null,
+				    	ChatParser.TYPE_CLIENT_MESSAGE
 				    );
 				    
 				    if(AOBotService.this.aochar != null) {
@@ -245,7 +248,8 @@ public class AOBotService extends Service {
 							appendToLog(
 								cp.parse(message, ChatParser.TYPE_PRIVATE_MESSAGE),
 								AOBotService.this.aobot.getCharTable().getName(privmsg.getCharID()),
-								null
+								null,
+								ChatParser.TYPE_PRIVATE_MESSAGE
 							);
 							
 							//Send an AFK message, if the message received is not an AFK message
@@ -287,13 +291,16 @@ public class AOBotService extends Service {
 									/* 
 									 * TODO
 									 * Need check to see if its OrgMsg, in that case it needs to be handled differently	
+									 * Perhaps not important but it would be nice to be able to differentiate between
+									 * org and other channels
 									 */
 									cp.parse(groupmsg.display(
 										AOBotService.this.aobot.getCharTable(), 
 										AOBotService.this.aobot.getGroupTable()
 									), ChatParser.TYPE_GROUP_MESSAGE).replace("] 0:", "]:"),
 									AOBotService.this.aobot.getCharTable().getName(groupmsg.getCharID()),
-									AOBotService.this.aobot.getGroupTable().getName(groupmsg.getGroupID())
+									AOBotService.this.aobot.getGroupTable().getName(groupmsg.getGroupID()),
+									ChatParser.TYPE_GROUP_MESSAGE
 								);
 							}
 						}
@@ -316,7 +323,8 @@ public class AOBotService extends Service {
 										ChatParser.TYPE_SYSTEM_MESSAGE
 									),
 									null,
-									null
+									null,
+									ChatParser.TYPE_SYSTEM_MESSAGE
 								);
 							}
 							
@@ -329,7 +337,8 @@ public class AOBotService extends Service {
 										ChatParser.TYPE_SYSTEM_MESSAGE
 									),
 									null,
-									null
+									null,
+									ChatParser.TYPE_SYSTEM_MESSAGE
 								);
 							}
 							
@@ -341,7 +350,8 @@ public class AOBotService extends Service {
 										ChatParser.TYPE_SYSTEM_MESSAGE
 									),
 									null,
-									null
+									null,
+									ChatParser.TYPE_SYSTEM_MESSAGE
 								);
 							}
 						}
@@ -355,7 +365,8 @@ public class AOBotService extends Service {
 							appendToLog(
 								cp.parse(system.display(), ChatParser.TYPE_SYSTEM_MESSAGE),
 								null,
-								null
+								null,
+								ChatParser.TYPE_SYSTEM_MESSAGE
 							);
 						}
 					}
@@ -388,7 +399,8 @@ public class AOBotService extends Service {
 													AOBotService.this.aobot.getGroupTable()
 												), ChatParser.TYPE_SYSTEM_MESSAGE),
 												null,
-												null
+												null,
+												ChatParser.TYPE_SYSTEM_MESSAGE
 											);
 							    		}
 							    	}
@@ -409,7 +421,8 @@ public class AOBotService extends Service {
 											AOBotService.this.aobot.getGroupTable()
 										), ChatParser.TYPE_SYSTEM_MESSAGE),
 										null,
-										null
+										null,
+										ChatParser.TYPE_SYSTEM_MESSAGE
 									);
 								}
 								
@@ -469,7 +482,8 @@ public class AOBotService extends Service {
 								AOBotService.this.aobot.getCharTable().getName(pgjoin.getCharID()) + 
 								" " + getString(R.string.group_joined) + ".", ChatParser.TYPE_GROUP_MESSAGE),
 							null,
-							PRIVATE_GROUP_PREFIX + AOBotService.this.aobot.getCharTable().getName(pgjoin.getGroupID())
+							PRIVATE_GROUP_PREFIX + AOBotService.this.aobot.getCharTable().getName(pgjoin.getGroupID()),
+							ChatParser.TYPE_GROUP_MESSAGE
 						);
 					}
 					
@@ -483,7 +497,8 @@ public class AOBotService extends Service {
 								ChatParser.TYPE_GROUP_MESSAGE
 							),
 							null,
-							null
+							null,
+							ChatParser.TYPE_GROUP_MESSAGE
 						);
 						
 						if(AOBotService.this.groupList.contains(PRIVATE_GROUP_PREFIX + AOBotService.this.aobot.getCharTable().getName(AOBotService.this.invitation.getGroupID()))) {
@@ -502,7 +517,8 @@ public class AOBotService extends Service {
 									ChatParser.TYPE_GROUP_MESSAGE
 								),
 								null,
-								PRIVATE_GROUP_PREFIX + AOBotService.this.aobot.getCharTable().getName(pgleave.getGroupID())
+								PRIVATE_GROUP_PREFIX + AOBotService.this.aobot.getCharTable().getName(pgleave.getGroupID()),
+								ChatParser.TYPE_GROUP_MESSAGE
 							);
 					}
 					
@@ -517,7 +533,8 @@ public class AOBotService extends Service {
 									AOBotService.this.aobot.getGroupTable()
 								), ChatParser.TYPE_GROUP_MESSAGE),
 								AOBotService.this.aobot.getCharTable().getName(pgmsg.getCharID()),
-								PRIVATE_GROUP_PREFIX + AOBotService.this.aobot.getCharTable().getName(pgmsg.getGroupID())
+								PRIVATE_GROUP_PREFIX + AOBotService.this.aobot.getCharTable().getName(pgmsg.getGroupID()),
+								ChatParser.TYPE_GROUP_MESSAGE
 							);
 						}
 					}
@@ -563,8 +580,9 @@ public class AOBotService extends Service {
 	 * @param message
 	 * @param character
 	 * @param channel
+	 * @param type
 	 */
-	public void appendToLog(String message, String character, String channel) {
+	public void appendToLog(String message, String character, String channel, int type) {
 		messages.add(new ChatMessage(new Date().getTime(), message,	character, channel));
 		
 		newMessageBroadcast.putExtra(EXTRA_MESSAGE, MSG_UPDATE);
@@ -572,6 +590,22 @@ public class AOBotService extends Service {
 	    
 	    WidgetController wc = new WidgetController();
 	    wc.setText(message, this);
+	    
+    	boolean toWatch = false;
+    	boolean vibrate = false;
+	    
+	    if(type == ChatParser.TYPE_PRIVATE_MESSAGE && message.contains("from [")) {
+	    	toWatch = true;
+	    	vibrate = true;
+	    }
+	    
+	    if(type == ChatParser.TYPE_SYSTEM_MESSAGE) {
+	    	toWatch = true;
+	    }
+    	
+	    if(toWatch) {
+	    	watch.pushText(character, channel, message, vibrate);
+	    }
 	}
 	
 	
@@ -597,9 +631,15 @@ public class AOBotService extends Service {
 					ChatParser.TYPE_PRIVATE_MESSAGE
 				),
 				target,
-				null
+				null,
+				ChatParser.TYPE_PRIVATE_MESSAGE
 			);
 		}
+	}
+	
+	
+	public String getCurrentCharacter() {
+		return AOBotService.this.aobot.getCharacter().getName();
 	}
 	
 	
@@ -608,7 +648,7 @@ public class AOBotService extends Service {
 	 * @param target
 	 * @param message
 	 */
-	public void sendGMsg(String target, String message) {
+	public void sendGMsg(String target, String message) {	
 		try {
 			AOBotService.this.aobot.sendGMsg(target, message);
 		} catch (IOException e) {
@@ -632,11 +672,21 @@ public class AOBotService extends Service {
 	
 	
 	/**
-	 * Set the list of groups that we dont want too listen to
+	 * Set the list of groups that we don't want too listen to
 	 * @param groups
 	 */
 	public void setDisabledGroups(List<String> groups) {
 		AOBotService.this.groupDisable = groups;
+	}
+
+	
+	/**
+	 * Sets the list of groups that we want displayed on the watch
+	 * Currently not in use
+	 * @param groups
+	 */
+	public void setEnabledWatchGroups(List<String> groups) {
+		AOBotService.this.watchEnable = groups;
 	}
 	
 	
@@ -667,7 +717,7 @@ public class AOBotService extends Service {
 					    true
 					);
 					
-					appendToLog(cp.parse("AFK off.", ChatParser.TYPE_SYSTEM_MESSAGE), null, null);
+					appendToLog(cp.parse("AFK off.", ChatParser.TYPE_SYSTEM_MESSAGE), null, null, ChatParser.TYPE_SYSTEM_MESSAGE);
 				}
 			} else {
 				//Set as AFK
@@ -683,7 +733,7 @@ public class AOBotService extends Service {
 					appendToLog(cp.parse(
 							"AFK on. All tell messages will be replied with afk.",
 							ChatParser.TYPE_SYSTEM_MESSAGE
-					), null, null);
+					), null, null, ChatParser.TYPE_SYSTEM_MESSAGE);
 				}
 			}
 		}
@@ -695,6 +745,16 @@ public class AOBotService extends Service {
 	 */
 	public List<String> getDisabledGroups() {
 		return AOBotService.this.groupDisable;
+	}
+	
+	
+	/**
+	 * Get the list of channels displayed in the watch
+	 * Currently not in use
+	 * @return
+	 */
+	public List<String> getWatchChannels() {
+		return AOBotService.this.watchEnable;
 	}
 	
 	
@@ -977,6 +1037,7 @@ public class AOBotService extends Service {
 		
 		groupList    = new ArrayList<String>();
         groupDisable = new ArrayList<String>();
+        watchEnable  = new ArrayList<String>();
         
         messages = new ArrayList<ChatMessage>();
         onlineFriends  = new ArrayList<Friend>();
@@ -992,12 +1053,14 @@ public class AOBotService extends Service {
         groupIgnore.add("Org Msg");
         
         cp = new ChatParser();
+        watch = new Watch(AOBotService.this);
+        
 	    noteManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 	}
 	
 	@Override
 	public void onStart(Intent intent, int startid) {
-	    Log.d(APPTAG, "onStart");
+	    //onStart
 	}
 	
 	@Override
@@ -1008,6 +1071,6 @@ public class AOBotService extends Service {
 	
 	@Override
 	public void onDestroy() {
-		Log.d(APPTAG, "onDestroy");
+		//onDestroy
 	}
 }

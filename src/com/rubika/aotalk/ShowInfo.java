@@ -36,6 +36,7 @@ import android.text.Html.ImageGetter;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.widget.TextView;
+import ao.misc.AONameFormat;
 
 public class ShowInfo extends Activity {
 	protected static final String APPTAG    = "--> AOTalk::ShowInfo";
@@ -141,12 +142,10 @@ public class ShowInfo extends Activity {
 	        } else if(chatcmd.equals(CMD_TELL)) {
 	        	target  = command.replace(chatcmd, "").trim().substring(0, command.trim().indexOf(" ") + 1).trim();
 	        	message = command.replace(chatcmd, "").trim().replace(target, "").trim();
-	        /*
 	        } else if(chatcmd.equals(CMD_CC)) {
 	        	String[] temp = command.replace(chatcmd, "").trim().split(" ");
 	        	method = temp[0].trim();
 	        	target = temp[1].trim();
-	        */
 	        } else {
 		        info.setText("this chatcmd is not implemented yet");
 		        info.append("\n'" + chatcmd + "'");
@@ -196,17 +195,36 @@ public class ShowInfo extends Activity {
 						finish();
 					}
 					
+					
 					if(chatcmd.equals(CMD_CC) && target != null && method != null) {
-						if(method.equals(CC_ADD)) {
-							//add a friend
-							bot.addFriend(target);
-							Log.d(APPTAG, "Added a buddy: " + target);
-						}
-						
-						if(method.equals(CC_REM)) {
-							//remove a friend
-							bot.removeFriend(target);
-							Log.d(APPTAG, "Removed a buddy: " + target);
+						Log.d(APPTAG, "CHATCMD : " + chatcmd + ", METHOD : " + method + ", TARGET : " + target);
+
+						if(!AONameFormat.format(target).equals(AONameFormat.format(ShowInfo.this.bot.getCurrentCharacter()))) {
+							ChatParser cp = new ChatParser();
+							
+							if(method.equals(CC_ADD)) {
+								//add a friend
+								Log.d(APPTAG, "Added a buddy: " + target);
+								bot.addFriend(target);
+								bot.appendToLog(
+									cp.parse(target + " added to your buddy list", ChatParser.TYPE_SYSTEM_MESSAGE),
+									null,
+									null,
+									ChatParser.TYPE_SYSTEM_MESSAGE
+								);
+							}
+							
+							if(method.equals(CC_REM)) {
+								//remove a friend
+								Log.d(APPTAG, "Removed a buddy: " + target);
+								bot.removeFriend(target);
+								bot.appendToLog(
+									cp.parse(target + " removed from your buddy list", ChatParser.TYPE_SYSTEM_MESSAGE),
+									null,
+									null,
+									ChatParser.TYPE_SYSTEM_MESSAGE
+								);
+							}
 						}
 
 						finish();

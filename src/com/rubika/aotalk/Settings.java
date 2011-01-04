@@ -46,39 +46,39 @@ public class Settings extends PreferenceActivity {
 
 	    //Account settings
 	    PreferenceCategory accountCat = new PreferenceCategory(this);
-	    accountCat.setTitle("Account");
+	    accountCat.setTitle(getString(R.string.account));
         root.addPreference(accountCat);
         
         EditTextPreference username = new EditTextPreference(this);
-        username.setDialogTitle("Set username");
+        username.setDialogTitle(getString(R.string.set_username));
         username.setKey("username");
-        username.setTitle("Username");
-        username.setSummary("Edit your username");
+        username.setTitle(getString(R.string.username));
+        username.setSummary(getString(R.string.edit_username));
         root.addPreference(username);
         
         EditTextPreference password = new EditTextPreference(this);
-        password.setDialogTitle("Set password");
+        password.setDialogTitle(getString(R.string.set_password));
         password.setKey("password");
-        password.setTitle("Password");
-        password.setSummary("Edit your password");
+        password.setTitle(getString(R.string.password));
+        password.setSummary(getString(R.string.edit_password));
         password.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         root.addPreference(password);
         
         CheckBoxPreference saveAccount = new CheckBoxPreference(this);
         saveAccount.setKey("savepref");
-        saveAccount.setTitle("Save account");
-        saveAccount.setSummary("Save your account information");
+        saveAccount.setTitle(getString(R.string.save_account));
+        saveAccount.setSummary(getString(R.string.save_account_info));
         root.addPreference(saveAccount);
 	    
 	    //Channel settings
         PreferenceCategory channelsCat = new PreferenceCategory(this);
-        channelsCat.setTitle("Channels");
+        channelsCat.setTitle(getString(R.string.channels));
         root.addPreference(channelsCat);
         
 	    PreferenceScreen muteChannels = getPreferenceManager().createPreferenceScreen(this);
 	    muteChannels.setKey("disabledchannels_button");
-	    muteChannels.setTitle("Mute channels");
-	    muteChannels.setSummary("Select the channels you want to mute");
+	    muteChannels.setTitle(getString(R.string.mute_channels));
+	    muteChannels.setSummary(getString(R.string.select_channels_to_mute));
 	    muteChannels.setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference arg0) {
@@ -90,13 +90,13 @@ public class Settings extends PreferenceActivity {
 	    
 	    //Friend settings
 	    PreferenceCategory friendsCat = new PreferenceCategory(this);
-	    friendsCat.setTitle("Friends");
+	    friendsCat.setTitle(getString(R.string.friends));
         root.addPreference(friendsCat);
         
 	    PreferenceScreen addFriend = getPreferenceManager().createPreferenceScreen(this);
 	    addFriend.setKey("addfriend_button");
-	    addFriend.setTitle("Add friend");
-	    addFriend.setSummary("Add a friend to your buddy list");
+	    addFriend.setTitle(getString(R.string.add_friend));
+	    addFriend.setSummary(getString(R.string.add_friend_to_buddy_list));
 	    addFriend.setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference arg0) {
@@ -108,8 +108,8 @@ public class Settings extends PreferenceActivity {
         
 	    PreferenceScreen removeFriend = getPreferenceManager().createPreferenceScreen(this);
 	    removeFriend.setKey("addfriend_button");
-	    removeFriend.setTitle("Remove friend");
-	    removeFriend.setSummary("Remove a friend from your buddy list");
+	    removeFriend.setTitle(getString(R.string.remove_friend));
+	    removeFriend.setSummary(getString(R.string.remove_friend_from_buddy_list));
 	    removeFriend.setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference arg0) {
@@ -134,30 +134,59 @@ public class Settings extends PreferenceActivity {
 	    
 	    //Other settings
 	    PreferenceCategory otherCat = new PreferenceCategory(this);
-	    otherCat.setTitle("Other");
+	    otherCat.setTitle(getString(R.string.other));
         root.addPreference(otherCat);
         
         CheckBoxPreference autoAFK = new CheckBoxPreference(this);
         autoAFK.setKey("autoafk");
-        autoAFK.setTitle("Auto AFK");
-        autoAFK.setSummary("Go AFK when the app loses focus");
+        autoAFK.setTitle(getString(R.string.auto_afk));
+        autoAFK.setSummary(getString(R.string.go_afk_when));
         root.addPreference(autoAFK);
-	    
+        
+        CheckBoxPreference enableWatch = new CheckBoxPreference(this);
+        enableWatch.setKey("enablewatch");
+        enableWatch.setTitle(getString(R.string.enable_watch));
+        enableWatch.setSummary(getString(R.string.show_messages_on_watch));
+        root.addPreference(enableWatch);
+        
+        /*
+	    PreferenceScreen watchChannels = getPreferenceManager().createPreferenceScreen(this);
+	    watchChannels.setKey("watchchannels_button");
+	    watchChannels.setTitle("Set channels to show in watch");
+	    watchChannels.setSummary("Select the channels you want to display in your watch");
+	    watchChannels.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference arg0) {
+				handleWatchChannels();
+				return false;
+			}
+	    });
+	    root.addPreference(watchChannels);
+        */
+        
 	    return root; 
 	}
 	
 	private void addFriend() {
-	   	LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
+	   	final ChatParser cp = new ChatParser();
+	   	
+		LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
         final View layout = inflater.inflate(R.layout.addfriend,(ViewGroup) findViewById(R.layout.addfriend));
     	Builder builder = new AlertDialog.Builder(Settings.this);
-    	builder.setTitle("Add a friend");
+    	builder.setTitle(getString(R.string.add_a_friend));
     	builder.setView(layout);
 
-    	builder.setPositiveButton("Add", new DialogInterface.OnClickListener() {
+    	builder.setPositiveButton(getString(R.string.add), new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {  	                											
 				EditText name = (EditText) layout.findViewById(R.id.friendname);
 				if(Settings.this.bot.getState() != AOBot.State.DISCONNECTED) {
-					Settings.this.bot.addFriend(name.getText().toString());	
+					Settings.this.bot.addFriend(name.getText().toString());
+					bot.appendToLog(
+						cp.parse(name.getText().toString() + getString(R.string.added_to_buddy_list), ChatParser.TYPE_SYSTEM_MESSAGE),
+						null,
+						null,
+						ChatParser.TYPE_SYSTEM_MESSAGE
+					);
 				}
 				return;
 			} 
@@ -175,7 +204,8 @@ public class Settings extends PreferenceActivity {
 	}
 	
 	private void removeFriend() {
-    	final List<Friend> friendList = Settings.this.bot.getAllFriends();
+    	final ChatParser cp = new ChatParser();
+		final List<Friend> friendList = Settings.this.bot.getAllFriends();
     	
     	CharSequence[] tempList = null;
     	
@@ -190,7 +220,7 @@ public class Settings extends PreferenceActivity {
     	final CharSequence[] flist = tempList;
 
     	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    	builder.setTitle("Remove friend");
+    	builder.setTitle(getString(R.string.remove_friend));
     	
     	builder.setItems(flist, new DialogInterface.OnClickListener() {
     	    @Override
@@ -199,16 +229,22 @@ public class Settings extends PreferenceActivity {
     	    	
     	    	AlertDialog acceptRemoveDialog = new AlertDialog.Builder(Settings.this).create();
     	    	
-    	    	acceptRemoveDialog.setTitle("Remove " + fname);
+    	    	acceptRemoveDialog.setTitle(getString(R.string.remove) + " " + fname);
     	    	acceptRemoveDialog.setMessage(
-    	    			"Are you sure you want to remove " + 
-    	    			fname + 
-    	    			" from your friends list?\n\nThis is will affect your ingame list!"
+    	    			getString(R.string.remove_friend_confirm1)
+    	    			+ fname + 
+    	    			getString(R.string.remove_friend_confirm2)
     	    	);
     	    		            
     	    	acceptRemoveDialog.setButton(Settings.this.getString(R.string.ok), new DialogInterface.OnClickListener() {
     				public void onClick(DialogInterface dialog, int which) {
     					Settings.this.bot.removeFriend(fname);
+    					bot.appendToLog(
+    						cp.parse(fname + getString(R.string.removed_from_buddy_list), ChatParser.TYPE_SYSTEM_MESSAGE),
+    						null,
+    						null,
+    						ChatParser.TYPE_SYSTEM_MESSAGE
+    					);
     					return;
     				} 
     			});
@@ -292,6 +328,70 @@ public class Settings extends PreferenceActivity {
     	AlertDialog settingsbox = builder.create();
     	settingsbox.show();	
     }
+    
+    /*
+    private void handleWatchChannels() {   	
+    	final List<String> watchEnable = Settings.this.bot.getWatchChannels();
+    	//final List<String> groupList = Settings.this.bot.getGroupList();
+    	List<String> groupList = new ArrayList<String>();
+    	groupList.add(Watch.CHN_SYSTEM);
+    	groupList.add(Watch.CHN_PRIVATE);
+    	groupList.add(Watch.CHN_OTHERS);
+    	
+    	CharSequence[] tempChannels = null;
+    	boolean[] channelStates = null;
+    	
+    	if(groupList != null) {
+    		tempChannels = new CharSequence[groupList.size()];
+    		channelStates = new boolean[groupList.size()];
+    		
+	    	for(int i = 0; i < groupList.size(); i++) {
+	    		tempChannels[i] = groupList.get(i);
+				if(watchEnable != null ) {
+		    		if(watchEnable.contains(groupList.get(i))) {
+						channelStates[i] = true;
+					} else {
+						channelStates[i] = false;
+					}
+				} else {
+					channelStates[i] = false;
+				}
+	    	} 
+    	}
+     	
+    	final CharSequence[] channellist = tempChannels;
+
+    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    	builder.setTitle(Settings.this.getString(R.string.watch_channels));
+    	
+    	builder.setMultiChoiceItems(channellist, channelStates, new DialogInterface.OnMultiChoiceClickListener() {
+    	    @Override
+			public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+				if(isChecked) {
+					if(!watchEnable.contains(channellist[which].toString())) {
+						watchEnable.add(channellist[which].toString());
+					}
+				} else {
+					if(watchEnable.contains(channellist[which].toString())) {
+						watchEnable.remove(channellist[which].toString());
+					}
+				}
+				
+				Settings.this.bot.setEnabledWatchGroups(watchEnable);
+			}
+    	});
+    	
+    	builder.setPositiveButton(Settings.this.getString(R.string.ok), new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {  	                						
+				Settings.this.bot.setEnabledWatchGroups(watchEnable);
+				return;
+			} 
+		});
+    	
+    	AlertDialog settingsbox = builder.create();
+    	settingsbox.show();	
+    }
+    */
     
 	private void attachToService() {
 		Intent serviceIntent = new Intent(this, AOBotService.class);

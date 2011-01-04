@@ -9,7 +9,7 @@
        <TextView  
        android:layout_width="fill_parent"
        android:layout_height="wrap_content"
-       android:text="Username"
+       android:text="@string/username"
        android:layout_marginLeft="5dip"
        />
        <EditText
@@ -23,7 +23,7 @@
        <TextView
        android:layout_width="fill_parent"
        android:layout_height="wrap_content"
-       android:text="Password"
+       android:text="@string/password"
        android:layout_marginLeft="5dip"
        />
        <EditText
@@ -39,7 +39,7 @@
        android:id="@+id/savepassword"
 	   android:layout_width="fill_parent"
 	   android:layout_height="wrap_content" 
-	   android:text="Save password" 
+	   android:text="@string/save_password" 
 	   />
        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
        android:orientation="vertical"
@@ -51,13 +51,13 @@
 	       android:id="@+id/okbutton"
 	       android:layout_width="fill_parent"
 	       android:layout_height="wrap_content"
-	       android:text="Login"
+	       android:text="@string/login"
 	       />    
 	       <Button
 	       android:id="@+id/cancelbutton" 
 	       android:layout_width="fill_parent"
 	       android:layout_height="wrap_content"
-	       android:text="Cancel"
+	       android:text="@string/cancel"
 	       />
        </LinearLayout> 
 </LinearLayout>

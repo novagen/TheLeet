@@ -65,7 +65,7 @@ public class ChatParser {
 		return output;
 	}
 	
-    private String getTime() {
+    public String getTime() {
     	SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm");
         Date date = new Date();
         return "<b>[" + dateFormat.format(date) + "]</b>";

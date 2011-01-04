@@ -58,8 +58,8 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.AdapterView.OnItemLongClickListener;
 
 import ao.misc.AONameFormat;
 import ao.protocol.AOBot;
@@ -95,6 +95,7 @@ public class AOTalk extends Activity {
 	
 	private List<String> predefinedText;
 	private List<String> groupDisable;
+	//private List<String> watchEnable;
 	private List<ChatMessage> messages;
 
 	private ListView messagelist;
@@ -132,11 +133,6 @@ public class AOTalk extends Activity {
         
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
-                
-        if(AOTalk.this.FULLSCRN) {
-        	LinearLayout titlebar = (LinearLayout) findViewById(R.id.headwrap);
-        	titlebar.setVisibility(View.GONE);
-    	}
         
         context = this;
         
@@ -151,6 +147,7 @@ public class AOTalk extends Activity {
         chat = new ChatParser();
         
         groupDisable = new ArrayList<String>();
+        //watchEnable = new ArrayList<String>();
         messages = new ArrayList<ChatMessage>();
         
         messagelist = (ListView)findViewById(R.id.messagelist);
@@ -165,7 +162,7 @@ public class AOTalk extends Activity {
         messagelist.setFocusableInTouchMode(true);
         messagelist.setItemsCanFocus(true);
         
-        messagelist.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener(){
+        messagelist.setOnItemLongClickListener(new OnItemLongClickListener(){
 			@Override
 			public boolean onItemLongClick(AdapterView<?> av, View v, int pos, long id) {
 		    	ChatMessage message = messages.get(pos);
@@ -754,12 +751,18 @@ public class AOTalk extends Activity {
         }
         */
         
-        String temp[] = settings.getString("disabledchannels", "").split(",");
-        
-        for(int i = 0; i < temp.length; i++) {
-        	groupDisable.add(temp[i]);
+        String temp1[] = settings.getString("disabledchannels", "").split(",");
+        for(int i = 0; i < temp1.length; i++) {
+        	groupDisable.add(temp1[i]);
         }
         
+        /*
+        String temp2[] = settings.getString("watchchannels", "").split(",");
+        for(int i = 0; i < temp2.length; i++) {
+        	watchEnable.add(temp2[i]);
+        }
+        */
+    
         attachToService();
     }
     
@@ -817,6 +820,18 @@ public class AOTalk extends Activity {
 		
 		editor.putString("disabledchannels", disabledChannels);
 		
+		String watchChannels = "";
+		List<String> wc = AOTalk.this.bot.getWatchChannels();
+		
+		for(int i = 0; i < wc.size(); i++) {
+			watchChannels += wc.get(i);
+			if(i > 0 && i < wc.size() - 1) {
+				watchChannels += ",";
+			}
+		}
+		
+		editor.putString("watchchannels", watchChannels);
+		
 		if(SAVEPREF) {
 			editor.putString("username", USERNAME);
 			editor.putString("password", PASSWORD);
@@ -871,7 +886,8 @@ public class AOTalk extends Activity {
 		    	AOTalk.this.bot.appendToLog(
 		    		chat.parse(AOTalk.this.getString(R.string.could_not_log_in), ChatParser.TYPE_CLIENT_MESSAGE),
 		    		null,
-		    		null
+		    		null,
+		    		ChatParser.TYPE_CLIENT_MESSAGE
 		    	);
 		    }
 	    	
@@ -880,7 +896,8 @@ public class AOTalk extends Activity {
 		    	AOTalk.this.bot.appendToLog(
 		    		chat.parse(AOTalk.this.getString(R.string.could_not_connect), ChatParser.TYPE_CLIENT_MESSAGE),
 		    		null,
-		    		null
+		    		null,
+		    		ChatParser.TYPE_CLIENT_MESSAGE
 		    	);
 
 		    	if(AOTalk.this.loader != null) {
@@ -894,7 +911,8 @@ public class AOTalk extends Activity {
 	    		AOTalk.this.bot.appendToLog(
 	    			chat.parse(AOTalk.this.getString(R.string.connected), ChatParser.TYPE_CLIENT_MESSAGE),
 	    			null,
-	    			null
+	    			null,
+	    			ChatParser.TYPE_CLIENT_MESSAGE
 	    		);
 
 		    	if(AOTalk.this.loader != null) {
@@ -938,6 +956,9 @@ public class AOTalk extends Activity {
 			@Override
 			public void onServiceConnected(ComponentName name, IBinder service) {
 				AOTalk.this.bot = ((AOBotService.ListenBinder) service).getService();
+				
+				AOTalk.this.bot.setDisabledGroups(groupDisable);
+				//AOTalk.this.bot.setEnabledWatchGroups(watchEnable);
 				
 				getMessages();
 				
