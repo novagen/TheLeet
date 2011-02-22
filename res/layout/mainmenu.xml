@@ -9,6 +9,12 @@
     <item android:id="@+id/clear"
           android:icon="@drawable/icon_clear"
           android:title="@string/clear_log" />
+    <item android:id="@+id/market"
+          android:icon="@drawable/icon_market"
+          android:title="@string/market" />
+    <item android:id="@+id/about"
+          android:icon="@drawable/icon_about"
+          android:title="@string/menuabout" />
     <item android:id="@+id/settings"
           android:icon="@drawable/icon_settings"
           android:title="@string/settings" />

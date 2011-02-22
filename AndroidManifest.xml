@@ -3,7 +3,7 @@
 xmlns:android="http://schemas.android.com/apk/res/android"
 package="com.rubika.aotalk"
 android:installLocation="internalOnly"
-android:versionCode="26" android:versionName="1.5.0">
+android:versionCode="31" android:versionName="1.5.2">
     <application
     android:icon="@drawable/icon"
     android:description="@string/app_description"
@@ -22,8 +22,26 @@ android:versionCode="26" android:versionName="1.5.0">
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity 
+        android:name=".Market"
+        android:configChanges="orientation"
+        >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity 
+        android:name=".About"
+        android:configChanges="orientation"
+        >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <activity
-        android:name=".ShowInfo"
+        android:name=".Information"
         android:configChanges="orientation"
         >
         	<intent-filter>
@@ -44,6 +62,10 @@ android:versionCode="26" android:versionName="1.5.0">
         </activity>
         <activity
         android:name=".Settings"
+        android:configChanges="orientation"
+        />
+        <activity
+        android:name=".MarketSettings"
         android:configChanges="orientation"
         />
         <receiver 
@@ -78,6 +100,4 @@ android:versionCode="26" android:versionName="1.5.0">
     </application>
     <uses-sdk android:minSdkVersion="4" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.STORAGE" />
-	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 </manifest> 

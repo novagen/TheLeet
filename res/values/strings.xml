@@ -6,7 +6,8 @@
     <string name="widget_name_large">AnarchyTalk (4x2)</string>
     <string name="welcome">Welcome to AnarchyTalk!</string>
     <string name="widget_welcome">AnarchyTalk by Novagen</string>
-    <string name="about">\n\nMade by Novagen (RK1)\nBased on the Java AOChat API by Losobie\n</string>
+    <string name="about">\n\nMade by Novagen (RK1)\nBased on the Java AOChat API by Losobie</string>
+    <string name="aouniverse">\n\nIn cooperation with &lt;a href="http://www.ao-universe.com"&gt;AO-Universe&lt;/a&gt;</string>
     <string name="connect">Connect</string>
     <string name="authenticate">Authenticate</string>
     <string name="login">Login</string>
@@ -83,8 +84,20 @@
     <string name="go_afk_when">Go AFK when the program loses focus</string>
     <string name="enable_watch">Enable Watch</string>
     <string name="show_messages_on_watch">Show messages on your bluetooth watch (requires OpenWatch)</string>
-    <string name="added_to_buddy_list"> added to your buddy list</string>
-    <string name="removed_from_buddy_list"> removed from your buddy list</string>
-    <string name="remove_friend_confirm1">Are you sure you want to remove </string>
-    <string name="remove_friend_confirm2"> from your buddy list?\n\nThis is will affect your ingame list!</string>
+    <string name="added_to_buddy_list">added to your buddy list</string>
+    <string name="removed_from_buddy_list">removed from your buddy list</string>
+    <string name="remove_friend_confirm1">Are you sure you want to remove</string>
+    <string name="remove_friend_confirm2">from your buddy list?\n\nThis is will affect your ingame list!</string>
+    <string name="chatcmd_not_implemented">This chat command is not implemented</string>
+    <string name="market">Market</string>
+    <string name="update">Update</string>
+    <string name="menuabout">About</string>
+    <string name="aou">AOU</string>
+    <string name="market_server">Select server</string>
+    <string name="market_server_info">Server to monitor shopping channels on</string>
+    <string name="market_autoupdate">Automatic updates</string>
+    <string name="market_autoupdate_info">Get new market data automatically</string>
+    <string name="market_interval">Update interval</string>
+    <string name="market_interval_info">Time between automatic updates</string>
+    <string name="not_add_yourself">You can not add yourself as a friend</string>
 </resources>

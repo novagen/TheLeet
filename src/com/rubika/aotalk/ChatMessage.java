@@ -23,14 +23,16 @@ public class ChatMessage {
     private String message;
     private String character;
     private String channel;
+    private int type;
     
     // Constructor for the ChatMessage class
-    public ChatMessage(long timestamp, String message, String character, String channel) {
+    public ChatMessage(long timestamp, String message, String character, String channel, int type) {
             super();
             this.message   = message;
             this.timestamp = timestamp;
             this.character = character;
             this.channel   = channel;
+            this.type	   = type;
     }
     
     // Getter and setter methods for all the fields.
@@ -64,5 +66,13 @@ public class ChatMessage {
 
 	public void setChannel(String channel) {
 	        this.channel = channel;
+	}
+    
+    public int getType() {
+        return type;
+    }
+
+	public void setType(int type) {
+	        this.type = type;
 	}
 }

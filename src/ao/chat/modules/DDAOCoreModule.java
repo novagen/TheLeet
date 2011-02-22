@@ -19,12 +19,12 @@
  */
 package ao.chat.modules;
 
-import ao.chat.AOChatBot;
-import ao.protocol.AOBotStateException;
-import ao.chat.modules.AOModuleList.Channel;
+import ao.chat.ChatBot;
+import ao.protocol.BotStateException;
+import ao.chat.modules.ModuleList.Channel;
 import ao.misc.*;
 
-public class DDAOCoreModule implements AOModule {
+public class DDAOCoreModule implements Module {
 
     private String name = "DDAO Core";
     private String[] commands = {
@@ -55,7 +55,7 @@ public class DDAOCoreModule implements AOModule {
         return commands;
     }
 
-    public String help(AOChatBot chatbot, String prefix, String command) {
+    public String help(ChatBot chatbot, String prefix, String command) {
         String help = "<a href=\"text://";
         help += "<font color='#00ff00'>" + command + "</font><br><br>";
 
@@ -86,7 +86,7 @@ public class DDAOCoreModule implements AOModule {
         return help;
     }
 
-    public void execute(AOChatBot chatbot, AOModuleUser user, Channel channel, byte[] id, String prefix, String command, String[] args) {
+    public void execute(ChatBot chatbot, ModuleUser user, Channel channel, byte[] id, String prefix, String command, String[] args) {
         try {
             if (channel == Channel.CON) {
                 if (command.compareTo(commands[0]) == 0 && args != null) {//invite
@@ -109,7 +109,7 @@ public class DDAOCoreModule implements AOModule {
                         }
                     }
                     msg = msg.substring(2);
-                    chatbot.sendTell(AONameFormat.format(args[0]), msg, true);
+                    chatbot.sendTell(NameFormat.format(args[0]), msg, true);
                 } else if (command.compareTo(commands[4]) == 0 && args != null && args.length > 0) {//t
                     String msg = "";
                     for (String part : args) {
@@ -141,7 +141,7 @@ public class DDAOCoreModule implements AOModule {
                         }
                     }
                     msg = msg.substring(2);
-                    chatbot.sendGMsg(AONameFormat.format(args[0]), msg);
+                    chatbot.sendGMsg(NameFormat.format(args[0]), msg);
                 } else if (command.compareTo(commands[8]) == 0 && args != null && args.length > 1) {//g
                     String msg = "";
                     for (String part : args) {
@@ -152,7 +152,7 @@ public class DDAOCoreModule implements AOModule {
                         }
                     }
                     msg = msg.substring(2);
-                    chatbot.sendGMsg(AONameFormat.format(args[0]), msg);
+                    chatbot.sendGMsg(NameFormat.format(args[0]), msg);
                 } else if (command.compareTo(commands[9]) == 0 && args != null && args.length > 1) {//private
                     String msg = "";
                     for (String part : args) {
@@ -163,7 +163,7 @@ public class DDAOCoreModule implements AOModule {
                         }
                     }
                     msg = msg.substring(2);
-                    chatbot.sendPMsg(AONameFormat.format(args[0]), msg);
+                    chatbot.sendPMsg(NameFormat.format(args[0]), msg);
                 } else if (command.compareTo(commands[10]) == 0 && args != null && args.length > 1) {//p
                     String msg = "";
                     for (String part : args) {
@@ -174,28 +174,28 @@ public class DDAOCoreModule implements AOModule {
                         }
                     }
                     msg = msg.substring(2);
-                    chatbot.sendPMsg(AONameFormat.format(args[0]), msg);
+                    chatbot.sendPMsg(NameFormat.format(args[0]), msg);
                 } else if (command.compareTo(commands[11]) == 0 && args != null) {//leave
                     for (String s : args) {
-                        chatbot.leaveGroup(AONameFormat.format(s));
+                        chatbot.leaveGroup(NameFormat.format(s));
                     }
                 } else if (command.compareTo(commands[12]) == 0 && args != null && args.length > 0) {//friend
                     if(args[0].compareTo("add") == 0 || args[0].compareTo("a") == 0 && args.length == 2){
-                        chatbot.addFriend(AONameFormat.format(args[1]), true);
+                        chatbot.addFriend(NameFormat.format(args[1]), true);
                     } else if (args[0].compareTo("remove") == 0 || args[0].compareTo("rem") == 0 || args[0].compareTo("r") == 0 && args.length == 2){
-                        chatbot.removeFriend(AONameFormat.format(args[1]), true);
+                        chatbot.removeFriend(NameFormat.format(args[1]), true);
                     } else if (args[0].compareTo("delete") == 0 || args[0].compareTo("del") == 0 || args[0].compareTo("d") == 0 && args.length == 2){
-                        chatbot.deleteFriend(AONameFormat.format(args[1]), true);
+                        chatbot.deleteFriend(NameFormat.format(args[1]), true);
                     } else if (args[0].compareTo("clear") == 0 || args[0].compareTo("clr") == 0 || args[0].compareTo("c") == 0 && args.length == 1){
                         chatbot.clearFriends();
                     }
                 } else if (command.compareTo(commands[13]) == 0 && args != null && args.length > 0) {//f
                     if(args[0].compareTo("add") == 0 || args[0].compareTo("a") == 0 && args.length == 2){
-                        chatbot.addFriend(AONameFormat.format(args[1]), true);
+                        chatbot.addFriend(NameFormat.format(args[1]), true);
                     } else if (args[0].compareTo("remove") == 0 || args[0].compareTo("rem") == 0 || args[0].compareTo("r") == 0 && args.length == 2){
-                        chatbot.removeFriend(AONameFormat.format(args[1]), true);
+                        chatbot.removeFriend(NameFormat.format(args[1]), true);
                     } else if (args[0].compareTo("delete") == 0 || args[0].compareTo("del") == 0 || args[0].compareTo("d") == 0 && args.length == 2){
-                        chatbot.deleteFriend(AONameFormat.format(args[1]), true);
+                        chatbot.deleteFriend(NameFormat.format(args[1]), true);
                     } else if (args[0].compareTo("clear") == 0 || args[0].compareTo("clr") == 0 || args[0].compareTo("c") == 0 && args.length == 1){
                         chatbot.clearFriends();
                     }
@@ -206,24 +206,24 @@ public class DDAOCoreModule implements AOModule {
         }
     }
 
-    private void reply(AOChatBot chatbot, AOModuleUser user, Channel channel, byte[] id, String msg) {
+    private void reply(ChatBot chatbot, ModuleUser user, Channel channel, byte[] id, String msg) {
         if (chatbot == null) {
             throw new NullPointerException("A reference to the bot was not supplied.");
         }
 
         // Make sure the bot is logged in
-        AOChatBot.State botState = chatbot.getState();
-        if (botState != AOChatBot.State.LOGGED_IN) {
-            throw new AOBotStateException("The bot must be logged in to perform this action.", botState, AOChatBot.State.LOGGED_IN);
+        ChatBot.State botState = chatbot.getState();
+        if (botState != ChatBot.State.LOGGED_IN) {
+            throw new BotStateException("The bot must be logged in to perform this action.", botState, ChatBot.State.LOGGED_IN);
         }   // end if
 
         try {
             switch (channel) {
                 case TELL:
-                    chatbot.sendTell(AOByteConvert.byteToInt(id), msg);
+                    chatbot.sendTell(ByteConvert.byteToInt(id), msg);
                     break;
                 case PRIVATE:
-                    chatbot.sendPMsg(AOByteConvert.byteToInt(id), msg);
+                    chatbot.sendPMsg(ByteConvert.byteToInt(id), msg);
                     break;
                 case GROUP:
                     chatbot.sendGMsg(id, msg);

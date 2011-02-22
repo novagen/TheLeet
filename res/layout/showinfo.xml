@@ -2,19 +2,13 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent">
-	<ScrollView
-	android:id="@+id/scrolltext"
-	android:layout_width="fill_parent"
-	android:layout_height="fill_parent"
-	android:isScrollContainer="true"
+    android:layout_height="fill_parent"
 	android:background="#062c36"
 	>
-	    <TextView
-	  	android:id="@+id/showinfo"
-	  	android:layout_width="fill_parent"
-	  	android:layout_height="wrap_content"
-		android:padding="10dip"
-	  	/>
-  	</ScrollView>
+  	<WebView
+	android:id="@+id/web"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:background="#062c36"
+	/>
 </LinearLayout>

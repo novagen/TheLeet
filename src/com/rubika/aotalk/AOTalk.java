@@ -21,7 +21,6 @@ package com.rubika.aotalk;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -61,11 +60,11 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.AdapterView.OnItemLongClickListener;
 
-import ao.misc.AONameFormat;
-import ao.protocol.AOBot;
-import ao.protocol.AODimensionAddress;
-import ao.protocol.packets.bi.AOPrivateGroupInvitePacket;
-import ao.protocol.packets.in.AOCharListPacket;
+import ao.misc.NameFormat;
+import ao.protocol.Bot;
+import ao.protocol.DimensionAddress;
+import ao.protocol.packets.bi.PrivateChannelInvitePacket;
+import ao.protocol.packets.in.CharacterListPacket;
 
 public class AOTalk extends Activity {
 	protected static final String APPTAG = "--> AOTalk";
@@ -80,7 +79,6 @@ public class AOTalk extends Activity {
 	private String PASSWORD  = "";
 	private String USERNAME  = "";
 	private boolean SAVEPREF = false;
-	private boolean FULLSCRN = false;
 	
 	private final String CHANNEL_MSG = "Private Message";
 	private final String CHANNEL_FRIEND = "Friend";
@@ -119,17 +117,6 @@ public class AOTalk extends Activity {
         PASSWORD = settings.getString("password", PASSWORD);
         CHATCHANNEL = settings.getString("chatchannel", CHATCHANNEL);
         MESSAGETO = settings.getString("messageto", MESSAGETO);
-        FULLSCRN = settings.getBoolean("fullscreen", FULLSCRN);
-        
-        /* Not in use as listview bugs in fullscreen
-        if(AOTalk.this.FULLSCRN) {
-        	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);	
-        } else {
-        	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);	
-        }
-        */
         
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
@@ -139,10 +126,12 @@ public class AOTalk extends Activity {
         //Predefined text string, user can chose between them when long pressing input field
         predefinedText = new ArrayList<String>();
         predefinedText.add("!afk ");
-        predefinedText.add("!online");
+        predefinedText.add("!help");
         predefinedText.add("!join");
         predefinedText.add("!leave");
+        predefinedText.add("!online");
         predefinedText.add("!items ");
+        predefinedText.add("!whois ");
 
         chat = new ChatParser();
         
@@ -250,13 +239,20 @@ public class AOTalk extends Activity {
         });
         
         messages.add(new ChatMessage(
-        		new Date().getTime(),
-        		chat.parse("<br /><b>" + getString(R.string.welcome) + "</b>" + getString(R.string.about),
-        		ChatParser.TYPE_PLAIN_MESSAGE), 
-        		null, 
-        		null
+    		new Date().getTime(),
+    		chat.parse(
+				"<br /><b>" + 
+				getString(R.string.welcome) + 
+				"</b>" + 
+				getString(R.string.about) + 
+				getString(R.string.aouniverse)
+    		,
+    		ChatParser.TYPE_PLAIN_MESSAGE), 
+    		null, 
+    		null,
+    		ChatParser.TYPE_PLAIN_MESSAGE
         ));
-               
+        
         channelbutton = (Button) findViewById(R.id.msgchannel);
         channelbutton.setOnClickListener(new OnClickListener() {
 			@Override
@@ -272,7 +268,7 @@ public class AOTalk extends Activity {
 			@Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
 				if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
-					if(AOTalk.this.bot.getState() == ao.protocol.AOBot.State.LOGGED_IN && msginput.getText().toString().length() > 0) {				
+					if(AOTalk.this.bot.getState() == ao.protocol.Bot.State.LOGGED_IN && msginput.getText().toString().length() > 0) {				
                 		//Send message
                 		if(CHATCHANNEL.equals(CHANNEL_MSG)) {
                 			AOTalk.this.bot.sendTell(AOTalk.this.MESSAGETO, msginput.getText().toString(), true, true);
@@ -326,7 +322,7 @@ public class AOTalk extends Activity {
 			if(AOTalk.this.CHATCHANNEL.equals(AOTalk.this.CHANNEL_MSG)) {
 				if(!AOTalk.this.MESSAGETO.equals("")) {
 					AOTalk.this.channelbutton.setText(
-						AOTalk.this.getString(R.string.tell) + ": " + AONameFormat.format(AOTalk.this.MESSAGETO)
+						AOTalk.this.getString(R.string.tell) + ": " + NameFormat.format(AOTalk.this.MESSAGETO)
 					);
 				} else {
 					AOTalk.this.channelbutton.setText(AOTalk.this.getString(R.string.select_channel));
@@ -387,7 +383,7 @@ public class AOTalk extends Activity {
     
     //Show a pop up when a new invitation is received
     private void handleInvitation() {
-    	final AOPrivateGroupInvitePacket invitation = AOTalk.this.bot.getInvitation();
+    	final PrivateChannelInvitePacket invitation = AOTalk.this.bot.getInvitation();
     	
     	AlertDialog joinGroupDialog = new AlertDialog.Builder(AOTalk.this).create();
     	joinGroupDialog.setTitle(AOTalk.this.bot.getCharTable().getName(invitation.getGroupID()));
@@ -447,19 +443,19 @@ public class AOTalk extends Activity {
     	    	if(servers[item].toString().equals("Atlantean")) {
     	    		new Thread() {
     		            public void run() {
-    		            	AOTalk.this.bot.setServer(AODimensionAddress.RK1);
+    		            	AOTalk.this.bot.setServer(DimensionAddress.RK1);
     		        	}
     				}.start();
     	    	} else if(servers[item].toString().equals("Rimor")) {
     	    		new Thread() {
     		            public void run() {
-    		            	AOTalk.this.bot.setServer(AODimensionAddress.RK2);
+    		            	AOTalk.this.bot.setServer(DimensionAddress.RK2);
     		        	}
     				}.start();
     	    	} else {
     	    		new Thread() {
     		            public void run() {
-    		            	AOTalk.this.bot.setServer(AODimensionAddress.TEST);
+    		            	AOTalk.this.bot.setServer(DimensionAddress.TEST);
     		        	}
     				}.start();
     	    	}
@@ -473,7 +469,7 @@ public class AOTalk extends Activity {
 	
 	//Lets the user select character during connection
 	private void setCharacter() {
-    	final AOCharListPacket charpacket = bot.getCharPacket();
+    	final CharacterListPacket charpacket = bot.getCharPacket();
 
     	if(charpacket != null) {
 	    	CharSequence names[] = new CharSequence[charpacket.getNumCharacters()];
@@ -488,7 +484,7 @@ public class AOTalk extends Activity {
 	    	builder.setTitle(AOTalk.this.getString(R.string.select_character));
 	    	builder.setItems(charlist, new DialogInterface.OnClickListener() {
 	    	    public void onClick(DialogInterface dialog, int item) {
-	    	    	AOTalk.this.bot.setCharacter(charpacket.findCharacter(AONameFormat.format(charlist[item].toString())));
+	    	    	AOTalk.this.bot.setCharacter(charpacket.findCharacter(NameFormat.format(charlist[item].toString())));
 	    	    }
 	    	});
 	    	
@@ -514,7 +510,7 @@ public class AOTalk extends Activity {
     	int chn = 0;
     	int cnt = 0;
     	
-    	if(AOTalk.this.bot.getState().equals(AOBot.State.LOGGED_IN)) {
+    	if(AOTalk.this.bot.getState().equals(Bot.State.LOGGED_IN)) {
     		add++;
     	}
     	
@@ -642,7 +638,7 @@ public class AOTalk extends Activity {
 		
     	builder.setNegativeButton(AOTalk.this.getString(R.string.cancel), new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
-				if(AOTalk.this.bot.getState() != AOBot.State.DISCONNECTED) {
+				if(AOTalk.this.bot.getState() != Bot.State.DISCONNECTED) {
 					AOTalk.this.bot.disconnect();
 				}
 				return;
@@ -652,7 +648,7 @@ public class AOTalk extends Activity {
     	builder.setOnCancelListener(new OnCancelListener() {
 			@Override
 			public void onCancel(DialogInterface dialog) {
-				if(AOTalk.this.bot.getState() != AOBot.State.DISCONNECTED) {
+				if(AOTalk.this.bot.getState() != Bot.State.DISCONNECTED) {
 					AOTalk.this.bot.disconnect();
 				}
 				return;
@@ -739,22 +735,21 @@ public class AOTalk extends Activity {
         PASSWORD = settings.getString("password", PASSWORD);
         CHATCHANNEL = settings.getString("chatchannel", CHATCHANNEL);
         MESSAGETO = settings.getString("messageto", MESSAGETO);
-        FULLSCRN = settings.getBoolean("fullscreen", FULLSCRN);
         
-        /* Not in use as listview bugs in fullscreen
-        if(AOTalk.this.FULLSCRN) {
-        	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);	
-        } else {
-        	getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);	
+        if(bot == null) {
+	        String temp1[] = settings.getString("disabledchannels", "").split(",");
+	                
+	        for(int i = 0; i < temp1.length; i++) {
+	        	if(temp1[i].length() > 2) {
+		        	if(!groupDisable.contains(temp1[i])) {
+		        		groupDisable.add(temp1[i]);
+			        	Log.d(APPTAG, "FOUND DISABLED GROUP : " + temp1[i]);
+		        	}
+	        	}
+	        }
         }
-        */
         
-        String temp1[] = settings.getString("disabledchannels", "").split(",");
-        for(int i = 0; i < temp1.length; i++) {
-        	groupDisable.add(temp1[i]);
-        }
+        Log.d(APPTAG, "LOADED DISABLED CHANNELS : " + settings.getString("disabledchannels", ""));
         
         /*
         String temp2[] = settings.getString("watchchannels", "").split(",");
@@ -806,20 +801,26 @@ public class AOTalk extends Activity {
 		editor.putBoolean("savepref", SAVEPREF);
 		editor.putString("chatchannel", CHATCHANNEL);
 		editor.putString("messageto", MESSAGETO);
-		editor.putBoolean("fullscreen", FULLSCRN);
 		
 		String disabledChannels = "";
-		List<String> dc = AOTalk.this.bot.getGroupDisableList();
+		List<String> dc = AOTalk.this.bot.getDisabledGroups();
 		
 		for(int i = 0; i < dc.size(); i++) {
-			disabledChannels += dc.get(i);
-			if(i > 0 && i < dc.size() - 1) {
-				disabledChannels += ",";
+			Log.d(APPTAG, "Added " + dc.get(i) + " to disabled channels");
+			if(dc.get(i).length() > 2) {
+				if(!disabledChannels.contains(dc.get(i))) {
+					disabledChannels += dc.get(i);
+					if(i < dc.size() - 1) {
+						disabledChannels += ",";
+					}
+				}
 			}
 		}
 		
 		editor.putString("disabledchannels", disabledChannels);
+        Log.d(APPTAG, "SAVING DISABLED CHANNELS : " + disabledChannels);
 		
+		/*
 		String watchChannels = "";
 		List<String> wc = AOTalk.this.bot.getWatchChannels();
 		
@@ -831,6 +832,7 @@ public class AOTalk extends Activity {
 		}
 		
 		editor.putString("watchchannels", watchChannels);
+		*/
 		
 		if(SAVEPREF) {
 			editor.putString("username", USERNAME);
@@ -995,6 +997,18 @@ public class AOTalk extends Activity {
         startActivity(intent);
     }
     
+    
+    private void showMarket() {
+    	Intent intent = new Intent(this, Market.class);
+        startActivity(intent);
+    }
+    
+    
+    private void showAbout() {
+    	Intent intent = new Intent(this, About.class);
+        startActivity(intent);
+    }
+    
 	
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -1019,7 +1033,7 @@ public class AOTalk extends Activity {
 		}
 		
 		if(AOTalk.this.bot != null) {
-			if(AOTalk.this.bot.getState() != AOBot.State.DISCONNECTED) {
+			if(AOTalk.this.bot.getState() != Bot.State.DISCONNECTED) {
 				conButton.setIcon(R.drawable.icon_disconnect);
 				conButton.setTitle(getString(R.string.disconnect));
 			} else {
@@ -1036,7 +1050,7 @@ public class AOTalk extends Activity {
     	switch (item.getItemId()) {
 	        case R.id.connect:
 	        	if(AOTalk.this.bot != null) {
-		        	if(AOTalk.this.bot.getState() == AOBot.State.DISCONNECTED) {
+		        	if(AOTalk.this.bot.getState() == Bot.State.DISCONNECTED) {
 			        	AOTalk.this.bot.connect();
 			        	AOTalk.this.messages.clear();
 		        	} else {
@@ -1058,6 +1072,12 @@ public class AOTalk extends Activity {
 		        		AOTalk.this.bot.setAFK(true);
 	        		}
 	        	}
+	        	return true;
+	        case R.id.about:
+	        	showAbout();
+	        	return true;
+	        case R.id.market:
+	        	showMarket();
 	        	return true;
 	        default:
 	            return super.onOptionsItemSelected(item);

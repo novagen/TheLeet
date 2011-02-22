@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -33,29 +32,29 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
-import ao.chat.AOChatBot;
-import ao.misc.AONameFormat;
-import ao.protocol.AOBot;
-import ao.protocol.AOBotListener;
-import ao.protocol.AOCharacter;
-import ao.protocol.AOCharacterIDTable;
-import ao.protocol.AODimensionAddress;
-import ao.protocol.AOGroupTable;
-import ao.protocol.AOBot.State;
-import ao.protocol.packets.AOPacket;
-import ao.protocol.packets.bi.AOFriendUpdatePacket;
-import ao.protocol.packets.bi.AOGroupMessagePacket;
-import ao.protocol.packets.bi.AOPrivateGroupInvitePacket;
-import ao.protocol.packets.bi.AOPrivateGroupKickPacket;
-import ao.protocol.packets.bi.AOPrivateGroupMessagePacket;
-import ao.protocol.packets.bi.AOPrivateMessagePacket;
-import ao.protocol.packets.in.AOAnonVicinityMessagePacket;
-import ao.protocol.packets.in.AOCharListPacket;
-import ao.protocol.packets.in.AOChatNoticePacket;
-import ao.protocol.packets.in.AOGroupAnnouncePacket;
-import ao.protocol.packets.in.AOLoginErrorPacket;
-import ao.protocol.packets.in.AOPrivateGroupClientJoinPacket;
-import ao.protocol.packets.in.AOPrivateGroupClientPartPacket;
+import ao.chat.ChatBot;
+import ao.misc.NameFormat;
+import ao.protocol.Bot;
+import ao.protocol.BotListener;
+import ao.protocol.CharacterIDTable;
+import ao.protocol.CharacterInfo;
+import ao.protocol.DimensionAddress;
+import ao.protocol.GroupTable;
+import ao.protocol.packets.Packet;
+import ao.protocol.packets.bi.ChannelMessagePacket;
+import ao.protocol.packets.bi.FriendUpdatePacket;
+import ao.protocol.packets.bi.PrivateChannelInvitePacket;
+import ao.protocol.packets.bi.PrivateChannelKickPacket;
+import ao.protocol.packets.bi.PrivateChannelMessagePacket;
+import ao.protocol.packets.bi.PrivateMessagePacket;
+import ao.protocol.packets.in.BroadcastMessagePacket;
+import ao.protocol.packets.in.ChannelUpdatePacket;
+import ao.protocol.packets.in.CharacterListPacket;
+import ao.protocol.packets.in.LoginErrorPacket;
+import ao.protocol.packets.in.PrivateChannelCharacterJoinPacket;
+import ao.protocol.packets.in.PrivateChannelCharacterLeavePacket;
+import ao.protocol.packets.in.SystemMessagePacket;
+import ao.protocol.packets.in.VicinityMessagePacket;
 
 public class AOBotService extends Service {
 	protected static final String APPTAG = "--> AOTalk::AOBotService";
@@ -93,12 +92,12 @@ public class AOBotService extends Service {
 	private List<String> groupIgnore;
 	private List<String> watchEnable;
 	
-	private AOPrivateGroupInvitePacket invitation = null;
-	private AOCharListPacket charpacket 		  = null;
+	private PrivateChannelInvitePacket invitation = null;
+	private CharacterListPacket charpacket 		  = null;
 	
-	private AOCharacter aochar;
-	private AOChatBot aobot;
-	private AODimensionAddress aoserver;
+	private CharacterInfo aochar;
+	private ChatBot aobot;
+	private DimensionAddress aoserver;
 	
 	private List<ChatMessage> messages;
 	private List<Friend> onlineFriends;
@@ -155,21 +154,21 @@ public class AOBotService extends Service {
 	 */
 	public void connect() {	
 		if(AOBotService.this.aobot == null) {
-	        aobot = new AOChatBot();
+	        aobot = new ChatBot();
 	        
-	        aobot.addListener(new AOBotListener() {	        	
+	        aobot.addListener(new BotListener() {	        	
 	        	@Override
-				public void authenticated(AOBot bot) {
+				public void authenticated(Bot bot) {
 				}
 
 				@Override
-				public void connected(AOBot bot) {				
+				public void connected(Bot bot) {				
 					connectionBroadcast.putExtra(EXTRA_CONNECTION, CON_ACCOUNT);
 				    getApplicationContext().sendBroadcast(connectionBroadcast);
 				}
 
 				@Override
-				public void disconnected(AOBot bot) {
+				public void disconnected(Bot bot) {
 					//Clear list of available channels
 					AOBotService.this.groupList = new ArrayList<String>();
 					AOBotService.this.allFriends = new ArrayList<Friend>();
@@ -195,13 +194,13 @@ public class AOBotService extends Service {
 				}
 
 				@Override
-				public void exception(AOBot bot, Exception e) {
+				public void exception(Bot bot, Exception e) {
 					Log.d(APPTAG, "BOT ERROR : " + e.getMessage());					
 					e.printStackTrace();
 				}
 
 				@Override
-				public void loggedIn(AOBot bot) {
+				public void loggedIn(Bot bot) {
 					connectionBroadcast.putExtra(EXTRA_CONNECTION, CON_CONNECTED);
 				    getApplicationContext().sendBroadcast(connectionBroadcast);
 				    
@@ -215,24 +214,24 @@ public class AOBotService extends Service {
 				}
 
 				@Override
-				public void packet(AOBot bot, AOPacket packet) {
+				public void packet(Bot bot, Packet packet) {
 					//Character list packet
-					if(packet.getType() == AOCharListPacket.TYPE) {
-						AOBotService.this.charpacket = (AOCharListPacket) packet;
+					if(packet.getType() == CharacterListPacket.TYPE) {
+						AOBotService.this.charpacket = (CharacterListPacket) packet;
 						
 						connectionBroadcast.putExtra(EXTRA_CONNECTION, CON_CHARACTER);
 					    getApplicationContext().sendBroadcast(connectionBroadcast);
 					}
 					
 					//Log in failed
-					if(packet.getType() == AOLoginErrorPacket.TYPE) {					
+					if(packet.getType() == LoginErrorPacket.TYPE) {					
 						connectionBroadcast.putExtra(EXTRA_CONNECTION, CON_LFAILURE);
 					    getApplicationContext().sendBroadcast(connectionBroadcast);
 					}
 					
 					//Private message
-					if(packet.getType() == AOPrivateMessagePacket.TYPE && packet.getDirection() == AOPacket.Direction.IN) {
-						AOPrivateMessagePacket privmsg = (AOPrivateMessagePacket) packet;
+					if(packet.getType() == PrivateMessagePacket.TYPE && packet.getDirection() == Packet.Direction.IN) {
+						PrivateMessagePacket privmsg = (PrivateMessagePacket) packet;
 						
 						if(privmsg != null) {
 							String message = privmsg.display(
@@ -263,7 +262,7 @@ public class AOBotService extends Service {
 								
 								sendTell(
 									AOBotService.this.aobot.getCharTable().getName(privmsg.getCharID()),
-									AONameFormat.format(AOBotService.this.aochar.getName()) + 
+									NameFormat.format(AOBotService.this.aochar.getName()) + 
 									" is currently AFK (Away From Keyboard)" +
 									" since " + hours + " hours and " + minutes + " minutes ago.", 
 									true,
@@ -274,8 +273,8 @@ public class AOBotService extends Service {
 					}
 					
 					//Chat group message
-					if(packet.getType() == AOGroupMessagePacket.TYPE && packet.getDirection() == AOPacket.Direction.IN) {
-						AOGroupMessagePacket groupmsg = (AOGroupMessagePacket) packet;
+					if(packet.getType() == ChannelMessagePacket.TYPE && packet.getDirection() == Packet.Direction.IN) {
+						ChannelMessagePacket groupmsg = (ChannelMessagePacket) packet;
 						
 						//Don't add groups that's in the groupIgnore list 
 						if(!AOBotService.this.groupIgnore.contains(aobot.getGroupTable().getName(groupmsg.getGroupID()))) {
@@ -306,20 +305,31 @@ public class AOBotService extends Service {
 						}
 					}
 					
+					
 					/*
-					 * Chat notices
-					 * For now only "received offline tell" and "user offline, message buffered"
+					 * System messages
 					 */
-					if(packet.getType() == AOChatNoticePacket.TYPE && packet.getDirection() == AOPacket.Direction.IN) {
-						AOChatNoticePacket notice = (AOChatNoticePacket) packet;
+					if(packet.getType() == SystemMessagePacket.TYPE && packet.getDirection() == Packet.Direction.IN) {
+						SystemMessagePacket syspack = (SystemMessagePacket) packet;
 						
-						if(notice != null) {
+						/*
+						if(syspack != null) {
+							appendToLog(
+								cp.parse(syspack.display(), ChatParser.TYPE_SYSTEM_MESSAGE),
+								null,
+								null,
+								ChatParser.TYPE_SYSTEM_MESSAGE
+							);
+						}
+						*/
+						
+						if(syspack != null) {
 							//Received offline message
-							if(notice.getMsgType().equals("a460d92")) {
+							if(syspack.getMsgType().equals("a460d92")) {
 								appendToLog(
 									cp.parse(
 										"You got an offline message from " +
-										AONameFormat.format(AOBotService.this.aobot.getCharTable().getName(notice.getCharID())),
+										NameFormat.format(AOBotService.this.aobot.getCharTable().getName(syspack.getCharID())),
 										ChatParser.TYPE_SYSTEM_MESSAGE
 									),
 									null,
@@ -329,10 +339,10 @@ public class AOBotService extends Service {
 							}
 							
 							//Offline message, message buffered
-							if(notice.getMsgType().equals("9740ff4")) {
+							if(syspack.getMsgType().equals("9740ff4")) {
 								appendToLog(
 									cp.parse(
-										AONameFormat.format(AOBotService.this.aobot.getCharTable().getName(notice.getCharID())) +
+										NameFormat.format(AOBotService.this.aobot.getCharTable().getName(syspack.getCharID())) +
 										" is offline, message has been buffered",
 										ChatParser.TYPE_SYSTEM_MESSAGE
 									),
@@ -343,7 +353,7 @@ public class AOBotService extends Service {
 							}
 							
 							//Offline message, message buffered
-							if(notice.getMsgType().equals("340e245")) {
+							if(syspack.getMsgType().equals("340e245")) {
 								appendToLog(
 									cp.parse(
 										"Message could not be sent. The recievers inbox is full or the message is too long",
@@ -357,9 +367,41 @@ public class AOBotService extends Service {
 						}
 					}
 					
+					/*
+					 * Broadcast Message
+					 */
+					if(packet.getType() == BroadcastMessagePacket.TYPE && packet.getDirection() == Packet.Direction.IN) {
+						BroadcastMessagePacket broadcast = (BroadcastMessagePacket) packet;
+						
+						if(broadcast != null) {
+							appendToLog(
+								cp.parse(broadcast.display(), ChatParser.TYPE_SYSTEM_MESSAGE),
+								null,
+								null,
+								ChatParser.TYPE_SYSTEM_MESSAGE
+							);
+						}	
+					}
+					
+					/*
+					 * Vincinity notices
+					 */
+					if(packet.getType() == VicinityMessagePacket.TYPE && packet.getDirection() == Packet.Direction.IN) {
+						VicinityMessagePacket notice = (VicinityMessagePacket) packet;
+						
+						if(notice != null) {
+							appendToLog(
+								cp.parse(notice.getStr(), ChatParser.TYPE_SYSTEM_MESSAGE),
+								null,
+								null,
+								ChatParser.TYPE_SYSTEM_MESSAGE
+							);
+						}
+					}
+					
 					//System message
-					if(packet.getType() == AOAnonVicinityMessagePacket.TYPE) {
-						AOAnonVicinityMessagePacket system = (AOAnonVicinityMessagePacket) packet;
+					if(packet.getType() == VicinityMessagePacket.TYPE) {
+						VicinityMessagePacket system = (VicinityMessagePacket) packet;
 						
 						if(system != null) {
 							appendToLog(
@@ -372,11 +414,11 @@ public class AOBotService extends Service {
 					}
 					
 					//Friend update
-					if(packet.getType() == AOFriendUpdatePacket.TYPE) {
-						AOFriendUpdatePacket friend = (AOFriendUpdatePacket) packet;
+					if(packet.getType() == FriendUpdatePacket.TYPE) {
+						FriendUpdatePacket friend = (FriendUpdatePacket) packet;
 
 						if(friend != null) {
-							if(friend.isFriend() && friend.getDirection() == AOPacket.Direction.IN) {
+							if(friend.isFriend() && friend.getDirection() == Packet.Direction.IN) {
 								//Add to online friends list
 								//Step trough the friend list, so we don't add a friend more than once
 								Iterator<Friend> i = AOBotService.this.onlineFriends.iterator();
@@ -452,8 +494,8 @@ public class AOBotService extends Service {
 					}
 					
 					//Group announcement
-					if(packet.getType() == AOGroupAnnouncePacket.TYPE) {
-						AOGroupAnnouncePacket group = (AOGroupAnnouncePacket) packet;
+					if(packet.getType() == ChannelUpdatePacket.TYPE) {
+						ChannelUpdatePacket group = (ChannelUpdatePacket) packet;
 												
 						//if(!AOBotService.this.groupIgnore.contains(group.getGroupName())) {
 							if(!AOBotService.this.groupList.contains(group.getGroupName())) {
@@ -463,8 +505,8 @@ public class AOBotService extends Service {
 					}
 					
 					//Private group invitation
-					if(packet.getType() == AOPrivateGroupInvitePacket.TYPE) {
-						AOBotService.this.invitation = (AOPrivateGroupInvitePacket) packet;
+					if(packet.getType() == PrivateChannelInvitePacket.TYPE) {
+						AOBotService.this.invitation = (PrivateChannelInvitePacket) packet;
 						
 						if(!AOBotService.this.groupList.contains(PRIVATE_GROUP_PREFIX + AOBotService.this.aobot.getCharTable().getName(AOBotService.this.invitation.getGroupID()))) {
 							AOBotService.this.groupList.add(PRIVATE_GROUP_PREFIX + AOBotService.this.aobot.getCharTable().getName(AOBotService.this.invitation.getGroupID()));
@@ -474,8 +516,8 @@ public class AOBotService extends Service {
 					}
 					
 					//Private group join
-					if(packet.getType() == AOPrivateGroupClientJoinPacket.TYPE) {
-						AOPrivateGroupClientJoinPacket pgjoin = (AOPrivateGroupClientJoinPacket) packet;
+					if(packet.getType() == PrivateChannelCharacterJoinPacket.TYPE) {
+						PrivateChannelCharacterJoinPacket pgjoin = (PrivateChannelCharacterJoinPacket) packet;
 						appendToLog(
 							cp.parse(
 								"[" + AOBotService.this.aobot.getCharTable().getName(pgjoin.getGroupID()) + "] " + 
@@ -488,8 +530,8 @@ public class AOBotService extends Service {
 					}
 					
 					//Private group kick
-					if(packet.getType() == AOPrivateGroupKickPacket.TYPE) {
-						AOPrivateGroupKickPacket pgkick = (AOPrivateGroupKickPacket) packet;
+					if(packet.getType() == PrivateChannelKickPacket.TYPE) {
+						PrivateChannelKickPacket pgkick = (PrivateChannelKickPacket) packet;
 						appendToLog(
 							cp.parse(
 								"[" + AOBotService.this.aobot.getCharTable().getName(pgkick.getGroupID()) + 
@@ -507,8 +549,8 @@ public class AOBotService extends Service {
 					}
 					
 					//Private group leave
-					if(packet.getType() == AOPrivateGroupClientPartPacket.TYPE) {
-						AOPrivateGroupClientPartPacket pgleave = (AOPrivateGroupClientPartPacket) packet;
+					if(packet.getType() == PrivateChannelCharacterLeavePacket.TYPE) {
+						PrivateChannelCharacterLeavePacket pgleave = (PrivateChannelCharacterLeavePacket) packet;
 						appendToLog(
 								cp.parse(
 									"[" + AOBotService.this.aobot.getCharTable().getName(pgleave.getGroupID()) + "] " + 
@@ -523,8 +565,8 @@ public class AOBotService extends Service {
 					}
 					
 					//Private group message
-					if(packet.getType() == AOPrivateGroupMessagePacket.TYPE) {
-						AOPrivateGroupMessagePacket pgmsg = (AOPrivateGroupMessagePacket) packet;
+					if(packet.getType() == PrivateChannelMessagePacket.TYPE) {
+						PrivateChannelMessagePacket pgmsg = (PrivateChannelMessagePacket) packet;
 						
 						if(pgmsg != null) {
 							appendToLog(
@@ -541,14 +583,14 @@ public class AOBotService extends Service {
 				}
 				
 				@Override
-				public void started(AOBot bot) {
+				public void started(Bot bot) {
 					connectionBroadcast.putExtra(EXTRA_CONNECTION, CON_STARTED);
 				    getApplicationContext().sendBroadcast(connectionBroadcast);
 				}
 			});
 		}
 		
-		if(AOBotService.this.aobot.getState() == AOBot.State.DISCONNECTED) {
+		if(AOBotService.this.aobot.getState() == Bot.State.DISCONNECTED) {
 			connectionBroadcast.putExtra(EXTRA_CONNECTION, CON_SERVER);
 		    getApplicationContext().sendBroadcast(connectionBroadcast);
 	
@@ -562,7 +604,7 @@ public class AOBotService extends Service {
 	 */
 	public void disconnect() {   
 		if(AOBotService.this.aobot != null) {
-			if(AOBotService.this.aobot.getState() != ao.protocol.AOBot.State.DISCONNECTED) {
+			if(AOBotService.this.aobot.getState() != Bot.State.DISCONNECTED) {
 		    	try {
 					AOBotService.this.aobot.disconnect();
 					AOBotService.this.afk = false;
@@ -583,7 +625,7 @@ public class AOBotService extends Service {
 	 * @param type
 	 */
 	public void appendToLog(String message, String character, String channel, int type) {
-		messages.add(new ChatMessage(new Date().getTime(), message,	character, channel));
+		messages.add(new ChatMessage(new Date().getTime(), message,	character, channel, type));
 		
 		newMessageBroadcast.putExtra(EXTRA_MESSAGE, MSG_UPDATE);
 	    getApplicationContext().sendBroadcast(newMessageBroadcast);
@@ -627,7 +669,7 @@ public class AOBotService extends Service {
 			appendToLog(
 				AOBotService.this.cp.parse(
 					getString(R.string.to) + " [" + 
-					AONameFormat.format(target) + "]: " + message, 
+					NameFormat.format(target) + "]: " + message, 
 					ChatParser.TYPE_PRIVATE_MESSAGE
 				),
 				target,
@@ -710,7 +752,7 @@ public class AOBotService extends Service {
 				//Remove AFK
 				AOBotService.this.afk = false;
 				
-				if(AOBotService.this.aobot.getState() == ao.protocol.AOBot.State.LOGGED_IN) {
+				if(AOBotService.this.aobot.getState() == Bot.State.LOGGED_IN) {
 					setNotification(
 					    AOBotService.this.aochar.getName() + " " + 
 					    getString(R.string.logged_in),
@@ -723,7 +765,7 @@ public class AOBotService extends Service {
 				//Set as AFK
 				AOBotService.this.afk = true;
 				
-				if(AOBotService.this.aobot.getState() == ao.protocol.AOBot.State.LOGGED_IN) {
+				if(AOBotService.this.aobot.getState() == Bot.State.LOGGED_IN) {
 					setNotification(
 					    AOBotService.this.aochar.getName() + " " + 
 					    getString(R.string.logged_in) + " (AFK)",
@@ -787,14 +829,14 @@ public class AOBotService extends Service {
 	/**
 	 * Get the character table from the bot
 	 */
-	public AOCharacterIDTable getCharTable() {
+	public CharacterIDTable getCharTable() {
 		return AOBotService.this.aobot.getCharTable();
 	}
 	
 	/**
 	 * Get the group table from the bot
 	 */
-	public AOGroupTable getGroupTable() {
+	public GroupTable getGroupTable() {
 		return AOBotService.this.aobot.getGroupTable();
 	}
 	
@@ -802,7 +844,7 @@ public class AOBotService extends Service {
 	 * Get private group invitation data
 	 * @return
 	 */
-	public AOPrivateGroupInvitePacket getInvitation() {
+	public PrivateChannelInvitePacket getInvitation() {
 		return AOBotService.this.invitation;
 	}
 	
@@ -893,7 +935,7 @@ public class AOBotService extends Service {
 	 */
 	public void removeFriend(String name) {
 		try {
-			AOBotService.this.aobot.removeFriend(name, true);
+			AOBotService.this.aobot.deleteFriend(name, true);
 			
 			Iterator<Friend> y = AOBotService.this.allFriends.iterator();
 		    int targetpos = -1;
@@ -921,7 +963,7 @@ public class AOBotService extends Service {
 	 * Get the packet containing character data
 	 * @return
 	 */
-	public AOCharListPacket getCharPacket() {
+	public CharacterListPacket getCharPacket() {
 		return AOBotService.this.charpacket;
 	}
 	
@@ -930,10 +972,10 @@ public class AOBotService extends Service {
 	 * Set character to log in with
 	 * @param character
 	 */
-	public void setCharacter(AOCharacter character) {
+	public void setCharacter(CharacterInfo character) {
 		AOBotService.this.aochar = character;
 		
-		if(AOBotService.this.aobot.getState() == ao.protocol.AOBot.State.AUTHENTICATED) {
+		if(AOBotService.this.aobot.getState() == Bot.State.AUTHENTICATED) {
 			try {
 				AOBotService.this.aobot.login(aochar);		
 			} catch (IOException e) {
@@ -949,7 +991,7 @@ public class AOBotService extends Service {
 	 * Set server to use
 	 * @param server
 	 */
-	public void setServer(AODimensionAddress server) {
+	public void setServer(DimensionAddress server) {
 		AOBotService.this.aoserver = server;
 		
 		try {
@@ -972,7 +1014,7 @@ public class AOBotService extends Service {
 		AOBotService.this.USERNAME = username;
 		AOBotService.this.PASSWORD = password;
 		
-		if(AOBotService.this.aobot.getState() == ao.protocol.AOBot.State.CONNECTED) {
+		if(AOBotService.this.aobot.getState() == Bot.State.CONNECTED) {
 			try {
 				AOBotService.this.aobot.authenticate(USERNAME, PASSWORD);
 			} catch (IOException e) {
@@ -988,11 +1030,11 @@ public class AOBotService extends Service {
 	 * Get the state of the bot
 	 * @return
 	 */
-	public State getState() {
+	public Bot.State getState() {
 		if(AOBotService.this.aobot != null) {
 			return AOBotService.this.aobot.getState();
 		} else {
-			return State.DISCONNECTED;
+			return Bot.State.DISCONNECTED;
 		}
 	}
 	
@@ -1003,15 +1045,6 @@ public class AOBotService extends Service {
 	 */
 	public List<String> getGroupList() {
 		return AOBotService.this.groupList;
-	}
-	
-	
-	/**
-	 * Get list of disabled groups
-	 * @return
-	 */
-	public List<String> getGroupDisableList() {
-		return AOBotService.this.groupDisable;
 	}
 	
 	
@@ -1051,6 +1084,7 @@ public class AOBotService extends Service {
         groupIgnore.add("Tour Announcements");
         groupIgnore.add("IRRK News Wire");
         groupIgnore.add("Org Msg");
+        groupIgnore.add("All Towers");
         
         cp = new ChatParser();
         watch = new Watch(AOBotService.this);

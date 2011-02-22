@@ -31,36 +31,11 @@ public class ChatParser {
 	public String parse(String message, int type) {
 		String output = "";
 		
-		switch(type) {
-			case TYPE_SYSTEM_MESSAGE:
-				output += getTime() + "<font color=#FFCC33>";
-				break;
-			case TYPE_PRIVATE_MESSAGE:
-				output += getTime() + "<font color=#CCFFCC>";
-				break;
-			case TYPE_CLIENT_MESSAGE:
-				output += getTime() + "<font color=#CC99CC>";
-				break;
-			case TYPE_GROUP_MESSAGE:
-				output += getTime();
-				break;
+		if(type != TYPE_PLAIN_MESSAGE) {
+			output += "<font color=#ffffff>" + getTime() + "</font> ";
 		}
 		
-		output += " " + message.replace("\n", "<br />");
-		
-		switch(type) {
-			case TYPE_SYSTEM_MESSAGE:
-				output += "</font>";
-				break;
-			case TYPE_PRIVATE_MESSAGE:
-				output += "</font>";
-				break;
-			case TYPE_CLIENT_MESSAGE:
-				output += "</font>";
-				break;
-			case TYPE_GROUP_MESSAGE:
-				break;
-		}
+		output += message.replace("\n", "<br />");
 		
 		return output;
 	}

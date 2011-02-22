@@ -53,16 +53,34 @@ public class ItemRef {
 			    	}
 			    	
 			    	retval += 
-			    		"<img src=http://www.rubi-ka.com/image/icon/" +  currentstring[3] + ".gif><br />" +
+			    		"<img src=\"http://www.rubi-ka.com/image/icon/" +  currentstring[3] + ".gif\" class=\"item\">" +
 			    		"<b>" + currentstring[0] + "</b>" +
 			    		flags +
 			    		"<br /><br />" +
 			    		"<b>Quality level:</b> " + currentstring[2] + 
 			    		"<br /><br />" +
-			    		"<b>Description</b><br />" + currentstring[1] +
-			    		"<br /><br /><font color=#777777>Data from Xyphos.org</font>";
+			    		"<b>Description</b><br />" + currentstring[1];
+			    	
+			    	/*
+			    	if(currentstring[6] != null) {
+			    		retval += currentstring[6];
+			    	}
+			    	
+			    	if(currentstring[7] != null) {
+			    		retval += "<br />";
+			    		retval += "<b>Attributes</b><br />";
+			    		retval += currentstring[7];
+			    	}
+			    	*/
+			    	
+			    	retval += "<br /><br />";
+			    	retval += "<font color=#777777>Data from Xyphos.org</font>";
 			    }
 	        }
+        }
+        
+        if(retval.startsWith("<br />")) {
+        	retval = retval.replaceFirst("<br />", "");
         }
         
 		return retval;

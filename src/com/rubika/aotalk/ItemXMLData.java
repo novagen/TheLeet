@@ -27,17 +27,21 @@ public class ItemXMLData {
 	private String icon  	   = null;
 	private String type        = null;
 	private String flags	   = null;
+	private String reqs		   = null;
+	private String attr		   = null;
 
 	private ArrayList<String[]> pointlist = new ArrayList<String[]>();
 	
 	public void createPoint() {
-		String[] point = new String[6];
+		String[] point = new String[8];
 		point[0] = this.name;
 		point[1] = this.description;
 		point[2] = this.quality;
 		point[3] = this.icon;
 		point[4] = this.type;
 		point[5] = this.flags;
+		point[6] = this.reqs;
+		point[7] = this.attr;
 		
 		this.pointlist.add(point);
 	}
@@ -70,6 +74,14 @@ public class ItemXMLData {
 		this.flags = flags;
 	}
 	
+	public void setReqs(String reqs) {
+		this.reqs = reqs;
+	}
+	
+	public void setAttr(String attr) {
+		this.attr = attr;
+	}
+	
 	public String getName() {
 		return this.name;
 	}
@@ -92,5 +104,13 @@ public class ItemXMLData {
 	
 	public String getFlags() {
 		return this.flags;
+	}
+	
+	public String getReqs() {
+		return this.reqs;
+	}
+	
+	public String getAttr() {
+		return this.attr;
 	}
 }

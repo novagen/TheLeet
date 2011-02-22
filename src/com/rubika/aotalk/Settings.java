@@ -1,3 +1,21 @@
+/*
+ * Settings.java
+ *
+ *************************************************************************
+ * Copyright 2010 Christofer Engel
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.rubika.aotalk;
 
 import java.util.List;
@@ -23,9 +41,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import ao.protocol.AOBot;
+import ao.protocol.Bot;
 
 public class Settings extends PreferenceActivity {
+	protected static final String APPTAG = "--> AOTalk::Settings";
 	private ServiceConnection conn;
 	private AOBotService bot;
 	
@@ -119,19 +138,6 @@ public class Settings extends PreferenceActivity {
 	    });
 	    root.addPreference(removeFriend); 
 	    
-	    /* Disabled due to a bug in ListView (it don't update height when keyboard pops up when fullscreen is enabled)
-	    //Layout settings
-	    PreferenceCategory layoutCat = new PreferenceCategory(this);
-	    layoutCat.setTitle("Layout");
-        root.addPreference(layoutCat);
-
-        CheckBoxPreference fullscreen = new CheckBoxPreference(this);
-        fullscreen.setKey("fullscreen");
-        fullscreen.setTitle("Fullscreen");
-        fullscreen.setSummary("Enable fullscreen view");
-        root.addPreference(fullscreen);
-        */
-	    
 	    //Other settings
 	    PreferenceCategory otherCat = new PreferenceCategory(this);
 	    otherCat.setTitle(getString(R.string.other));
@@ -179,10 +185,10 @@ public class Settings extends PreferenceActivity {
     	builder.setPositiveButton(getString(R.string.add), new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {  	                											
 				EditText name = (EditText) layout.findViewById(R.id.friendname);
-				if(Settings.this.bot.getState() != AOBot.State.DISCONNECTED) {
+				if(Settings.this.bot.getState() != Bot.State.DISCONNECTED) {
 					Settings.this.bot.addFriend(name.getText().toString());
 					bot.appendToLog(
-						cp.parse(name.getText().toString() + getString(R.string.added_to_buddy_list), ChatParser.TYPE_SYSTEM_MESSAGE),
+						cp.parse(name.getText().toString() + " " + getString(R.string.added_to_buddy_list), ChatParser.TYPE_SYSTEM_MESSAGE),
 						null,
 						null,
 						ChatParser.TYPE_SYSTEM_MESSAGE
@@ -232,7 +238,7 @@ public class Settings extends PreferenceActivity {
     	    	acceptRemoveDialog.setTitle(getString(R.string.remove) + " " + fname);
     	    	acceptRemoveDialog.setMessage(
     	    			getString(R.string.remove_friend_confirm1)
-    	    			+ fname + 
+    	    			+ " " + fname + " " + 
     	    			getString(R.string.remove_friend_confirm2)
     	    	);
     	    		            
@@ -240,7 +246,7 @@ public class Settings extends PreferenceActivity {
     				public void onClick(DialogInterface dialog, int which) {
     					Settings.this.bot.removeFriend(fname);
     					bot.appendToLog(
-    						cp.parse(fname + getString(R.string.removed_from_buddy_list), ChatParser.TYPE_SYSTEM_MESSAGE),
+    						cp.parse(fname + " " + getString(R.string.removed_from_buddy_list), ChatParser.TYPE_SYSTEM_MESSAGE),
     						null,
     						null,
     						ChatParser.TYPE_SYSTEM_MESSAGE

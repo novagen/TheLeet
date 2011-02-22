@@ -21,6 +21,7 @@ package com.rubika.aotalk;
 import java.util.List;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
@@ -59,6 +60,26 @@ public class ChatMessageAdapter extends BaseAdapter {
         }
 
         TextView message = (TextView) convertView.findViewById(R.id.message);
+        
+		String color = "#FFFFFF";
+        
+		switch(entry.getType()) {
+			case ChatParser.TYPE_SYSTEM_MESSAGE:
+				color = "#FFCC33";
+				break;
+			case ChatParser.TYPE_PRIVATE_MESSAGE:
+				color = "#88FF88";
+				break;
+			case ChatParser.TYPE_CLIENT_MESSAGE:
+				color = "#CC99CC";
+				break;
+			case ChatParser.TYPE_GROUP_MESSAGE:
+				color = "#FFFFFF";
+				break;
+		}
+        
+       	message.setTextColor(Color.parseColor(color));
+        
         message.setText("");
         message.append(Html.fromHtml(entry.getMessage()));
         message.setMovementMethod(LinkMovementMethod.getInstance());

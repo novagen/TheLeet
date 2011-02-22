@@ -22,8 +22,6 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import android.util.Log;
-
 public class ItemXMLHandler extends DefaultHandler {
 	protected static final String APPTAG = "--> AOTalk::ItemXMLHandler";
 	
@@ -31,7 +29,10 @@ public class ItemXMLHandler extends DefaultHandler {
 	private boolean in_innertag    = false;
     private boolean in_name        = false;
     private boolean in_description = false;
+    private boolean in_req		   = false;
     
+    private String last_op;
+      
     private ItemXMLData myParsedDataSet = new ItemXMLData();
 
 	public ItemXMLData getParsedData() {
@@ -50,36 +51,74 @@ public class ItemXMLHandler extends DefaultHandler {
     public void startElement(String namespaceURI, String localName, String qName, Attributes atts) throws SAXException {   	
     	if (localName.equals("item")) {
             this.in_outertag = true;
+
         } else if (localName.equals("attributes")) {
             this.in_innertag = true;
+        } else if (localName.equals("action")) {
+        	this.in_req = true;
+        	if(myParsedDataSet.getReqs() != null) {
+        		myParsedDataSet.setReqs(myParsedDataSet.getReqs() + "<br /><br /><b>" + atts.getValue("name") + "</b><br />");
+        	} else {
+        		myParsedDataSet.setReqs("<br /><br /><b>" + atts.getValue("name") + "</b><br />");
+        	}
         } else if (localName.equals("name")) {
             this.in_name = true;
         } else if (localName.equals("description")) {
         	this.in_description = true;
+        } else if (localName.equals("stat")) {
+        	myParsedDataSet.setReqs(myParsedDataSet.getReqs() + atts.getValue("name") + " : ");
+        } else if (localName.equals("op")) {
+        	last_op = atts.getValue("name");
+        } else if (localName.equals("value")) {
+        	int num = new Integer(atts.getValue("num")).intValue();
+        	if(last_op.equals("GreaterThan")) {
+        		num++;
+        	}
+        	myParsedDataSet.setReqs(myParsedDataSet.getReqs() + num + "<br />");
         } else if (localName.equals("attribute")) {
-    		Log.d("XMLPARSER", "Found an attribute");
-    		
         	if(atts.getValue("name").equals("Level")) {
         		myParsedDataSet.setQuality(atts.getValue("value"));
-        		Log.d("XMLPARSER", "Found an ql-attribute : " + atts.getValue("value"));
         	}
         	
         	if(atts.getValue("name").equals("Icon")) {
         		myParsedDataSet.setIcon(atts.getValue("value"));
-        		Log.d("XMLPARSER", "Found an icon-attribute : " + atts.getValue("value"));
         	}
         	
         	if(atts.getValue("name").equals("EquipmentPage")) {
         		myParsedDataSet.setType(atts.getValue("extra"));
-        		Log.d("XMLPARSER", "Found an type-attribute : " + atts.getValue("extra"));
         	}
         	
         	if(atts.getValue("name").equals("Flags")) {
         		myParsedDataSet.setFlags(atts.getValue("extra"));
-        		Log.d("XMLPARSER", "Found an flags-attribute : " + atts.getValue("extra"));
+        	} 
+        	
+        	if(atts.getValue("stat").length() > 2) {
+        		if(!(
+        			atts.getValue("stat").equals("209") || 
+        			atts.getValue("stat").equals("353") || 
+        			atts.getValue("stat").equals("298")
+        		)) {
+	        		String stat;
+	        		
+	        		stat = atts.getValue("name") + " : ";
+	        		
+	    			if(!atts.getValue("extra").equals("")) {
+	    				stat += atts.getValue("extra");
+	    			} else {
+	    				stat += atts.getValue("value");
+	    			}
+	    			
+	        		stat += "<br />";
+	        		
+	        		if(myParsedDataSet.getAttr() != null) {
+	        			myParsedDataSet.setAttr(myParsedDataSet.getAttr() + stat);
+	        		} else {
+	        			myParsedDataSet.setAttr(stat);
+	        		}
+        		}
         	}
         }
-   	}
+    }
 
     @Override
     public void endElement(String namespaceURI, String localName, String qName) throws SAXException {
@@ -87,6 +126,8 @@ public class ItemXMLHandler extends DefaultHandler {
             this.in_outertag = false;
             myParsedDataSet.createPoint();
             myParsedDataSet.setDescription("");
+        } else if(localName.equals("action")) {
+        	this.in_req = false;
         } else if (localName.equals("attributes")) {
         	this.in_innertag = false;
         } else if (localName.equals("name")) {
@@ -98,6 +139,10 @@ public class ItemXMLHandler extends DefaultHandler {
 
     @Override
     public void characters(char ch[], int start, int length) {
+    	if (this.in_req) {
+    		//...
+    	}
+    	
     	if (this.in_name) {
         	String tempname = new String();
         	tempname = "";
@@ -107,8 +152,6 @@ public class ItemXMLHandler extends DefaultHandler {
         	}
         	
         	myParsedDataSet.setName(tempname + new String(ch, start, length));
-	    	Log.d("XMLPARSER", "ITEM : " + myParsedDataSet.getName());
-
         }
     	
         if (this.in_description) {
