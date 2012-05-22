@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AOTalkTheme" parent="Theme.Sherlock">
+        <item name="background">@drawable/app</item>
+        <item name="android:background">@drawable/app</item>
+        <item name="android:windowBackground">@drawable/app</item>
+        <item name="actionBarStyle">@style/Widget.Styled.ActionBar</item>
+        <item name="android:actionBarStyle">@style/Widget.Styled.ActionBar</item>
+    </style>
+
+    <style name="Widget.Styled.ActionBar" parent="Widget.Sherlock.ActionBar">
+        <item name="android:indeterminateProgressStyle">@style/IndeterminateProgress</item> 
+        <item name="indeterminateProgressStyle">@style/IndeterminateProgress</item> 
+    </style>
+
+    <style name="IndeterminateProgress" parent="@android:style/Widget.ProgressBar.Small"> 
+       <item name="android:indeterminateDrawable">@drawable/progress_small_holo</item> 
+   </style>
+</resources>

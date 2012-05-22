@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="fill_parent"
+android:layout_height="fill_parent"
+android:background="@drawable/fragment_background"
+>
+	<RelativeLayout
+	android:id="@+id/inputbar"
+	android:layout_width="fill_parent"
+	android:layout_height="45dp"
+    android:layout_alignParentBottom="true"
+    android:background="@color/inputbg"
+    android:padding="2dp"
+	>
+		<ImageButton 
+		android:id="@+id/add_friend"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:src="@drawable/ic_menu_invite"
+		android:layout_alignParentLeft="true"
+		android:background="@drawable/channel_button_background"
+		android:contentDescription="@string/set_channel"
+		android:layout_centerVertical="true"
+		android:gravity="center"
+    	android:padding="2dp"
+		/>
+		<EditText 
+		android:id="@+id/input"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:inputType="text"
+		android:maxLines="1"
+		android:longClickable="true"
+		android:textAppearance="?android:attr/textAppearanceMedium"
+		android:layout_alignParentRight="true"
+		android:layout_toRightOf="@id/add_friend"
+		android:layout_centerVertical="true"
+		android:hint="@string/search"
+		/>
+	</RelativeLayout>
+    <ListView
+	android:id="@+id/friendlist"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+    android:scrollingCache="false"
+	android:layout_above="@id/inputbar"
+    android:fastScrollEnabled="true"
+	/>
+</RelativeLayout>

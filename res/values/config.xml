@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="fling_animation_duration">225</integer>
+    <integer name="prefs_version">6</integer>
+	<declare-styleable name="VerticalLabelView">
+        <attr name="text" format="string" />
+    </declare-styleable>
+    <color name="actbg">#99567C8A</color>
+    <color name="actbg_start">#DD567C8A</color>
+    <color name="actbg_center">#CC567C8A</color>
+    <color name="actbg_end">#DD567C8A</color>
+    <color name="inputbg">#FF000000</color>
+</resources>

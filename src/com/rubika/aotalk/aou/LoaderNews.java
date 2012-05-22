@@ -1,0 +1,405 @@
+/*
+ * Copyright (C) 2011 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.rubika.aotalk.aou;
+
+import java.text.Collator;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+import org.mcsoxford.rss.RSSFault;
+import org.mcsoxford.rss.RSSFeed;
+import org.mcsoxford.rss.RSSItem;
+import org.mcsoxford.rss.RSSReader;
+import org.mcsoxford.rss.RSSReaderException;
+
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.app.SherlockListFragment;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuInflater;
+import com.rubika.aotalk.R;
+import com.rubika.aotalk.util.Logging;
+
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
+import android.content.res.Resources;
+import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.AsyncTaskLoader;
+import android.support.v4.content.Loader;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
+
+/**
+ * Demonstration of the implementation of a custom Loader.
+ */
+public class LoaderNews extends SherlockFragmentActivity {
+	private static final String APP_TAG = "--> AnarchyTalk::LoaderNews";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        FragmentManager fm = getSupportFragmentManager();
+
+        // Create the list fragment and add it as our sole content.
+        if (fm.findFragmentById(android.R.id.content) == null) {
+            DataListFragment list = new DataListFragment();
+            fm.beginTransaction().add(android.R.id.content, list).commit();
+        }
+    }
+
+
+    public static class DataEntry {
+    	private String label;
+    	private String desc;
+    	private String date;
+    	private String link;
+    	private String target;
+    	
+    	public DataEntry(String label, String desc, String date, String link, String target) {
+    		this.desc = desc;
+    		this.date = date;
+    		this.label = label;
+    		this.link = link;
+    		this.target = target;
+    	}
+
+    	public String getLink() {
+    		return link;
+    	}
+    	
+        public String getLabel() {
+            return label;
+        }
+        
+        public String getDesc() {
+        	return desc;
+        }
+        
+        public String getDate() {
+        	return date;
+        }
+        
+        public String getTarget() {
+        	return target;
+        }
+        
+        @Override public String toString() {
+            return desc;
+        }
+   }
+    
+    /**
+     * Perform alphabetical comparison of application entry objects.
+     */
+    public static final Comparator<DataEntry> ALPHA_COMPARATOR = new Comparator<DataEntry>() {
+        private final Collator sCollator = Collator.getInstance();
+        @Override
+        public int compare(DataEntry object1, DataEntry object2) {
+            return sCollator.compare(object1.getLabel(), object2.getLabel());
+        }
+    };
+
+    /**
+     * Helper for determining if the configuration has changed in an interesting
+     * way so we need to rebuild the app list.
+     */
+    public static class InterestingConfigChanges {
+        final Configuration mLastConfiguration = new Configuration();
+        int mLastDensity;
+
+        boolean applyNewConfig(Resources res) {
+            int configChanges = mLastConfiguration.updateFrom(res.getConfiguration());
+            boolean densityChanged = mLastDensity != res.getDisplayMetrics().densityDpi;
+            if (densityChanged || (configChanges&(ActivityInfo.CONFIG_LOCALE
+                    |ActivityInfo.CONFIG_UI_MODE|ActivityInfo.CONFIG_SCREEN_LAYOUT)) != 0) {
+                mLastDensity = res.getDisplayMetrics().densityDpi;
+                return true;
+            }
+            return false;
+        }
+    }
+
+
+    public static class ListLoader extends AsyncTaskLoader<List<DataEntry>> {
+        List<DataEntry> dataList;
+        //PackageIntentReceiver mPackageObserver;
+        
+        final InterestingConfigChanges mLastConfig = new InterestingConfigChanges();
+      
+        public ListLoader(Context context) {
+            super(context);
+
+            // Retrieve the package manager for later use; note we don't
+            // use 'context' directly but instead the save global application
+            // context returned by getContext().
+        }
+    	
+        @Override public List<DataEntry> loadInBackground() {
+	        RSSReader reader = new RSSReader();
+	        List<DataEntry> items = new ArrayList<DataEntry>();
+	        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+	        
+	        try {
+				RSSFeed feed = reader.load(AOU.NEWS_URL);
+				List<RSSItem> feedItems = feed.getItems();
+				
+				for(RSSItem i : feedItems) {
+					String title = "";
+					String target = "";
+					
+					title = i.getTitle();
+					
+					if (title.length() > 0) {
+						if (title.contains(" - ")) {
+							target = title.substring(0, title.indexOf(" - ")).trim();
+							title = title.substring(title.indexOf(" - ") + 2, title.length()).trim();
+						}
+					} else {
+						target = "";
+						title = "";
+					}
+					
+					items.add(new DataEntry(
+							title, 
+							i.getDescription(), 
+							df.format(i.getPubDate()),
+							i.getLink().toString(),
+							target
+					));
+				}
+			} catch (RSSReaderException e) {
+				Logging.log(APP_TAG, e.getMessage());
+			} catch (RSSFault e) {
+				Logging.log(APP_TAG, e.getMessage());
+			}
+			
+			reader.close();
+			reader = null;
+			
+			return items;
+        }
+        
+        @Override public void deliverResult(List<DataEntry> news) {
+            if (isReset()) {
+                // An async query came in while the loader is stopped.  We
+                // don't need the result.
+                if (news != null) {
+                    onReleaseResources(news);
+                }
+            }
+            List<DataEntry> oldNews = news;
+            dataList = news;
+
+            if (isStarted()) {
+                // If the Loader is currently started, we can immediately
+                // deliver its results.
+                super.deliverResult(news);
+            }
+
+            // At this point we can release the resources associated with
+            // 'oldApps' if needed; now that the new result is delivered we
+            // know that it is no longer in use.
+            if (oldNews != null) {
+                onReleaseResources(oldNews);
+            }
+        }
+        
+        @Override protected void onStartLoading() {
+            if (dataList != null) {
+                // If we currently have a result available, deliver it
+                // immediately.
+                deliverResult(dataList);
+            }
+
+            // Has something interesting in the configuration changed since we
+            // last built the app list?
+            boolean configChange = mLastConfig.applyNewConfig(getContext().getResources());
+
+            if (takeContentChanged() || dataList == null || configChange) {
+                // If the data has changed since the last time it was loaded
+                // or is not currently available, start a load.
+                forceLoad();
+            }
+        }
+
+        /**
+         * Handles a request to stop the Loader.
+         */
+        @Override protected void onStopLoading() {
+            // Attempt to cancel the current load task if possible.
+            cancelLoad();
+        }
+
+        /**
+         * Handles a request to cancel a load.
+         */
+        @Override public void onCanceled(List<DataEntry> news) {
+            super.onCanceled(news);
+
+            // At this point we can release the resources associated with 'apps'
+            // if needed.
+            onReleaseResources(news);
+        }
+
+        /**
+         * Handles a request to completely reset the Loader.
+         */
+        @Override protected void onReset() {
+            super.onReset();
+
+            // Ensure the loader is stopped
+            onStopLoading();
+
+            // At this point we can release the resources associated with 'news'
+            // if needed.
+            if (dataList != null) {
+                onReleaseResources(dataList);
+                dataList = null;
+            }
+        }
+
+        /**
+         * Helper function to take care of releasing resources associated
+         * with an actively loaded data set.
+         */
+        protected void onReleaseResources(List<DataEntry> news) {
+            // For a simple List<> there is nothing to do.  For something
+            // like a Cursor, we would close it here.
+        }
+	}
+
+    public static class ListAdapter extends ArrayAdapter<DataEntry> {
+        private final LayoutInflater mInflater;
+
+        public ListAdapter(Context context) {
+            super(context, android.R.layout.simple_list_item_2);
+            mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        }
+
+        public void setData(List<DataEntry> data) {
+            clear();
+            if (data != null) {
+                for (DataEntry entry : data) {
+                	add(entry);
+                }
+            }
+        }
+
+        /**
+         * Populate new items in the list.
+         */
+        @Override public View getView(int position, View convertView, ViewGroup parent) {
+            View view;
+
+            if (convertView == null) {
+                view = mInflater.inflate(R.layout.list_item_news, parent, false);
+            } else {
+                view = convertView;
+            }
+
+            DataEntry item = getItem(position);
+            ((TextView)view.findViewById(R.id.text)).setText(item.getLabel());
+            ((TextView)view.findViewById(R.id.date)).setText(item.getDate());
+            ((TextView)view.findViewById(R.id.target)).setText(item.getTarget());
+
+            return view;
+        }
+    }
+
+    public static class DataListFragment extends SherlockListFragment implements LoaderManager.LoaderCallbacks<List<DataEntry>> {
+        // This is the Adapter being used to display the list's data.
+        ListAdapter mAdapter;
+
+        // If non-null, this is the current filter the user has provided.
+        String mCurFilter;
+
+        @Override public void onActivityCreated(Bundle savedInstanceState) {
+            super.onActivityCreated(savedInstanceState);
+            
+            // Give some text to display if there is no data.  In a real
+            // application this would come from a resource.
+            //setEmptyText(getString(R.string.no_news));
+
+            // We have a menu item to show in action bar.
+            setHasOptionsMenu(true);
+
+            // Create an empty adapter we will use to display the loaded data.
+            mAdapter = new ListAdapter(getActivity());
+            setListAdapter(mAdapter);
+
+            // Start out with a progress indicator.
+            setListShown(false);
+
+            // Prepare the loader.  Either re-connect with an existing one,
+            // or start a new one.
+            getLoaderManager().initLoader(0, null, this);
+        }
+        
+        @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        	container.setBackgroundColor(getResources().getColor(R.color.actbg));
+        	return super.onCreateView(inflater, container, savedInstanceState);
+        }
+
+        @Override public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        }
+
+        @Override public void onListItemClick(ListView l, View v, int position, long id) {
+			Intent intent = new Intent();
+			intent.setClass(mAdapter.getContext(), ActivityNews.class);
+			intent.putExtra("title", mAdapter.getItem(position).getLabel());
+			intent.putExtra("date", mAdapter.getItem(position).getDate());
+			intent.putExtra("text", mAdapter.getItem(position).getDesc());
+			intent.putExtra("link", mAdapter.getItem(position).getLink());
+			
+			mAdapter.getContext().startActivity(intent);
+        }
+
+        @Override public Loader<List<DataEntry>> onCreateLoader(int id, Bundle args) {
+            // This is called when a new Loader needs to be created.  This
+            // sample only has one Loader with no arguments, so it is simple.
+            return new ListLoader(getActivity());
+        }
+
+        @Override public void onLoadFinished(Loader<List<DataEntry>> loader, List<DataEntry> data) {
+            // Set the new data in the adapter.
+            mAdapter.setData(data);
+
+            // The list should now be shown.
+            if (isResumed()) {
+                setListShown(true);
+            } else {
+                setListShownNoAnimation(true);
+            }
+        }
+
+        @Override public void onLoaderReset(Loader<List<DataEntry>> loader) {
+            // Clear the data in the adapter.
+            mAdapter.setData(null);
+        }
+    }
+
+}

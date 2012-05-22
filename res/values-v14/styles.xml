@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AOTalkTheme" parent="Theme.Sherlock">
+        <item name="actionBarStyle">@style/Widget.Styled.ActionBar</item>
+        <item name="android:actionBarStyle">@style/Widget.Styled.ActionBar</item>
+    </style>
+
+    <style name="Widget.Styled.ActionBar" parent="Widget.Sherlock.Light.ActionBar">
+        <item name="android:indeterminateProgressStyle">@style/IndeterminateProgress</item> 
+        <item name="indeterminateProgressStyle">@style/IndeterminateProgress</item> 
+    </style>
+
+    <style name="IndeterminateProgress" parent="@android:style/Widget.ProgressBar.Small" /> 
+</resources>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="fill_parent"
+android:layout_height="fill_parent"
+android:background="@drawable/fragment_background"
+>
+	<RelativeLayout
+	android:id="@+id/gsp_player"
+	android:layout_width="fill_parent"
+	android:layout_height="45dp"
+	android:background="@color/inputbg"
+	android:layout_alignParentBottom="true"
+	android:visibility="visible"
+	>
+	    <ImageView
+	    android:id="@+id/gsplogo"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:src="@drawable/gsplogo"
+		android:contentDescription="@string/gsp"
+	    android:layout_alignParentLeft="true"
+	    android:layout_centerVertical="true"
+	    />
+		<ImageButton
+	    android:id="@+id/gspplay"
+		android:layout_width="wrap_content"
+	    android:layout_height="33dp"
+	    android:src="@drawable/button_play"
+	    android:adjustViewBounds="true"
+	    android:background="@android:color/transparent"
+	    android:layout_centerVertical="true"
+	    android:layout_alignParentRight="true"
+	    android:contentDescription="@string/play"
+	    android:layout_marginRight="3dp"
+		/>
+		<TextView
+	    android:id="@+id/gsptext"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+	    android:layout_centerVertical="true"
+	    android:layout_toLeftOf="@id/gspplay"
+	    android:layout_toRightOf="@id/gsplogo"
+	    android:text="@string/gsp2"
+	    android:gravity="center"
+	    android:textSize="11dp"
+		/>
+	</RelativeLayout>
+	<RelativeLayout 
+	android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+	android:paddingRight="25dp"
+	android:paddingLeft="25dp"
+	android:layout_above="@id/gsp_player"
+	android:layout_alignParentTop="true"
+	android:gravity="center"
+	>
+		<GridView
+		android:id="@+id/grid"
+		android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:stretchMode="columnWidth"
+	    android:verticalSpacing="22dip"
+	    android:numColumns="auto_fit"
+	    android:scrollbars="none"
+	    android:columnWidth="120dp"
+	    />
+	</RelativeLayout>
+</RelativeLayout>

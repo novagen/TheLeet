@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string-array name="icons">
-		<item>Default</item>
-		<item>Atrox</item>
-		<item>Clan</item>
-		<item>ICC</item>
-		<item>Omni</item>
-	</string-array>
 	<string-array name="servers">
 		<item>Atlantean</item>
 		<item>Rimor</item>
 		<item>TestLive</item>
 	</string-array>
 	<string-array name="servers_values">
+		<item>1</item>
+		<item>2</item>
 		<item>0</item>
+	</string-array>
+	<string-array name="marketservers">
+		<item>Atlantean</item>
+		<item>Rimor</item>
+	</string-array>
+	<string-array name="marketservers_values">
 		<item>1</item>
 		<item>2</item>
 	</string-array>

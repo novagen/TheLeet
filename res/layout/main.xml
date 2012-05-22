@@ -1,47 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout 
-xmlns:android="http://schemas.android.com/apk/res/android"
-android:orientation="vertical"
-android:layout_width="fill_parent"
-android:layout_height="fill_parent"
-android:id="@+id/main"
-android:keepScreenOn="true"
->
-    <LinearLayout
-	android:id="@+id/messages"
-	android:layout_width="fill_parent"
-	android:layout_height="fill_parent"
-	android:isScrollContainer="true"
-	android:layout_marginBottom="52dip"
-	android:layout_alignParentTop="true"
-	android:background="#062c36"
-	>
-	    <ListView 
-	    android:id="@+id/messagelist"
-	    android:layout_width="fill_parent"
-	    android:layout_height="fill_parent" 
-	    android:scrollingCache="false"
-	    android:divider="#466c76"
-	    />
-    </LinearLayout>
-	<Button
-	android:id="@+id/msgchannel"
-	android:layout_width="120dip"
-	android:layout_height="49dip"
-	android:layout_marginTop="-49dip"
-	android:layout_alignParentBottom="true"
-	android:textSize="12dip"
-	/>
-	<EditText 
-	android:id="@+id/msginput"
-	android:layout_width="fill_parent"
-	android:layout_height="50dip"
-	android:inputType="text"
-	android:maxLines="1"
-	android:maxLength="1000"
-	android:layout_marginTop="-50dip"
-	android:layout_marginLeft="120dip"
-	android:layout_alignParentBottom="true"
-	android:longClickable="true"
-	/>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res/com.rubika.aotalk"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@android:color/transparent"
+    >
+
+    <com.viewpagerindicator.TitlePageIndicator
+		android:id="@+id/titles"
+        android:padding="10dip"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        app:footerColor="#33B5E5"
+        app:footerLineHeight="0dp"
+        app:footerIndicatorHeight="4dp"
+        app:footerIndicatorStyle="underline"
+        app:textSize="12dp"
+        app:textColor="#CCFFFFFF"
+        app:selectedColor="#FFFFFFFF"
+        app:selectedBold="true"
+        />
+    <android.support.v4.view.ViewPager
+		android:id="@+id/fragmentpager"
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        />
 </LinearLayout>

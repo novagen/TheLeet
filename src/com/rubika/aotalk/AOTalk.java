@@ -1,1086 +1,2147 @@
-/*
- * AOTalk.java
- *
- *************************************************************************
- * Copyright 2010 Christofer Engel
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.rubika.aotalk;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Collections;
 import java.util.List;
-import android.app.Activity;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.app.AlertDialog.Builder;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.content.DialogInterface.OnCancelListener;
+import android.content.res.Configuration;
+import android.graphics.Color;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
+import android.preference.Preference;
+import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceManager;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.text.Editable;
-import android.text.Selection;
-import android.util.Log;
+import android.text.Html;
+import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
-import android.view.View.OnClickListener;
 import android.view.View.OnKeyListener;
-import android.view.View.OnLongClickListener;
-import android.view.inputmethod.InputMethodManager;
+import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.AdapterView;
-import android.widget.Button;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.GridView;
+import android.widget.ImageButton;
 import android.widget.ListView;
-import android.widget.AdapterView.OnItemLongClickListener;
-
+import android.widget.Spinner;
+import android.widget.TextView;
 import ao.misc.NameFormat;
-import ao.protocol.Bot;
+import ao.protocol.CharacterInfo;
 import ao.protocol.DimensionAddress;
-import ao.protocol.packets.bi.PrivateChannelInvitePacket;
-import ao.protocol.packets.in.CharacterListPacket;
+import ao.protocol.packets.toclient.CharacterListPacket;
 
-public class AOTalk extends Activity {
-	protected static final String APPTAG = "--> AOTalk";
+import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.ActionBar.OnNavigationListener;
+import com.actionbarsherlock.app.SherlockFragment;
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuItem;
+import com.actionbarsherlock.view.Window;
+import com.rubika.aotalk.adapter.ChannelAdapter;
+import com.rubika.aotalk.adapter.CharacterAdapter;
+import com.rubika.aotalk.adapter.ChatMessageAdapter;
+import com.rubika.aotalk.adapter.FriendAdapter;
+import com.rubika.aotalk.adapter.GridAdapter;
+import com.rubika.aotalk.aou.AOU;
+import com.rubika.aotalk.database.DatabaseHandler;
+import com.rubika.aotalk.item.Account;
+import com.rubika.aotalk.item.Channel;
+import com.rubika.aotalk.item.Character;
+import com.rubika.aotalk.item.ChatMessage;
+import com.rubika.aotalk.item.Friend;
+import com.rubika.aotalk.item.Tool;
+import com.rubika.aotalk.market.Market;
+import com.rubika.aotalk.service.ClientService;
+import com.rubika.aotalk.service.ServiceTools;
+import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.RestClient;
+import com.viewpagerindicator.TitlePageIndicator;
+import com.viewpagerindicator.TitleProvider;
 
-	private BroadcastReceiver messageReceiver    = new AOBotMessageReceiver();
-	private BroadcastReceiver connectionReceiver = new AOBotConnectionReceiver();
-
-	private ServiceConnection conn;
-	private AOBotService bot;
-	private ChatParser chat;
+public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPageChangeListener, OnPreferenceChangeListener {
+	private static final String APP_TAG = "--> AnarchyTalk";
+	public static boolean LOGGING_ENABLED = false;
 	
-	private String PASSWORD  = "";
-	private String USERNAME  = "";
-	private boolean SAVEPREF = false;
-	
-	private final String CHANNEL_MSG = "Private Message";
-	private final String CHANNEL_FRIEND = "Friend";
-	private String CHATCHANNEL = "";
-	private String MESSAGETO   = "";
-	private String LASTMESSAGE = "";
-	
-	private Button channelbutton;
-	private EditText msginput;
+	private Messenger service = null;
 	private Context context;
+	private boolean serviceIsBound = false;	
 	private ProgressDialog loader;
+	private DatabaseHandler databaseHandler;
+	private ChatMessageAdapter messageAdapter;
+	private ChannelAdapter channelAdapter;
+	private GridAdapter gridAdapter;
+	private FriendAdapter friendAdapter;
+	private int selectedAccountToManage = 0;
 	
-	private List<String> predefinedText;
-	private List<String> groupDisable;
-	//private List<String> watchEnable;
-	private List<ChatMessage> messages;
+	private static long gspUpdateInterval = 30000;
 
-	private ListView messagelist;
-	private ChatMessageAdapter msgadapter;
-	
-	private boolean welcome = true;
-	
+	private static ImageButton play;
+	private static boolean isPlaying = false;
+
+	private String currentTargetChannel = "";
+	private String currentTargetCharacter = "";
+	private int currentUserID = 0;
+	private int currentServerID = 0;
+	private String currentCharacterName = "";
 	private SharedPreferences settings;
 	private SharedPreferences.Editor editor;
+	private String currentShowChannel = ServiceTools.CHANNEL_MAIN;
+	private ActionBar actionBar;
+	private ViewPager fragmentPager;
+	private TitlePageIndicator titleIndicator;
+	
+	private List<Channel> channelList = new ArrayList<Channel>();
+	private List<Channel> privateList = new ArrayList<Channel>();
+	private List<Friend> friendList = new ArrayList<Friend>();
 			
+	private final Messenger serviceMessenger = new Messenger(new ServiceHandler());
+
+	class ServiceHandler extends Handler {
+	    @SuppressWarnings("unchecked")
+		@Override
+	    public void handleMessage(Message message) {
+	    	switch (message.what) {
+	            case ServiceTools.MESSAGE_LOGIN_ERROR:
+	            	Logging.toast(context, getString(R.string.login_error));
+	                break;
+	            case ServiceTools.MESSAGE_CHANNEL:
+	            	channelList = (List<Channel>)message.obj;
+	            	
+	    	        updateInputHint();
+	    	        updateChannelList();
+	    	        updateConnectionButton();
+	    	        
+	            	break;
+	            case ServiceTools.MESSAGE_FRIEND:
+	            	friendList = (List<Friend>)message.obj;
+	            	
+	    	        updateFriendList();
+	    	        updateMessages();
+	    	        
+	                break;
+	            case ServiceTools.MESSAGE_IS_CONNECTED:
+	    	        setDisconnect();
+	    	        
+	                break;
+	            case ServiceTools.MESSAGE_IS_DISCONNECTED:
+	    	        setAccount();
+	    	        
+	                break;
+	            case ServiceTools.MESSAGE_UPDATE:
+	            	updateMessages();
+	            	
+	                break;
+	            case ServiceTools.MESSAGE_REGISTERED:
+	    			currentUserID = message.arg1;
+	    			currentServerID = message.arg2;
+
+	    			getMessages();
+	    			
+	    			List<Object> registerData = (ArrayList<Object>) message.obj;
+	    	        
+	    			friendList = (List<Friend>)registerData.get(0);
+	    	        channelList = (List<Channel>)registerData.get(1);
+	    	        privateList = (List<Channel>)registerData.get(8);
+	    			currentTargetChannel = (String)registerData.get(2);
+	    			currentTargetCharacter = (String)registerData.get(3);
+	    			currentCharacterName = (String)registerData.get(4);
+	    			currentShowChannel = (String)registerData.get(5);
+	    			isPlaying = (Boolean)registerData.get(6);
+	    	        
+	    	        updateFriendList();
+	    	        updateChannelList();
+	    	        updateInputHint();
+	    	        updateConnectionButton();
+	    	        handleInvitations((List<Channel>)registerData.get(7));
+	    	        
+	    	        if (channelList.size() > 0 && settings.getBoolean("showChatWhenOnline", true)) {
+						fragmentPager.setCurrentItem(1);
+	    	        }
+	    	        
+	                break;
+	            case ServiceTools.MESSAGE_STARTED:
+	    	        hideLoader();
+	    	        
+					if (settings.getBoolean("showChatWhenOnline", true)) {
+						fragmentPager.setCurrentItem(1);
+					}
+					
+	    			currentUserID = message.arg1;
+	    			currentServerID = message.arg2;
+	    			
+	    			List<Object> startedData = (ArrayList<Object>) message.obj;
+	    			
+	    			currentTargetChannel = (String)startedData.get(0);
+	    			currentTargetCharacter = (String)startedData.get(1);
+	    			currentCharacterName = (String)startedData.get(2);
+	    			currentShowChannel = (String)startedData.get(3);
+	    			
+	    	        updateInputHint();
+	    			getMessages();
+	    			
+	    	        break;
+	            case ServiceTools.MESSAGE_CHARACTERS:
+	    	        hideLoader();
+	            	setCharacter((CharacterListPacket) message.obj);
+	            	
+	            	break;
+	            case ServiceTools.MESSAGE_CONNECTION_ERROR:
+	    	        hideLoader();
+	            	Logging.toast(context, getString(R.string.connection_error));
+	    	        
+	                break;
+	            case ServiceTools.MESSAGE_CLIENT_ERROR:
+	    	        hideLoader();
+	            	Logging.log(APP_TAG, "Client error");
+	    	        
+	                break;
+	            case ServiceTools.MESSAGE_WHOIS:
+	    	        List<String> whoisData = (ArrayList<String>) message.obj;
+	    	        showWhoIs(whoisData.get(1), whoisData.get(0));
+	    	        
+	                break;
+	            case ServiceTools.MESSAGE_DISCONNECTED:
+	            	hideLoader();
+	            	
+	    	        friendList.clear();
+	    	        channelList.clear();
+	    	        
+	    	        ((EditText) findViewById(R.id.input)).setHint(getString(R.string.disconnected));
+	    	        
+	            	updateMessages();
+	    	        updateChannelList();
+	    	        updateFriendList();
+	    	        updateConnectionButton();
+	            	
+	            	if (message.arg1 == 0 && settings.getBoolean("clearMessagesOnDisconnect", true)) {
+	            		databaseHandler.deleteAllPostsForUser(currentUserID);
+	            	}
+	            	
+	                break;
+	            case ServiceTools.MESSAGE_PLAYER_ERROR:
+	            	Logging.log(APP_TAG, "Player error");
+	            	
+	                break;
+	            case ServiceTools.MESSAGE_PLAYER_STARTED:
+	            	isPlaying = true;
+	            	updatePlayer();
+
+	                break;
+	            case ServiceTools.MESSAGE_PLAYER_STOPPED:
+	            	isPlaying = false;
+	            	updatePlayer();
+
+	                break;
+	            case ServiceTools.MESSAGE_PRIVATE_CHANNEL_INVITATION:
+	            	handleInvitations((List<Channel>) message.obj);
+	            	
+	            	break;
+	            case ServiceTools.MESSAGE_PRIVATE_CHANNEL:
+	            	privateList = (List<Channel>) message.obj;
+	            	updateChannelList();
+	            	
+	            	break;
+	            default:
+	                super.handleMessage(message);
+	        }
+	    }
+	}
+		
+	private synchronized void handleInvitations(List<Channel> invitations) {
+		for (final Channel channel : invitations) {
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setTitle(getString(R.string.join_channel));
+			builder.setMessage(String.format(getString(R.string.you_were_invited_to_channel), channel.getName().replace(ServiceTools.PREFIX_PRIVATE_GROUP, "")));
+			
+			builder.setPositiveButton(getString(R.string.ok), new OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+			        Message msg = Message.obtain(null, ServiceTools.MESSAGE_PRIVATE_CHANNEL_JOIN);
+			        msg.replyTo = serviceMessenger;
+			        msg.obj = channel;
+			        
+			        try {
+						service.send(msg);
+					} catch (RemoteException e) {
+						Logging.log(APP_TAG, e.getMessage());
+					}
+				}
+			});
+
+			builder.setNegativeButton(getString(R.string.cancel), new OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+			        Message msg = Message.obtain(null, ServiceTools.MESSAGE_PRIVATE_CHANNEL_DENY);
+			        msg.replyTo = serviceMessenger;
+			        msg.obj = channel;
+			        
+			        try {
+						service.send(msg);
+					} catch (RemoteException e) {
+						Logging.log(APP_TAG, e.getMessage());
+					}
+				}
+			});
+
+			builder.create().show();
+		}
+	}
+	
+	private void updatePlayer() {
+		if (isPlaying) {
+        	Logging.log(APP_TAG, "Player started");
+        	play.setImageResource(R.drawable.ic_menu_stop);
+		} else {
+        	Logging.log(APP_TAG, "Player stopped");
+        	play.setImageResource(R.drawable.ic_menu_play);			
+		}
+	}
+	
+	private ServiceConnection serviceConnection = new ServiceConnection() {
+	    public void onServiceConnected(ComponentName className, IBinder ibinder) {
+	        service = new Messenger(ibinder);
+
+	        try {
+	            Message message = Message.obtain(null, ServiceTools.MESSAGE_CLIENT_REGISTER);
+	            message.replyTo = serviceMessenger;
+	            service.send(message);
+	        } catch (RemoteException e) {
+				Logging.log(APP_TAG, e.getMessage());
+	        }
+	    }
+
+	    public void onServiceDisconnected(ComponentName className) {
+	    	service = null;
+	    }
+	};
+
+	private void bindService() {
+		currentTargetChannel = settings.getString("lastUsedChannel", currentTargetChannel);
+		currentTargetCharacter = settings.getString("lastUsedCharacter", currentTargetCharacter);
+
+		if (!serviceIsBound) {
+	    	Intent serviceIntent = new Intent(this, ClientService.class);
+			bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+		    serviceIsBound = true;
+		    
+		    startService(serviceIntent);
+	    }
+	}
+
+	private void unbindService() {
+		if (serviceIsBound) {
+	        if (service != null) {
+	            try {
+	                Message msg = Message.obtain(null, ServiceTools.MESSAGE_CLIENT_UNREGISTER);
+	                msg.replyTo = serviceMessenger;
+	                service.send(msg);
+	            } catch (RemoteException e) {
+					Logging.log(APP_TAG, e.getMessage());
+	            }
+	        }
+
+	        unbindService(serviceConnection);
+	        serviceIsBound = false;
+	    }
+		
+		editor.putString("lastUsedChannel", currentTargetChannel);
+		editor.putString("lastUsedCharacter", currentTargetCharacter);
+		editor.commit();
+	}
+	
+	private void sendMessage(String tell) {
+		Logging.log(APP_TAG, "sendMessage\ncurrentTargetChannel: " + currentTargetChannel + "\ncurrentTargetCharacter: " + currentTargetCharacter);
+		ChatMessage chatMessage = null;
+		
+		List<Channel> tempList = new ArrayList<Channel>();
+		tempList.addAll(channelList);
+		tempList.addAll(privateList);
+		
+		if (currentTargetChannel.length() > 0) {
+			for (Channel channel : tempList) {
+	        	if (channel.getName().equals(currentTargetChannel)) {
+		        	chatMessage = new ChatMessage(System.currentTimeMillis(), tell, "", channel.getName(), 0, 0);
+		        	break;
+	        	}
+	        }
+		} else if (currentTargetCharacter.length() > 0) {
+        	chatMessage = new ChatMessage(System.currentTimeMillis(), tell, currentTargetCharacter, "", 0, 0);			
+		}
+        
+		if (chatMessage != null) {
+			Logging.log(APP_TAG, "Sending message to service");
+			try {
+	            Message message = Message.obtain(null, ServiceTools.MESSAGE_SEND);
+	            message.arg1 = 1;
+	            message.obj = chatMessage;
+	            message.replyTo = serviceMessenger;
+	            
+	            service.send(message);
+	        } catch (RemoteException e) {
+				Logging.log(APP_TAG, e.getMessage());
+	        }
+		}
+	}
+	
+	private void whoIs(final String name, final int server, final boolean manual) {
+		setSupportProgressBarIndeterminateVisibility(Boolean.TRUE);
+		
+        if (settings.getBoolean("whoisFromWeb", true) || manual) {
+			new Thread(new Runnable() { 
+	            public void run(){
+					Message msg = Message.obtain();
+					msg.what = 0;
+					
+					List<String> whoisData = ServiceTools.getUserData(context, name, server);
+	
+					if (whoisData == null) {
+						whoisData = new ArrayList<String>();
+						whoisData.add("");
+						whoisData.add("");
+						whoisData.add(name);
+					}
+	
+					msg.obj = whoisData;
+					msg.arg1 = manual? 1 : 0;
+					whoIsHandler.sendMessage(msg);
+				}
+			}).start();
+        } else {
+			ChatMessage chatMessage = new ChatMessage(
+					System.currentTimeMillis(),
+					String.format(ServiceTools.WHOIS_MESSAGE, name),
+					ServiceTools.BOTNAME,
+					ServiceTools.CHANNEL_PM,
+					0,
+					0
+				);
+
+			Message message = Message.obtain();
+			message.what = ServiceTools.MESSAGE_SEND;
+			message.arg1 = 0;
+			message.obj = chatMessage;
+			
+			try {
+				service.send(message);
+			} catch (RemoteException e) {
+				Logging.log(APP_TAG, e.getMessage());
+			}
+        	
+        }
+	}
+	
+	private Handler whoIsHandler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			@SuppressWarnings("unchecked")
+			List<String> whoisData = (ArrayList<String>) msg.obj;
+			
+			if (whoisData.get(0).equals("")) {
+				if (settings.getBoolean("whoisFallbackToBot", true) && channelList.size() > 0 && msg.arg1 != 1) {
+					ChatMessage chatMessage = new ChatMessage(
+							System.currentTimeMillis(),
+							String.format(ServiceTools.WHOIS_MESSAGE, whoisData.get(2)),
+							ServiceTools.BOTNAME,
+							ServiceTools.CHANNEL_PM,
+							0,
+							0
+						);
+	
+					Message message = Message.obtain();
+					message.what = ServiceTools.MESSAGE_SEND;
+					message.arg1 = 0;
+					message.obj = chatMessage;
+					
+					try {
+						service.send(message);
+					} catch (RemoteException e) {
+						Logging.log(APP_TAG, e.getMessage());
+					}
+				} else {
+					showWhoIs(getString(R.string.no_char_data), getString(R.string.no_char_title));
+				}
+			} else {
+				showWhoIs(whoisData.get(1), whoisData.get(0));
+			}
+		}
+	};
+	
+	private void showWhoIs(String message, String name) {
+		setSupportProgressBarIndeterminateVisibility(Boolean.FALSE);
+		
+		LayoutInflater inflater = (LayoutInflater) this.getSystemService(LAYOUT_INFLATER_SERVICE);
+		View layout = inflater.inflate(R.layout.alert_whois, null);
+
+		if (name.equals("")) {
+			name = getString(R.string.no_char_title);
+		}
+		
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setView(layout);
+		builder.setTitle(Html.fromHtml(name));
+		builder.setPositiveButton(
+			getString(R.string.ok),
+			new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int which) {
+					return;
+				}
+			}
+		);
+
+		final AlertDialog dialog = builder.create();
+
+		final WebView webView = (WebView) layout.findViewById(R.id.whois);
+		webView.setBackgroundColor(Color.parseColor("#000000"));
+		webView.loadData(Uri.encode(ServiceTools.HTML_START
+			+ message
+			+ ServiceTools.HTML_END), "text/html", "UTF-8"
+		);
+		
+		WebViewClient webClient = new WebViewClient() {
+			@Override
+			public void onPageFinished(WebView view, String url) {
+				dialog.show();
+			}
+		};
+		
+		webView.setWebViewClient(webClient);
+	}
+	
+	private void manualWhoIs() {
+        if (channelList.size() <= 0 && !settings.getBoolean("whoisFromWeb", true)) {
+        	Logging.toast(context, getString(R.string.not_connected));
+        } else {
+			LayoutInflater factory = LayoutInflater.from(context);
+	        View view = factory.inflate(R.layout.alert_lookup, null);
+	        final EditText username = (EditText) view.findViewById(R.id.username);
+	        
+	        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+	        builder.setTitle(R.string.whois);
+	        builder.setView(view);
+	        
+	        final Spinner spinner = (Spinner) view.findViewById(R.id.server);
+	        
+	        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+	            public void onClick(DialogInterface dialog, int whichButton) {
+					int server = 0;
+					
+	            	switch(spinner.getSelectedItemPosition()) {
+					case 0:
+						server = DimensionAddress.RK1.getID();
+						break;
+					case 1:
+						server = DimensionAddress.RK2.getID();
+						break;
+					default:
+						server = DimensionAddress.RK1.getID();
+	            	}
+	            	
+	            	if (username.getText().toString().length() > 0) {
+	            		whoIs(NameFormat.format(username.getText().toString()), server, true);
+	            	}
+	            }
+	        });
+	        
+	        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+	            public void onClick(DialogInterface dialog, int whichButton) {
+	            }
+	        });
+	        
+	        builder.create();
+	        builder.show();
+        }
+	}
+	
+	private void updateConnectionButton() {
+		if (channelList.size() > 0) {
+			gridAdapter.getItem(0).setName(getString(R.string.disconnect));
+		} else {
+			gridAdapter.getItem(0).setName(getString(R.string.connect));
+		}
+		
+		gridAdapter.notifyDataSetChanged();
+
+	}
+	
+	private synchronized void updateChannelList() {
+		List<Channel> tempList = new ArrayList<Channel>();
+
+		tempList.addAll(channelList);
+		Collections.sort(tempList, new Channel.CustomComparator());
+		
+		List<Channel> privList = new ArrayList<Channel>();
+		privList.addAll(privateList);
+		
+		Collections.sort(privList, new Channel.CustomComparator());
+		tempList.addAll(privList);
+		
+		String lastShowChannel = currentShowChannel;
+		
+		channelAdapter.clear();
+		channelAdapter.add(new Channel("AnarchyTalk", 0, true, false));
+		
+		if (tempList.size() > 0) {
+			channelAdapter.add(new Channel("Private messages", 0, true, false));
+		}
+		
+		for (Channel channel : tempList) {
+			if (channel.getEnabled() && !channel.getMuted()) {
+				channelAdapter.add(channel);
+			}
+		}
+	
+		channelAdapter.notifyDataSetChanged();
+		
+		int navigationItem = 0;
+		int navigationCount = 2;
+		
+		for (Channel channel : tempList) {
+			Logging.log(APP_TAG, "Found channel "  + channel.getName() + ", want channel "  + lastShowChannel);
+			if (lastShowChannel.equals(channel.getName())) {
+				navigationItem = navigationCount;
+				break;
+			}
+			
+			navigationCount++;
+		}
+		
+		if (lastShowChannel.equals(ServiceTools.CHANNEL_MAIN)) {
+			navigationItem = 0;
+		}
+		
+		if (lastShowChannel.equals(ServiceTools.CHANNEL_PM) && tempList.size() > 0) {
+			navigationItem = 1;
+		}
+		
+		Logging.log(APP_TAG, "Setting channel to " + navigationItem);
+		actionBar.setSelectedNavigationItem(navigationItem);
+	}
+	
+	private synchronized void updateFriendList() {
+		Logging.log(APP_TAG, "updateFriendList");
+		
+		List<Friend> tempList = new ArrayList<Friend>();
+		tempList.addAll(friendList);
+		
+		if (settings.getBoolean("showOnlyOnline", false)) {
+			for (int i = tempList.size() - 1; i >= 0; i--) {
+				if (!tempList.get(i).isOnline()) {
+					tempList.remove(i);
+				}
+			}
+		}
+		
+		Collections.sort(tempList, new Friend.CustomComparator());
+		
+		friendAdapter.clear();
+		
+		for (Friend friend : tempList) {
+			friendAdapter.add(friend);
+		}
+		
+		friendAdapter.notifyDataSetChanged();
+	}
+
+	private void updateInputHint() {
+	    boolean hintIsSet = false;
+	    
+	    List<Channel> tempList = new ArrayList<Channel>();
+	    tempList.addAll(channelList);
+	    tempList.addAll(privateList);
+	    
+	    Logging.log(APP_TAG, "currentTargetChannel: '" + currentTargetChannel + "', currentTargetCharacter: '" + currentTargetCharacter + "'" + ", listsize: " + tempList.size());
+	    
+		if (currentTargetChannel.equals("") && currentTargetCharacter.equals("") && tempList.size() > 0) {
+	    	((EditText) findViewById(R.id.input)).setHint(getString(R.string.select_channel));
+		} else if (tempList.size() == 0) {
+        	((EditText) findViewById(R.id.input)).setHint(getString(R.string.disconnected));
+		} else {
+			if (!currentTargetChannel.equals("")) {
+				if (tempList.size() > 0) {
+		        	for (Channel channel : tempList) {
+		        		if (channel.getName().equals(currentTargetChannel)) {
+		    				((EditText) findViewById(R.id.input)).setHint(channel.getName());
+		    				hintIsSet = true;
+		    				break;
+		        		}
+		        	}
+		        	
+		        	if (!hintIsSet) {
+		            	((EditText) findViewById(R.id.input)).setHint(getString(R.string.select_channel));
+		            }
+		        }
+			}
+			
+			if (!currentTargetCharacter.equals("")) {
+				((EditText) findViewById(R.id.input)).setHint(String.format(getString(R.string.tell), currentTargetCharacter));
+			}
+	    }
+	}
+
+	private synchronized void getMessages() {
+    	if (currentUserID != 0) {
+	    	messageAdapter.clear();
+	    	
+	    	List<ChatMessage> newMessages = databaseHandler.getAllPostsForUser(currentUserID, currentServerID, currentShowChannel);
+	    	
+	    	for (ChatMessage message : newMessages) {
+	    		messageAdapter.add(message);
+		    	messageAdapter.notifyDataSetChanged();
+	    	}
+    	}
+	}
+	
+	private synchronized void updateMessages() {
+    	if (currentUserID != 0 && messageAdapter.getCount() > 0) {
+	    	List<ChatMessage> newMessages = databaseHandler.getNewPostsForUser(currentUserID, messageAdapter.getItem(messageAdapter.getCount() - 1).getId(), currentServerID, currentShowChannel);
+	    	
+	    	for (ChatMessage message : newMessages) {
+	    		messageAdapter.add(message);
+		    	messageAdapter.notifyDataSetChanged();
+	    	}
+    	}
+    	
+    	if (currentUserID != 0 && messageAdapter.getCount() == 0) {
+    		getMessages();
+    	}
+	}
+	
+	private void setAccount() {
+		final List<Account> accounts = new DatabaseHandler(context).getAllAccounts();
+		int numberOfAccounts = 0;
+		
+		if (accounts != null) {
+			numberOfAccounts = accounts.size();
+		}
+		
+		final CharSequence[] listItems = new CharSequence[numberOfAccounts + 1];
+		
+		listItems[0] = getString(R.string.add_account);
+		
+		for (int i = 0; i < numberOfAccounts; i++) {
+			String serverName = "";
+			if (accounts.get(i).getServer() == DimensionAddress.RK1) {
+				serverName = "RK1";
+			}
+			if (accounts.get(i).getServer() == DimensionAddress.RK2) {
+				serverName = "RK2";
+			}
+			if (accounts.get(i).getServer() == DimensionAddress.TEST) {
+				serverName = "Test";
+			}
+			listItems[i + 1] = serverName + " - " + accounts.get(i).getUsername();
+		}
+	
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle(getString(R.string.select_account));
+		builder.setItems(
+			listItems,
+			new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, final int item) {
+					if (item > 0) {
+						showLoader(getString(R.string.connecting));
+						final Account account = accounts.get(item - 1);
+						
+						new Thread() {
+							public void run() {
+				                Message msg = Message.obtain(null, ServiceTools.MESSAGE_CONNECT);
+				                msg.replyTo = serviceMessenger;
+				                msg.obj = account;
+				                
+				                try {
+									service.send(msg);
+								} catch (RemoteException e) {
+									Logging.log(APP_TAG, e.getMessage());
+								}
+							}
+						}.start();
+					} else {
+						newAccount();
+					}
+				}
+			}
+		);
+		
+		if (numberOfAccounts > 0) {
+			builder.setNeutralButton(getString(R.string.manage), new OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					manageAccount();
+				}
+			});
+		}
+	
+		builder.setNegativeButton(getString(R.string.cancel), new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+			}
+		});
+	
+		builder.create().show();
+	}
+
+	private void manageAccount() {
+		final List<Account> accounts = new DatabaseHandler(context).getAllAccounts();
+		int numberOfAccounts = 0;
+		
+		if (accounts != null) {
+			numberOfAccounts = accounts.size();
+		}
+		
+		final CharSequence[] listItems = new CharSequence[numberOfAccounts];
+		
+		for (int i = 0; i < numberOfAccounts; i++) {
+			String serverName = "";
+			if (accounts.get(i).getServer() == DimensionAddress.RK1) {
+				serverName = "RK1";
+			}
+			if (accounts.get(i).getServer() == DimensionAddress.RK2) {
+				serverName = "RK2";
+			}
+			if (accounts.get(i).getServer() == DimensionAddress.TEST) {
+				serverName = "Test";
+			}
+			listItems[i] = serverName + " - " + accounts.get(i).getUsername();
+		}
+	
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle(getString(R.string.select_account));
+		builder.setSingleChoiceItems(listItems, 0, new DialogInterface.OnClickListener() {
+	        public void onClick(DialogInterface dialog, int which) {
+	        	selectedAccountToManage = which;
+	        }
+	    });
+		
+		builder.setNeutralButton(getString(R.string.delete), new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				AlertDialog.Builder builder = new AlertDialog.Builder(context);
+				builder.setTitle(getString(R.string.delete_account));
+				builder.setMessage(getString(R.string.confirm_delete_account));
+				
+				builder.setPositiveButton(getString(R.string.ok), new OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						databaseHandler.deleteAccount(accounts.get(selectedAccountToManage));
+						manageAccount();
+					}
+				});
+	
+				builder.setNegativeButton(getString(R.string.cancel), new OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						manageAccount();
+					}
+				});
+	
+				builder.create().show();
+	
+			}
+		});
+	
+		builder.setNegativeButton(getString(R.string.edit), new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				editAccount(accounts.get(selectedAccountToManage));
+			}
+		});
+	
+		builder.setPositiveButton(getString(R.string.cancel), new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				setAccount();
+			}
+		});
+	
+		builder.create().show();
+	}
+
+	private void newAccount() {
+		LayoutInflater inflater = (LayoutInflater) this.getSystemService(LAYOUT_INFLATER_SERVICE);
+		
+		final View layout = inflater.inflate(R.layout.alert_account, null);
+		final Spinner spinner = (Spinner) layout.findViewById(R.id.server);
+		
+		AlertDialog.Builder builder = new AlertDialog.Builder(context);
+		builder.setTitle(getResources().getString(R.string.login_title));
+		builder.setView(layout);
+
+		builder.setPositiveButton(getString(R.string.ok),
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						if (
+							((EditText) layout.findViewById(R.id.username)).getText().toString().length() > 0
+							&&
+							((EditText) layout.findViewById(R.id.password)).getText().toString().length() > 0
+						) {
+							showLoader(getString(R.string.connecting));
+	
+							new Thread() {
+								public void run() {
+									DimensionAddress server;
+	
+									switch(spinner.getSelectedItemPosition()) {
+										case 0:
+											server = DimensionAddress.RK1;
+											break;
+										case 1:
+											server = DimensionAddress.RK2;
+											break;
+										case 2:
+											server = DimensionAddress.TEST;
+											break;
+										default:
+											server = DimensionAddress.RK1;
+									}
+									Account account = new Account(
+											((EditText) layout.findViewById(R.id.username)).getText().toString(),
+											((EditText) layout.findViewById(R.id.password)).getText().toString(),
+											server,
+											false,
+											0
+									);
+									
+									if (((CheckBox) layout.findViewById(R.id.savepassword)).isChecked()) {
+										new DatabaseHandler(context).addAccount(account);
+									}
+									
+					                Message msg = Message.obtain(null, ServiceTools.MESSAGE_CONNECT);
+					                msg.replyTo = serviceMessenger;
+					                msg.obj = account;
+					                
+					                try {
+										service.send(msg);
+									} catch (RemoteException e) {
+										Logging.log(APP_TAG, e.getMessage());
+									}
+								}
+							}.start();
+						} else {
+							Logging.toast(context, getString(R.string.u_and_p_required));
+						}
+					}
+				});
+
+		builder.setNegativeButton(getString(R.string.cancel),new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				setAccount();
+			}
+		});
+		
+		builder.create().show();
+	}
+	
+	private void editAccount(final Account account) {
+		LayoutInflater inflater = (LayoutInflater) this.getSystemService(LAYOUT_INFLATER_SERVICE);
+		
+		final View layout = inflater.inflate(R.layout.alert_account, null);
+		
+		((CheckBox) layout.findViewById(R.id.savepassword)).setVisibility(View.GONE);
+		
+		((EditText) layout.findViewById(R.id.username)).setText(account.getUsername());
+		((EditText) layout.findViewById(R.id.password)).setText(account.getPassword());
+		
+		int spinnerSelection = 0;
+		if (account.getServer() == DimensionAddress.RK1) {
+			spinnerSelection = 0;
+		}
+		if (account.getServer() == DimensionAddress.RK2) {
+			spinnerSelection = 1;
+		}
+		if (account.getServer() == DimensionAddress.TEST) {
+			spinnerSelection = 2;
+		}
+
+		((Spinner) layout.findViewById(R.id.server)).setSelection(spinnerSelection);
+		
+		AlertDialog.Builder builder = new AlertDialog.Builder(context);
+		builder.setTitle(getResources().getString(R.string.login_title));
+		builder.setView(layout);
+
+		builder.setPositiveButton(getString(R.string.ok),
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						if (
+							((EditText) layout.findViewById(R.id.username)).getText().toString().length() > 0
+							&&
+							((EditText) layout.findViewById(R.id.password)).getText().toString().length() > 0
+						) {
+							DimensionAddress server;
+							
+							switch(((Spinner) layout.findViewById(R.id.server)).getSelectedItemPosition()) {
+								case 0:
+									server = DimensionAddress.RK1;
+									break;
+								case 1:
+									server = DimensionAddress.RK2;
+									break;
+								case 2:
+									server = DimensionAddress.TEST;
+									break;
+								default:
+									server = DimensionAddress.RK1;
+							}
+							
+							account.setUsername(((EditText) layout.findViewById(R.id.username)).getText().toString());
+							account.setPassword(((EditText) layout.findViewById(R.id.password)).getText().toString());
+							account.setServer(server);
+							
+							new DatabaseHandler(context).updateAccount(account);
+							manageAccount();
+						} else {
+							Logging.toast(context, getString(R.string.u_and_p_required));
+						}
+					}
+				});
+
+		builder.setNegativeButton(getString(R.string.cancel),new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				manageAccount();
+			}
+		});
+		
+		builder.create().show();
+	}
+	
+	private void setDisconnect() {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle(getString(R.string.disconnect));
+		builder.setMessage(getString(R.string.confirm_disconnect));
+		
+		builder.setPositiveButton(getString(R.string.ok), new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+                Message msg = Message.obtain(null, ServiceTools.MESSAGE_DISCONNECT);
+                msg.replyTo = serviceMessenger;
+                
+                try {
+					service.send(msg);
+				} catch (RemoteException e) {
+					Logging.log(APP_TAG, e.getMessage());
+				}
+			}
+		});
+
+		builder.setNegativeButton(getString(R.string.cancel), new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+			}
+		});
+
+		builder.create().show();
+	}
+	
+	private void setCharacter(final CharacterListPacket charpacket) {
+		final List<Character> listItems = new ArrayList<Character>();
+
+		if (charpacket != null) {
+			for (int i = 0; i < charpacket.getNumCharacters(); i++) {
+				listItems.add(new Character(charpacket.getCharacter(i).getName(), 0, 0));
+			}
+
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setTitle(getString(R.string.select_character));
+			builder.setAdapter(
+				new CharacterAdapter(this, R.layout.listitem, listItems),
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, final int item) {
+						showLoader(getString(R.string.connecting));
+
+						final CharacterInfo character = charpacket.getCharacter(item);
+
+						new Thread() {
+							public void run() {
+				                Message msg = Message.obtain(null, ServiceTools.MESSAGE_CHARACTER);
+				                msg.replyTo = serviceMessenger;
+				                msg.obj = character;
+				                
+				                try {
+									service.send(msg);
+								} catch (RemoteException e) {
+									Logging.log(APP_TAG, e.getMessage());
+								}
+							}
+						}.start();
+
+						return;
+					}
+				}
+			);
+			
+			builder.setNegativeButton(getString(R.string.cancel), new OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+	                Message msg = Message.obtain(null, ServiceTools.MESSAGE_DISCONNECT);
+	                msg.replyTo = serviceMessenger;
+	                
+	                try {
+						service.send(msg);
+					} catch (RemoteException e) {
+						Logging.log(APP_TAG, e.getMessage());
+					}
+				}
+			});
+
+			builder.setOnCancelListener(new OnCancelListener() {
+				@Override
+				public void onCancel(DialogInterface dialog) {
+	                Message msg = Message.obtain(null, ServiceTools.MESSAGE_DISCONNECT);
+	                msg.replyTo = serviceMessenger;
+	                
+	                try {
+						service.send(msg);
+					} catch (RemoteException e) {
+						Logging.log(APP_TAG, e.getMessage());
+					}
+				}
+			});
+
+			builder.create().show();
+		}
+	}
+	
+	private void setChannel() {
+		if (channelList.size() > 0) {
+			final List<Channel> tempList = new ArrayList<Channel>();
+			
+			for (Channel channel : channelList) {
+				if (channel.getEnabled() && !channel.getMuted()) {
+					tempList.add(channel);
+				}
+			}
+			
+			Collections.sort(tempList, new Channel.CustomComparator());
+			
+			List<Channel> privList = new ArrayList<Channel>();
+			privList.addAll(privateList);
+			Collections.sort(privList, new Channel.CustomComparator());
+			
+			tempList.addAll(privList);
+			
+			int itemSize = 0;
+			
+			if (!currentShowChannel.equals(ServiceTools.CHANNEL_PM)) {
+				itemSize = tempList.size();
+			}
+			
+			final CharSequence[] listItems = new CharSequence[itemSize + 2];
+	
+			listItems[0] = getString(R.string.select_friend);
+			listItems[1] = getString(R.string.enter_name);
+			
+			for (int i = 0; i < itemSize; i++) {
+				listItems[i + 2] = tempList.get(i).getName();
+			}
+	
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setTitle(getString(R.string.select_channel));
+			builder.setItems(
+				listItems,
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, final int item) {
+						if (item == 0) {
+							final List<Friend> tempList = new ArrayList<Friend>();
+							tempList.addAll(friendList);
+							
+							if (settings.getBoolean("showOnlyOnline", false)) {
+								for (int i = tempList.size() - 1; i >= 0; i--) {
+									if (!tempList.get(i).isOnline()) {
+										tempList.remove(i);
+									}
+								}
+							}
+							
+							Collections.sort(tempList, new Friend.CustomComparator());
+							
+							AlertDialog.Builder builder = new AlertDialog.Builder(context);
+							builder.setTitle(getString(R.string.select_friend));
+							builder.setAdapter(new FriendAdapter(context, R.id.friendlist, tempList), new DialogInterface.OnClickListener() {
+									@Override
+									public void onClick(DialogInterface dialog, int which) {
+										currentTargetCharacter = tempList.get(which).getName();
+										currentTargetChannel = "";
+										setServiceTargets();
+									}
+								}
+							);
+							
+							builder.setNegativeButton(getString(R.string.cancel), new OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog, int which) {
+									setChannel();
+								}
+							});
+					
+							builder.create().show();
+						} else if (item == 1) {
+				            LayoutInflater factory = LayoutInflater.from(context);
+				            View view = factory.inflate(R.layout.alert_character, null);
+				            final EditText username = (EditText) view.findViewById(R.id.username);
+				            
+				            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+			                builder.setTitle(R.string.enter_name);
+			                builder.setView(view);
+			                
+			                builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+			                    public void onClick(DialogInterface dialog, int whichButton) {
+			                    	if (username.getText().toString().length() > 0) {
+			                    		currentTargetCharacter = NameFormat.format(username.getText().toString());
+										currentTargetChannel = "";
+										setServiceTargets();
+			                    	}
+			                    }
+			                });
+			                
+			                builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+			                    public void onClick(DialogInterface dialog, int whichButton) {
+			                    	setChannel();
+			                    }
+			                });
+			                
+			                builder.create();
+			                builder.show();
+						} else if (item > 1) {
+							currentTargetCharacter = "";
+							currentTargetChannel = tempList.get(item - 2).getName();
+						}
+						
+						setServiceTargets();
+					}
+				}
+			);
+			
+			builder.setNegativeButton(getString(R.string.cancel), new OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+				}
+			});
+	
+			builder.create().show();
+		}
+	}
+	
+	private void setServiceTargets() {
+		if (service != null) {
+			Message msg = Message.obtain(null, ServiceTools.MESSAGE_SET_CHARACTER);
+	        msg.obj = currentTargetCharacter;
+	        msg.replyTo = serviceMessenger;
+	        
+	        try {
+				service.send(msg);
+			} catch (RemoteException e) {
+				Logging.log(APP_TAG, e.getMessage());
+			}
+			
+	        msg = Message.obtain(null, ServiceTools.MESSAGE_SET_CHANNEL);
+	        msg.obj = currentTargetChannel;
+	        msg.replyTo = serviceMessenger;
+	        
+	        try {
+				service.send(msg);
+			} catch (RemoteException e) {
+				Logging.log(APP_TAG, e.getMessage());
+			}
+			
+	        msg = Message.obtain(null, ServiceTools.MESSAGE_SET_SHOW);
+	        msg.obj = currentShowChannel;
+	        msg.replyTo = serviceMessenger;
+	        
+	        try {
+				service.send(msg);
+			} catch (RemoteException e) {
+				Logging.log(APP_TAG, e.getMessage());
+			}
+		}
+		
+		updateInputHint();		
+	}
+	
+	private void showLoader(String message) {
+		loader.setMessage(message + getString(R.string.dots));
+		loader.show();
+	}
+	
+	private void hideLoader() {
+    	if (loader != null) {
+    		loader.dismiss();
+    	}		
+	}
+			
+	private List<Tool> getToolItems() {
+		List<Tool> toolList = new ArrayList<Tool>();
+		
+		toolList.add(new Tool(getString(R.string.connect), R.drawable.iws_repeat, new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				try {
+					Message msg = Message.obtain(null, ServiceTools.MESSAGE_STATUS);
+					msg.replyTo = serviceMessenger;
+					service.send(msg);
+				} catch (RemoteException e) {
+					Logging.log(APP_TAG, e.getMessage());
+				}
+			}
+		}));
+		
+		toolList.add(new Tool(getString(R.string.whois), R.drawable.iws_search, new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				manualWhoIs();
+			}
+		}));
+		
+		toolList.add(new Tool(getString(R.string.market_monitor), R.drawable.iws_shopping, new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(context, Market.class);
+				startActivity(intent);
+			}
+		}));
+		
+		toolList.add(new Tool(getString(R.string.ao_universe), R.drawable.iws_games, new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(context, AOU.class);
+				startActivity(intent);
+			}
+		}));
+		
+		toolList.add(new Tool(getString(R.string.help), R.drawable.iws_help, new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(context, Help.class);
+				startActivity(intent);
+			}
+		}));
+		
+		toolList.add(new Tool(getString(R.string.preferences), R.drawable.iws_tools, new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(context, Preferences.class);
+				startActivity(intent);
+			}
+		}));
+		
+		return toolList;
+	}
+
+	public static class FragmentTools extends SherlockFragment {
+		private AOTalk activity;
+		private TextView title;
+		private Timer timer;
+		private GridAdapter adapter;
+		
+		final Handler handler = new Handler();
+		
+		static FragmentTools newInstance(AOTalk activity, GridAdapter adapter) {
+			FragmentTools f = new FragmentTools(activity, adapter);
+	        return f;
+	    }
+		
+		public FragmentTools(AOTalk activity, GridAdapter adapter) {
+			this.activity = activity;
+			this.adapter = adapter;
+		}
+		
+		@Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+        }	
+
+		@Override
+		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+			Logging.log("FragmentTools", "onCreateView");
+			
+			if (container == null) {
+	            return null;
+	        }
+
+			View fragmentTools = inflater.inflate(R.layout.fragment_tools, container, false);
+			
+			GridView grid = (GridView) fragmentTools.findViewById(R.id.grid);
+			grid.setAdapter(adapter);
+			
+			title = (TextView) fragmentTools.findViewById(R.id.gsptext);
+			play = (ImageButton) fragmentTools.findViewById(R.id.gspplay);
+			
+			if (isPlaying) {
+	            timer = new Timer();
+	            timer.schedule(new TimerTask() {
+	                @Override
+	                public void run() {
+	                    handler.post(new Runnable() {
+	                        public void run() {
+	                            try {
+	                            	Logging.log("TASK", "Updating GSP title");
+	                            	new GetGSPTitle().execute();
+	                            } catch (Exception e) {
+	        						Logging.log(APP_TAG, e.getMessage());
+	                            }
+	                        }
+	                    });
+	                }
+	            }, 0, gspUpdateInterval);
+
+	            play.setImageResource(R.drawable.ic_menu_stop);
+			} else {
+				play.setImageResource(R.drawable.ic_menu_play);
+			}
+			
+			play.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (isPlaying) {
+		                if (activity.service != null) {
+							Message msg = Message.obtain(null, ServiceTools.MESSAGE_PLAYER_STOP);
+			                msg.replyTo = activity.serviceMessenger;
+			                try {
+			                	activity.service.send(msg);
+							} catch (RemoteException e) {
+								Logging.log(APP_TAG, e.getMessage());
+							}
+
+			                play.setImageResource(R.drawable.button_play);
+							isPlaying = false;
+							
+							if (timer != null) {
+								timer.cancel();
+								timer.purge();
+								timer = null;
+							}
+							
+							title.setText(getString(R.string.gsp2));
+		                } else {
+		                	Logging.log(APP_TAG, "service is NULL");
+		                }
+					} else {
+		                if (activity.service != null) {
+			                Message msg = Message.obtain(null, ServiceTools.MESSAGE_PLAYER_PLAY);
+			                msg.replyTo = activity.serviceMessenger;
+			                
+			                try {
+			                	activity.service.send(msg);
+							} catch (RemoteException e) {
+								Logging.log(APP_TAG, e.getMessage());
+							}
+							
+							play.setImageResource(R.drawable.button_stop);
+							isPlaying = true;
+							
+							if (timer != null) {
+								timer.cancel();
+								timer.purge();								
+							}
+							
+				            timer = new Timer();
+				            timer.schedule(new TimerTask() {
+				                @Override
+				                public void run() {
+				                    handler.post(new Runnable() {
+				                        public void run() {
+				                            try {
+				                            	Logging.log("TASK", "Updating GSP title");
+				                            	new GetGSPTitle().execute();
+				                            } catch (Exception e) {
+				        						Logging.log(APP_TAG, e.getMessage());
+				                            }
+				                        }
+				                    });
+				                }
+				            }, 0, gspUpdateInterval);
+		                } else {
+		                	Logging.log(APP_TAG, "service is NULL");
+		                }
+					}
+				}
+			});
+			
+			return fragmentTools;
+		}
+
+		@Override
+	    public void onActivityCreated(Bundle savedInstanceState) {
+			Logging.log("FragmentChat", "onActivityCreated");
+	        super.onActivityCreated(savedInstanceState);
+	    }
+		
+		private void updateTitle(String text) {
+			title.setText(text);
+		}
+		
+		private class GetGSPTitle extends AsyncTask<URL, Integer, Long> {
+			private String text = "";
+			
+			protected void onProgressUpdate(Integer... progress) {
+			}
+		
+			protected void onPostExecute(Long result) {
+				updateTitle(text);
+			}
+			
+			protected void onPreExecute() {
+			}
+
+			@Override
+			protected Long doInBackground(URL... arg0) {
+				Logging.log("DOWNLOAD", "doInBackground");
+				
+				HttpClient client = new DefaultHttpClient();
+				HttpResponse response = null;
+								
+			    HttpGet httpget = new HttpGet("http://s7.viastreaming.net:7350/");
+			    httpget.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+			    httpget.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.151 Safari/535.19");
+				
+				try {
+					Logging.log("DOWNLOAD", "running download");
+
+					response = client.execute(httpget);
+				} catch (Exception e) {
+					Logging.log(APP_TAG, e.getMessage());
+				}
+
+				if (response != null) {
+					InputStream in;
+					Logging.log("DOWNLOAD", "Response NOT NULL");
+
+					try {
+						in = response.getEntity().getContent();
+						String result = RestClient.convertStreamToString(in);
+						
+						Logging.log("REST", "RESULT\n" + result);
+
+						if (result != null) {
+							Pattern pattern = Pattern.compile("Current Song: </font></td><td><font class=default><b>(.*?)</b>");
+							Matcher matcher = pattern.matcher(result);
+					        
+							while(matcher.find()) {
+								text = matcher.group(1).trim();
+								Logging.log("TEXT", text);
+					        }
+						}
+					} catch (IllegalStateException e) {
+						Logging.log(APP_TAG, e.getMessage());
+					} catch (IOException e) {
+						Logging.log(APP_TAG, e.getMessage());
+					}
+				} else {
+					Logging.log("DOWNLOAD", "Response NULL");
+				}
+
+				return null;
+			}
+		}
+	}
+
+	public static class FragmentChat extends SherlockFragment {
+		private ChatMessageAdapter messageAdapter;
+		private OnItemLongClickListener clickListener;
+		private View.OnClickListener channelListener;
+		private OnKeyListener keyListener;
+		
+		static FragmentChat newInstance(ChatMessageAdapter messageAdapter, OnItemLongClickListener clickListener, View.OnClickListener channelListener, OnKeyListener keyListener) {
+			FragmentChat f = new FragmentChat(messageAdapter, clickListener, channelListener, keyListener);
+	        return f;
+	    }
+		
+		public FragmentChat(ChatMessageAdapter messageAdapter, OnItemLongClickListener clickListener, View.OnClickListener channelListener, OnKeyListener keyListener) {
+			this.messageAdapter = messageAdapter;
+			this.clickListener = clickListener;
+			this.channelListener = channelListener;
+			this.keyListener = keyListener;
+		}
+		
+		@Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+        }	
+		
+		@Override
+		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+			Logging.log("FragmentChat", "onCreateView");
+			
+			if (container == null) {
+	            return null;
+	        }
+			
+			View fragmentChat = inflater.inflate(R.layout.fragment_chat, container, false);
+			
+			((ListView) fragmentChat.findViewById(R.id.messagelist)).setAdapter(messageAdapter);
+			((ListView) fragmentChat.findViewById(R.id.messagelist)).setOnItemLongClickListener(clickListener);
+	        
+	        ((ImageButton) fragmentChat.findViewById(R.id.channel)).setOnClickListener(channelListener);
+	        ((EditText) fragmentChat.findViewById(R.id.input)).setOnKeyListener(keyListener);
+			
+			return fragmentChat;
+		}
+		
+		@Override
+	    public void onActivityCreated(Bundle savedInstanceState) {
+			Logging.log("FragmentChat", "onActivityCreated");
+	        super.onActivityCreated(savedInstanceState);
+	    }
+	}
+	
+	public static class FragmentFriends extends SherlockFragment {
+		private FriendAdapter friendAdapter;
+		private OnItemLongClickListener clickListener;
+		private TextWatcher keyListener;
+		private AOTalk activity;
+		
+		static FragmentFriends newInstance(AOTalk activity, FriendAdapter friendAdapter, OnItemLongClickListener clickListener, TextWatcher keyListener) {
+			FragmentFriends f = new FragmentFriends(activity, friendAdapter, clickListener, keyListener);
+	        return f;
+	    }
+		
+		public FragmentFriends(AOTalk activity, FriendAdapter friendAdapter, OnItemLongClickListener clickListener, TextWatcher keyListener) {
+			this.activity = activity;
+			this.friendAdapter = friendAdapter;
+			this.clickListener = clickListener;
+			this.keyListener = keyListener;
+		}
+		
+		@Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+        }	
+		
+		@Override
+		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+			Logging.log("FragmentFriends", "onCreateView");
+			
+			if (container == null) {
+	            return null;
+	        }
+			
+			final View fragmentFriends = inflater.inflate(R.layout.fragment_friends, container, false);
+			((ListView) fragmentFriends.findViewById(R.id.friendlist)).setAdapter(friendAdapter);
+			((ListView) fragmentFriends.findViewById(R.id.friendlist)).setOnItemLongClickListener(clickListener);
+			
+			((EditText) fragmentFriends.findViewById(R.id.input)).addTextChangedListener(keyListener);
+			((ImageButton) fragmentFriends.findViewById(R.id.add_friend)).setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+			    	if (((EditText) fragmentFriends.findViewById(R.id.input)).getText().toString().length() > 0) {
+						Message msg = Message.obtain(null, ServiceTools.MESSAGE_FRIEND_ADD);
+				        msg.replyTo = activity.serviceMessenger;
+				        msg.obj = NameFormat.format(((EditText) fragmentFriends.findViewById(R.id.input)).getText().toString().trim());
+				        
+				        try {
+				        	activity.service.send(msg);
+						} catch (RemoteException e) {
+							Logging.log(APP_TAG, e.getMessage());
+						}
+						
+						((EditText) fragmentFriends.findViewById(R.id.input)).setText("");
+			    	}
+				}
+			});
+			
+			return fragmentFriends;
+		}
+		
+		@Override
+	    public void onActivityCreated(Bundle savedInstanceState) {
+			Logging.log("FragmentFriends", "onActivityCreated");
+	        super.onActivityCreated(savedInstanceState);
+	    }
+	}
+	
+	public static class FragmentAdapter extends FragmentPagerAdapter implements TitleProvider {
+		private List<SherlockFragment> fragments;
+
+		public FragmentAdapter(FragmentManager fm, List<SherlockFragment> fragments) {
+			super(fm);
+			this.fragments = fragments;
+		}
+
+		@Override
+		public SherlockFragment getItem(int position) {
+			return this.fragments.get(position);
+		}
+
+		@Override
+		public int getCount() {
+			return this.fragments.size();
+		}
+
+		@Override
+		public String getTitle(int position) {
+			switch (position) {
+			case 0:
+				return "TOOLS";
+			case 1:
+				return "CHAT";
+			case 2:
+				return "FRIENDS";
+			}
+			return null;
+		}
+	}
+		
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         settings = PreferenceManager.getDefaultSharedPreferences(this);
         editor = settings.edit();
         
-        //Load values that are saved from last time the app was used
-        SAVEPREF = settings.getBoolean("savepref", SAVEPREF);
-        USERNAME = settings.getString("username", USERNAME);
-        PASSWORD = settings.getString("password", PASSWORD);
-        CHATCHANNEL = settings.getString("chatchannel", CHATCHANNEL);
-        MESSAGETO = settings.getString("messageto", MESSAGETO);
+        if (settings.getBoolean("firstRun", true)) {
+        	editor.clear();
+        	editor.putBoolean("firstRun", false);
+        	editor.commit();
+        }
+
+        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
-        
+        setSupportProgressBarIndeterminateVisibility(Boolean.FALSE);
+		
+		friendAdapter = new FriendAdapter(this, R.id.friendlist, friendList);
+
+		channelAdapter = new ChannelAdapter(this, R.id.messagelist, channelList);
+		channelAdapter.add(new Channel(getString(R.string.app_name), 0, true, false));
+		
+		actionBar = getSupportActionBar();
+
+		actionBar.setDisplayShowTitleEnabled(false);
+		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);		
+		actionBar.setListNavigationCallbacks(channelAdapter, new OnNavigationListener() {
+			@Override
+			public boolean onNavigationItemSelected(int itemPosition , long itemId) {
+				messageAdapter.clear();
+				
+				if (currentShowChannel == ServiceTools.CHANNEL_MAIN) {
+					editor.putString("lastUsedChannel", currentTargetChannel);
+					editor.putString("lastUsedCharacter", currentTargetCharacter);
+					editor.commit();
+				}
+				
+				if (itemPosition == 0) {
+					currentTargetChannel = settings.getString("lastUsedChannel", "");
+					currentTargetCharacter = settings.getString("lastUsedCharacter", "");
+					currentShowChannel = ServiceTools.CHANNEL_MAIN;
+				} else if (itemPosition == 1) {
+					currentTargetChannel = "";
+					currentTargetCharacter = settings.getString("lastUsedCharacter", "");
+					currentShowChannel = ServiceTools.CHANNEL_PM;
+				} else {
+					List<Channel> tempList = new ArrayList<Channel>();
+					tempList.addAll(channelList);
+					tempList.addAll(privateList);
+					
+					for (Channel channel : tempList) {
+						if (channel.getName().equals(channelAdapter.getItem(itemPosition).getName())) {
+							currentTargetChannel = channelAdapter.getItem(itemPosition).getName();
+							currentTargetCharacter = "";
+							currentShowChannel = channelAdapter.getItem(itemPosition).getName();
+							
+							break;
+						}
+					}
+				}
+				
+				if (itemPosition > 1) {
+					((ImageButton) findViewById(R.id.channel)).setVisibility(View.GONE);
+				} else {
+					((ImageButton) findViewById(R.id.channel)).setVisibility(View.VISIBLE);
+				}
+				
+				setServiceTargets();
+				updateMessages();
+				
+				return true;
+			}
+		});
+		
         context = this;
         
-        //Predefined text string, user can chose between them when long pressing input field
-        predefinedText = new ArrayList<String>();
-        predefinedText.add("!afk ");
-        predefinedText.add("!help");
-        predefinedText.add("!join");
-        predefinedText.add("!leave");
-        predefinedText.add("!online");
-        predefinedText.add("!items ");
-        predefinedText.add("!whois ");
+		loader = new ProgressDialog(context);
+		loader.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+		loader.setCancelable(false);
 
-        chat = new ChatParser();
-        
-        groupDisable = new ArrayList<String>();
-        //watchEnable = new ArrayList<String>();
-        messages = new ArrayList<ChatMessage>();
-        
-        messagelist = (ListView)findViewById(R.id.messagelist);
-        messagelist.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);
-        
-        //Disable automatic pop up of keyboard at launch
-        this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-        
-        msgadapter = new ChatMessageAdapter(this, messages);
-        messagelist.setAdapter(msgadapter);
-        messagelist.setFocusable(true);
-        messagelist.setFocusableInTouchMode(true);
-        messagelist.setItemsCanFocus(true);
-        
-        messagelist.setOnItemLongClickListener(new OnItemLongClickListener(){
+        databaseHandler = new DatabaseHandler(this);
+        messageAdapter = new ChatMessageAdapter(context, android.R.layout.simple_dropdown_item_1line, new ArrayList<ChatMessage>());
+		
+        OnItemLongClickListener chatFragmentClickListener = new OnItemLongClickListener() {
 			@Override
-			public boolean onItemLongClick(AdapterView<?> av, View v, int pos, long id) {
-		    	ChatMessage message = messages.get(pos);
-		    	String tmpToCharacter  = "";
-		    	String tmpToChannel    = "";
-		    	String tmpCharacter    = "";
-		    	String tmpChannel      = "";
-		    	String tmpLeaveChannel = "";
-		    	
-		     	int countArrayAlts = 0;
-		    	
-		    	if(message.getChannel() != null) {
-			     	if(message.getChannel().startsWith(AOBotService.PRIVATE_GROUP_PREFIX)) {
-			     		countArrayAlts++;
-			     	}
-		    		countArrayAlts++;
-		    	}
-		     	
-		     	if(message.getCharacter() != null) {
-		     		countArrayAlts++;
-		    	}
-		     	
-		     	CharSequence tmpOptions[] = new CharSequence[countArrayAlts];
-		     	
-		     	int countMenuAlts = 0;
+			public boolean onItemLongClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+				final ChatMessage message = messageAdapter.getItem(arg2);
+				
+				if (!message.getChannel().equals(ServiceTools.CHANNEL_SYSTEM) && message.getCharacter() != null && !message.getCharacter().isEmpty()) {
+					int diff = 0;
+					
+					if (message.getCharacter().equals(currentCharacterName)) {
+						diff++;
+					}
+					
+					if (message.getChannel().equals(ServiceTools.CHANNEL_PM) || message.getChannel().equals(ServiceTools.CHANNEL_MAIN) || message.getChannel().equals(ServiceTools.CHANNEL_FRIEND)) {
+						diff++;
+					}
+					
+					final CharSequence[] listItems = new CharSequence[3 - diff];
+					
+					int itemCharacter = -1;
+					int itemChannel = -1;
+					int itemWhois = -1;
+					int currentItem = 0;
+					
+					if (!message.getCharacter().equals(currentCharacterName)) {
+						listItems[currentItem] = "Message to " + message.getCharacter();
+						itemCharacter = currentItem;
+						currentItem++;
+					}
+					
+					Logging.log(APP_TAG, "Channel is " + message.getChannel());
+					
+					if (!message.getChannel().equals(ServiceTools.CHANNEL_PM) && !message.getChannel().equals(ServiceTools.CHANNEL_MAIN) && !message.getChannel().equals(ServiceTools.CHANNEL_FRIEND)) {
+						listItems[currentItem] = "Message to " + message.getChannel();
+						itemChannel = currentItem;
+						currentItem++;
+					}
+					
+					listItems[currentItem] = String.format(getString(R.string.who_is), message.getCharacter());
+					itemWhois = currentItem;
+					
+					final int fItemCharacter = itemCharacter;
+					final int fItemChannel = itemChannel;
+					final int fItemWhois = itemWhois;
 
-		    	if(message.getChannel() != null && !AOTalk.this.bot.getGroupIgnoreList().contains(message.getChannel())) {
-			     	if(message.getChannel().startsWith(AOBotService.PRIVATE_GROUP_PREFIX)) {
-			     		tmpLeaveChannel = "Leave " + message.getChannel();
-			     		tmpOptions[countMenuAlts] = tmpLeaveChannel;
-			    		tmpChannel = message.getChannel();
-			     		countMenuAlts++;
-			     	}
-			     	
-			     	tmpToChannel = AOTalk.this.getString(R.string.group_message_to) + " " + message.getChannel();
-		    		tmpOptions[countMenuAlts] = tmpToChannel;
-		    		tmpChannel = message.getChannel();
-		    		countMenuAlts++;
-		    	}
-		     	
-		     	if(message.getCharacter() != null) {
-		    		tmpToCharacter = AOTalk.this.getString(R.string.private_message_to) + " " + message.getCharacter();
-		    		tmpOptions[countMenuAlts] = tmpToCharacter;
-		    		tmpCharacter = message.getCharacter();
-		    		countMenuAlts++;
-		    	}
-		    	
-		    	if(countMenuAlts > 0) {
-			    	final CharSequence options[] = tmpOptions;
-			    	final String toCharacter = tmpToCharacter;
-			    	final String toChannel = tmpToChannel;
-			    	final String character = tmpCharacter;
-			    	final String channel = tmpChannel;
-			    	final String leaveChannel = tmpLeaveChannel;
-			   	
-			    	AlertDialog.Builder builder = new AlertDialog.Builder(AOTalk.this);
-			    	builder.setTitle("Message options");
-			    	builder.setItems(options, new DialogInterface.OnClickListener() {
-			    	    public void onClick(DialogInterface dialog, int item) {
-			    	    	if(options[item].toString().equals(leaveChannel)) {
-			    	    		AOTalk.this.bot.leaveGroup(channel.replace(AOBotService.PRIVATE_GROUP_PREFIX, ""));
-			    	    		AOTalk.this.CHATCHANNEL = "";
-			    	    		AOTalk.this.MESSAGETO = "";
-			    	    		Log.d(APPTAG, "Leaving group...");
-			    	    		setButtonText();
-			    	    	} else if(options[item].toString().equals(toCharacter)) {
-			    	    		AOTalk.this.CHATCHANNEL = AOTalk.this.CHANNEL_MSG;
-			    	    		AOTalk.this.MESSAGETO = character;
-			    	    		setButtonText();
-			    	    	} else if(options[item].toString().equals(toChannel)) {
-			    	    		AOTalk.this.CHATCHANNEL = channel;
-			    	    		setButtonText();
-			    	    	}
-			    	    }
-			    	});
-			    	
-			    	AlertDialog optionlist = builder.create();
-			    	optionlist.show();
-			    	
-			    	return true;
-		    	} else {
-		    		return false;
-		    	}
+					AlertDialog.Builder builder = new AlertDialog.Builder(context);
+					builder.setTitle(getString(R.string.select_action));
+					builder.setItems(
+						listItems,
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, final int item) {
+								if (item == fItemCharacter && fItemCharacter >= 0) {
+									currentTargetCharacter = message.getCharacter();
+									currentTargetChannel = "";
+									
+									setServiceTargets();
+								}
+								
+								if (item == fItemChannel && fItemChannel >= 0) {
+									currentTargetCharacter = "";
+									
+									List<Channel> tempList = new ArrayList<Channel>();
+									tempList.addAll(channelList);
+									tempList.addAll(privateList);
+									
+									for (Channel channel : tempList) {
+										if (channel.getName().toLowerCase().equals(message.getChannel().toLowerCase())) {
+											currentTargetChannel = channel.getName();
+											break;
+										}
+									}
+									
+									setServiceTargets();
+								}
+								
+								if (item == fItemWhois && fItemWhois >= 0) {
+									whoIs(message.getCharacter(), currentServerID, false);								
+								}
+							}
+						}
+					);
+
+					builder.setNegativeButton(getString(R.string.cancel), new OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+						}
+					});
+				
+					builder.create().show();
+					
+					return true;
+				} else {
+					return false;
+				}
 			}
-        });
-        
-        messages.add(new ChatMessage(
-    		new Date().getTime(),
-    		chat.parse(
-				"<br /><b>" + 
-				getString(R.string.welcome) + 
-				"</b>" + 
-				getString(R.string.about) + 
-				getString(R.string.aouniverse)
-    		,
-    		ChatParser.TYPE_PLAIN_MESSAGE), 
-    		null, 
-    		null,
-    		ChatParser.TYPE_PLAIN_MESSAGE
-        ));
-        
-        channelbutton = (Button) findViewById(R.id.msgchannel);
-        channelbutton.setOnClickListener(new OnClickListener() {
+		};
+		
+        OnItemLongClickListener friendFragmentClickListener = new OnItemLongClickListener() {
+			@Override
+			public boolean onItemLongClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+				final Friend friend = friendAdapter.getItem(arg2);
+				final CharSequence[] listItems = new CharSequence[3];
+				
+				listItems[0] = getString(R.string.send_private_message);
+				listItems[1] = String.format(getString(R.string.who_is), friend.getName());
+				listItems[2] = getString(R.string.remove_friend);
+				
+				AlertDialog.Builder builder = new AlertDialog.Builder(context);
+				builder.setTitle(friend.getName());
+				builder.setItems(
+					listItems,
+					new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, final int item) {
+							if (item == 0) {
+								editor.putString("lastUsedChannel", "");
+								editor.putString("lastUsedCharacter", friend.getName());
+								editor.commit();
+								
+								currentTargetCharacter = friend.getName();
+								currentTargetChannel = "";
+
+								actionBar.setSelectedNavigationItem(0);
+								fragmentPager.setCurrentItem(1);
+																
+								setServiceTargets();
+								
+								return;
+							}
+							
+							if (item == 1) {
+								whoIs(friend.getName(), currentServerID, false);								
+							}
+							
+							if (item == 2) {
+				    	    	final String fname = friend.getName();
+				    	    	
+				    	    	AlertDialog acceptRemoveDialog = new AlertDialog.Builder(context).create();
+				    	    	
+				    	    	acceptRemoveDialog.setTitle(String.format(getString(R.string.remove_friend_title), fname));
+				    	    	acceptRemoveDialog.setMessage(String.format(getString(R.string.remove_friend_confirm), fname));
+				    	    		            
+				    	    	acceptRemoveDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.ok), new DialogInterface.OnClickListener() {
+				    				public void onClick(DialogInterface dialog, int which) {
+				    			    	Message msg = Message.obtain(null, ServiceTools.MESSAGE_FRIEND_REMOVE);
+				    			        msg.replyTo = serviceMessenger;
+				    			        msg.obj = fname;
+				    			        
+				    			        try {
+				    						service.send(msg);
+				    					} catch (RemoteException e) {
+				    						Logging.log(APP_TAG, e.getMessage());
+				    					}
+
+				    					return;
+				    				} 
+				    			});
+				    			
+				    	    	acceptRemoveDialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.cancel), new DialogInterface.OnClickListener() {
+				    				public void onClick(DialogInterface dialog, int which) {
+				    					return;
+				    				}
+				    			});
+				    	    	
+				    	    	acceptRemoveDialog.show();
+
+								return;
+							}
+						}
+					}
+				);
+				
+				builder.setNegativeButton(getString(R.string.cancel), new OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+					}
+				});
+		
+				builder.create().show();
+
+				return true;
+			}
+		};
+		
+		TextWatcher friendFragmentTextListener = new TextWatcher() {
+			@Override
+			public void afterTextChanged(Editable e) {
+				List<Friend> tempList = new ArrayList<Friend>();
+				tempList.addAll(friendList);
+				
+				if (settings.getBoolean("showOnlyOnline", false)) {
+					for (int i = tempList.size() - 1; i >= 0; i--) {
+						if (!tempList.get(i).isOnline()) {
+							tempList.remove(i);
+						}
+					}
+				}
+				
+				Collections.sort(tempList, new Friend.CustomComparator());
+				
+				friendAdapter.clear();
+
+				for (Friend friend : tempList) {
+					if (friend.getName().toLowerCase().startsWith(e.toString().toLowerCase()) || e.toString().equals("")) {
+						friendAdapter.add(friend);
+					}
+				}
+				
+				friendAdapter.notifyDataSetChanged();
+			}
+
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+			}
+
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+			}
+		};
+		
+        View.OnClickListener inputChannelClick = new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				setChannel();
 			}
-		});
-        
-        setButtonText();
+		};
 		
-        msginput = (EditText) findViewById(R.id.msginput);
-        msginput.setOnKeyListener(new OnKeyListener() {
+		OnKeyListener inputTextClick = new OnKeyListener() {
 			@Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
 				if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
-					if(AOTalk.this.bot.getState() == ao.protocol.Bot.State.LOGGED_IN && msginput.getText().toString().length() > 0) {				
-                		//Send message
-                		if(CHATCHANNEL.equals(CHANNEL_MSG)) {
-                			AOTalk.this.bot.sendTell(AOTalk.this.MESSAGETO, msginput.getText().toString(), true, true);
-                			getMessages();
-                			
-							Log.d(APPTAG, "Sent private message to " + MESSAGETO + ": " + msginput.getText().toString());
-                		} else { //Send to group
-                			if(CHATCHANNEL.startsWith(AOBotService.PRIVATE_GROUP_PREFIX)) {
-                				AOTalk.this.bot.sendPGMsg(AOTalk.this.CHATCHANNEL.replace(AOBotService.PRIVATE_GROUP_PREFIX, ""), msginput.getText().toString());
-                				Log.d(APPTAG, "Sent private group message to " + 
-                						CHATCHANNEL.replace(AOBotService.PRIVATE_GROUP_PREFIX, "") + 
-                						": " + msginput.getText().toString()
-                				);
-                				
-                			} else {
-                				AOTalk.this.bot.sendGMsg(AOTalk.this.CHATCHANNEL, msginput.getText().toString());
-                				Log.d(APPTAG, "Sent group message to " + CHATCHANNEL + ": " + msginput.getText().toString());
-                			}
-                		}
-                		
-                		AOTalk.this.LASTMESSAGE = AOTalk.this.msginput.getText().toString();
-                		AOTalk.this.msginput.setText("");
-
-	                	return true;
-					} else {
-						Log.d(APPTAG, "Not logged in or no message, can't send message");
-                	}
-                }
-				
-                return false;
-            }
-        });
-        
-        //Long click on input lets user select from last message and predefined texts
-        msginput.setOnLongClickListener(new OnLongClickListener() {
-			@Override
-			public boolean onLongClick(View v) {
-				showPredefinedText();
-				return true;
-			}
-		});
-        
-        //Connect to the bot service
-        attachToService();
-    }
-    
-    
-    //Change the text on the channel button
-    private void setButtonText() {
-		if(AOTalk.this.CHATCHANNEL != "") {
-			if(AOTalk.this.CHATCHANNEL.equals(AOTalk.this.CHANNEL_MSG)) {
-				if(!AOTalk.this.MESSAGETO.equals("")) {
-					AOTalk.this.channelbutton.setText(
-						AOTalk.this.getString(R.string.tell) + ": " + NameFormat.format(AOTalk.this.MESSAGETO)
-					);
-				} else {
-					AOTalk.this.channelbutton.setText(AOTalk.this.getString(R.string.select_channel));
-				}
-	    	} else {
-	    		AOTalk.this.channelbutton.setText(CHATCHANNEL);
-	    	}
-		} else {
-			AOTalk.this.channelbutton.setText(AOTalk.this.getString(R.string.select_channel));
-		}   	
-    }
-
-    
-    //Displays a list of predefined text (and the last message user made) when long pressing the input field
-    private void showPredefinedText() {
-    	CharSequence tempTexts[] = null;
-    	int adder = 0;
-    	
-    	if(predefinedText != null) {
- 	    	if((!predefinedText.contains(AOTalk.this.LASTMESSAGE) && (!AOTalk.this.LASTMESSAGE.equals("")))) {
-	    		adder = 1;
-	    	} 
- 	    	
- 	    	tempTexts = new CharSequence[predefinedText.size() + adder];
- 	    	
-	    	for(int i = 0; i < predefinedText.size() + adder; i++) {
-	    		if(i == 0 && adder > 0) {
-	    			tempTexts[i] = AOTalk.this.LASTMESSAGE;
-	    		} else {
-	    			tempTexts[i] = predefinedText.get(i - adder);
-	    		}
-	    	}
-    	}
-     	
-    	final CharSequence[] texts = tempTexts;
-
-    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    	builder.setTitle(AOTalk.this.getString(R.string.select_message));
-    	builder.setItems(texts, new DialogInterface.OnClickListener() {
-    	    public void onClick(DialogInterface dialog, int item) {
-    	    	AOTalk.this.msginput.setText(texts[item]);
-    	    	
-    	    	//Move cursor to the end of the text
-    	    	Editable etext = AOTalk.this.msginput.getText();
-    	    	int position = etext.length();
-    	    	Selection.setSelection(etext, position);
-    	    	
-    	    	//Force soft keyboard to show after selecting a predefined text
-    	    	InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-    	    	mgr.showSoftInput(AOTalk.this.msginput, InputMethodManager.SHOW_IMPLICIT);
-    	    }
-    	});
-    	
-    	AlertDialog textlist = builder.create();
-    	textlist.show();
-    }
-
-    
-    //Show a pop up when a new invitation is received
-    private void handleInvitation() {
-    	final PrivateChannelInvitePacket invitation = AOTalk.this.bot.getInvitation();
-    	
-    	AlertDialog joinGroupDialog = new AlertDialog.Builder(AOTalk.this).create();
-    	joinGroupDialog.setTitle(AOTalk.this.bot.getCharTable().getName(invitation.getGroupID()));
-    	joinGroupDialog.setMessage(AOTalk.this.getString(R.string.join_group));
-    		            
-    	joinGroupDialog.setButton(AOTalk.this.getString(R.string.ok), new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {
-		    	AOTalk.this.bot.acceptInvitation(invitation.getGroupID());
-				return;
-			} 
-		});
-		
-    	joinGroupDialog.setButton2(AOTalk.this.getString(R.string.cancel), new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {
-				AOTalk.this.bot.rejectInvitation(invitation.getGroupID());
-				return;
-			}
-		}); 
-    	
-    	joinGroupDialog.show();   	
-    }
-    
-    //Load last messages from the bot service
-    private void getMessages() {
-    	if(AOTalk.this.bot.getMessagesSize() > 0) {
-    		if(AOTalk.this.welcome) {
-    			AOTalk.this.messages.clear();
-    			AOTalk.this.welcome = false;
-    		}
-    		
-    		List<ChatMessage> temp = AOTalk.this.bot.getLastMessages(AOTalk.this.messages.size());
-    		
-    		if(temp != null) {
-	    		for(int i = 0; i < temp.size(); i++) {
-	    			AOTalk.this.messages.add(temp.get(i));
-	    			AOTalk.this.msgadapter.notifyDataSetChanged();
-	    		}
-    		}
-    	}
-    }
-    
-    
-    //Let user select server during the connection
-	private void setServer() {
-    	final CharSequence servers[] = {"Atlantean", "Rimor", "TestLive"};
-
-    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    	builder.setTitle(AOTalk.this.getString(R.string.select_server));
-    	builder.setItems(servers, new DialogInterface.OnClickListener() {
-    	    public void onClick(DialogInterface dialog, int item) {
-    	    	loader = new ProgressDialog(context);
-		    	loader.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-		    	loader.setTitle(getResources().getString(R.string.connecting));
-				loader.setMessage(getResources().getString(R.string.please_wait));
-				loader.show();
-    	    	
-    	    	if(servers[item].toString().equals("Atlantean")) {
-    	    		new Thread() {
-    		            public void run() {
-    		            	AOTalk.this.bot.setServer(DimensionAddress.RK1);
-    		        	}
-    				}.start();
-    	    	} else if(servers[item].toString().equals("Rimor")) {
-    	    		new Thread() {
-    		            public void run() {
-    		            	AOTalk.this.bot.setServer(DimensionAddress.RK2);
-    		        	}
-    				}.start();
-    	    	} else {
-    	    		new Thread() {
-    		            public void run() {
-    		            	AOTalk.this.bot.setServer(DimensionAddress.TEST);
-    		        	}
-    				}.start();
-    	    	}
-    	    }
-    	});
-    	
-    	AlertDialog serverlist = builder.create();
-    	serverlist.show();
-    }
-    
-	
-	//Lets the user select character during connection
-	private void setCharacter() {
-    	final CharacterListPacket charpacket = bot.getCharPacket();
-
-    	if(charpacket != null) {
-	    	CharSequence names[] = new CharSequence[charpacket.getNumCharacters()];
-	    	
-    		for(int i = 0; i < charpacket.getNumCharacters(); i++) {
-    			names[i] = charpacket.getCharacter(i).getName();
-	    	}
-
-	    	final CharSequence[] charlist = names;
-	
-	    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-	    	builder.setTitle(AOTalk.this.getString(R.string.select_character));
-	    	builder.setItems(charlist, new DialogInterface.OnClickListener() {
-	    	    public void onClick(DialogInterface dialog, int item) {
-	    	    	AOTalk.this.bot.setCharacter(charpacket.findCharacter(NameFormat.format(charlist[item].toString())));
-	    	    }
-	    	});
-	    	
-	    	builder.setOnCancelListener(new OnCancelListener() {
-				@Override
-				public void onCancel(DialogInterface dialog) {
-					AOTalk.this.bot.disconnect();
-				}}
-	    	);
-	    	
-	    	AlertDialog characters = builder.create();	    	
-	    	characters.show();
-    	} else {
-    		Log.d(APPTAG, "Character packet is NULL");
-    	}
-    }
-    
-	
-    private void setChannel() {
-    	CharSequence[] tempChannels = null;
-    	List<String> groupList = AOTalk.this.bot.getGroupList();
-    	int add = 0;
-    	int chn = 0;
-    	int cnt = 0;
-    	
-    	if(AOTalk.this.bot.getState().equals(Bot.State.LOGGED_IN)) {
-    		add++;
-    	}
-    	
-    	if(!AOTalk.this.bot.getOnlineFriends().isEmpty()) {
-    		add++;
-    	}
-    	
-    	for(int i = 0; i < groupList.size(); i++) {
-    		if(!AOTalk.this.bot.getGroupIgnoreList().contains(groupList.get(i))) {
-    			chn++;
-    		}
-    	}
-    	    	
-    	if(groupList != null) {
-    		tempChannels = new CharSequence[chn + add];
-    		
-	    	for(int i = 0; i < (groupList.size() + add); i++) {
-	    		if(i == 0 && add > 0) {
-	    			tempChannels[cnt] = AOTalk.this.CHANNEL_MSG;
-	    			cnt++;
-	    		} else if(i == 1 && add == 2) {
-	    			tempChannels[cnt] = AOTalk.this.CHANNEL_FRIEND;
-	    			cnt++;
-	    		} else {
-	    			if(!AOTalk.this.bot.getGroupIgnoreList().contains(groupList.get(i - add))) {
-		    			tempChannels[cnt] = groupList.get(i - add);
-		    			cnt++;
-	        		}
-	    		}
-	    	} 
-    	}
-     	
-    	final CharSequence[] channellist = tempChannels;
-
-    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    	builder.setTitle(AOTalk.this.getString(R.string.select_channel));
-    	
-    	builder.setItems(channellist, new DialogInterface.OnClickListener() {
-    	    public void onClick(DialogInterface dialog, int item) {
-         	    AOTalk.this.CHATCHANNEL = channellist[item].toString();
-         	    
-         	    if(channellist[item].toString().equals(AOTalk.this.CHANNEL_MSG)) {
-     	        	LayoutInflater inflater = (LayoutInflater)AOTalk.this.getSystemService(LAYOUT_INFLATER_SERVICE);
-    	            final View layout = inflater.inflate(R.layout.sendto,(ViewGroup) findViewById(R.layout.sendto));
-    	            
-    	        	Builder builder = new AlertDialog.Builder(context);
-    	        	builder.setTitle(getResources().getString(R.string.send_to_title));
-    	        	builder.setView(layout);
-    	        	
-    	    		EditText TargetEditText = (EditText) layout.findViewById(R.id.targetname);
-    	    		TargetEditText.setText(AOTalk.this.MESSAGETO);
-    	    		
-    	    		//Select text, for easier removal
-    	    		TargetEditText.selectAll();
-    	    		
-    	    		//Force soft keyboard to show after selecting a predefined text
-        	    	InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        	    	mgr.showSoftInput(AOTalk.this.msginput, InputMethodManager.SHOW_IMPLICIT);
-    	        	
-    	        	builder.setPositiveButton(AOTalk.this.getString(R.string.ok), new DialogInterface.OnClickListener() {
-    	    			public void onClick(DialogInterface dialog, int which) {
-    	    				EditText TargetEditText = (EditText) layout.findViewById(R.id.targetname);
-    	    				AOTalk.this.MESSAGETO = TargetEditText.getText().toString();
-    	    				
-    	    				setButtonText();
-    	    				return;
-    	    			}
-    	    		});
-    	        	
-    	        	AlertDialog targetbox = builder.create();
-    	        	targetbox.show();    	    		
-    	    	} else if(channellist[item].toString().equals(AOTalk.this.CHANNEL_FRIEND)) {
-    	    		showFriends();
-    	    	} else {
-    	    		setButtonText();
-    	    	}
-    	    }
-    	});
-    	
-    	AlertDialog channels = builder.create();
-    	channels.show();
-    }
-    
-    
-    private void setAccount() {
-    	LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
-        final View layout = inflater.inflate(R.layout.login,(ViewGroup) findViewById(R.layout.login));
-    	Builder builder = new AlertDialog.Builder(context);
-    	builder.setTitle(getResources().getString(R.string.login_title));
-    	builder.setView(layout);
-    	
-		EditText UserEditText = (EditText) layout.findViewById(R.id.username);
-		EditText PassEditText = (EditText) layout.findViewById(R.id.password);
-		CheckBox SavePrefs    = (CheckBox) layout.findViewById(R.id.savepassword);
-		
-		UserEditText.setText(USERNAME);
-    	PassEditText.setText(PASSWORD);
-    	SavePrefs.setChecked(SAVEPREF);
-    	
-    	builder.setPositiveButton(AOTalk.this.getString(R.string.ok), new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {  	                											
-				EditText UserEditText = (EditText) layout.findViewById(R.id.username);
-				EditText PassEditText = (EditText) layout.findViewById(R.id.password);
-				CheckBox SavePrefs    = (CheckBox) layout.findViewById(R.id.savepassword);
-				
-				AOTalk.this.USERNAME = UserEditText.getText().toString();
-				AOTalk.this.PASSWORD = PassEditText.getText().toString();
-				AOTalk.this.SAVEPREF = SavePrefs.isChecked();
-				
-				loader = new ProgressDialog(context);
-		    	loader.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-		    	loader.setTitle(getResources().getString(R.string.connecting));
-				loader.setMessage(getResources().getString(R.string.please_wait));
-				loader.show();
-				
-				new Thread() {
-		            public void run() {
-		            	AOTalk.this.bot.setAccount(AOTalk.this.USERNAME, AOTalk.this.PASSWORD);
+		        	if (((EditText) v).getText().toString().length() > 0) {
+						sendMessage(((EditText) v).getText().toString());
+						((EditText) v).setText("");
 		        	}
-				}.start();
-				
-				return;
-			} 
-		});
-		
-    	builder.setNegativeButton(AOTalk.this.getString(R.string.cancel), new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {
-				if(AOTalk.this.bot.getState() != Bot.State.DISCONNECTED) {
-					AOTalk.this.bot.disconnect();
+	            	return true;
 				}
-				return;
-			}
-		}); 
-    	
-    	builder.setOnCancelListener(new OnCancelListener() {
-			@Override
-			public void onCancel(DialogInterface dialog) {
-				if(AOTalk.this.bot.getState() != Bot.State.DISCONNECTED) {
-					AOTalk.this.bot.disconnect();
-				}
-				return;
-			}
-    	});
-    	
-    	AlertDialog loginbox = builder.create();
-    	loginbox.show();
-	}
-    
-    
-    private void clearLog() {
-    	AlertDialog clearDialog = new AlertDialog.Builder(AOTalk.this).create();
-    	
-    	clearDialog.setTitle(AOTalk.this.getString(R.string.clear_chat_log));
-    	clearDialog.setMessage(getResources().getString(R.string.want_to_clear));
-    	clearDialog.setIcon(R.drawable.icon_clear);
-    		            
-    	clearDialog.setButton(AOTalk.this.getString(R.string.ok), new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {
-				AOTalk.this.messages.clear();
-				AOTalk.this.bot.clearLog();
 				
-				AOTalk.this.messagelist.post(new Runnable() {
-					@Override
-					public void run() {
-						AOTalk.this.msgadapter.notifyDataSetChanged();
-					}
-				});
-				
-				return;
-			} 
-		});
-		
-    	clearDialog.setButton2(AOTalk.this.getString(R.string.cancel), new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int which) {
-				return;
+				return false;
 			}
-		}); 
-    	
-    	clearDialog.show();
-    }
-    
-    
-    private void showFriends() {   	
-    	final List<Friend> friendList = AOTalk.this.bot.getOnlineFriends();
-    	
-    	CharSequence[] tempList = null;
-    	
-    	if(friendList != null) {
-    		tempList = new CharSequence[friendList.size()];
-    		
-	    	for(int i = 0; i < friendList.size(); i++) {
-	    		tempList[i] = friendList.get(i).getName();
-	    	}
-    	}
-     	
-    	final CharSequence[] flist = tempList;
+        };
+        
+		gridAdapter = new GridAdapter(this, R.id.grid, getToolItems());
 
-    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    	builder.setTitle(AOTalk.this.getString(R.string.friends_online));
-    	
-    	builder.setItems(flist, new DialogInterface.OnClickListener() {
-    	    @Override
-			public void onClick(DialogInterface dialog, int which) {
-				AOTalk.this.CHATCHANNEL = AOTalk.this.CHANNEL_MSG;
-				AOTalk.this.MESSAGETO = flist[which].toString();
-				setButtonText();
-			}
-    	});
-    	
-    	AlertDialog settingsbox = builder.create();
-    	settingsbox.show();	
+		List<SherlockFragment> fragments = new Vector<SherlockFragment>();
+        fragments.add(FragmentTools.newInstance((AOTalk)this, gridAdapter));
+        fragments.add(FragmentChat.newInstance(messageAdapter, chatFragmentClickListener, inputChannelClick, inputTextClick));
+        fragments.add(FragmentFriends.newInstance((AOTalk)this, friendAdapter, friendFragmentClickListener, friendFragmentTextListener));
+        
+        FragmentAdapter fragmentAdapter = new FragmentAdapter(super.getSupportFragmentManager(), fragments);
+
+        fragmentPager = (ViewPager) findViewById(R.id.fragmentpager);
+        fragmentPager.setAdapter(fragmentAdapter);
+        fragmentPager.setOnPageChangeListener(this);
+        
+        titleIndicator = (TitlePageIndicator)findViewById(R.id.titles);
+        titleIndicator.setViewPager(fragmentPager);
+        
+        if (settings.getBoolean("hideTitles", false)) {
+        	titleIndicator.setVisibility(View.GONE);
+        } else {
+        	titleIndicator.setVisibility(View.VISIBLE);
+        }
+                
+        bindService();
     }
-    
     
     @Override
-    public void onResume() {
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onResume() {
     	super.onResume();
-    	
-        //Load values that are saved from last time the app was used
-        SAVEPREF = settings.getBoolean("savepref", SAVEPREF);
-        USERNAME = settings.getString("username", USERNAME);
-        PASSWORD = settings.getString("password", PASSWORD);
-        CHATCHANNEL = settings.getString("chatchannel", CHATCHANNEL);
-        MESSAGETO = settings.getString("messageto", MESSAGETO);
         
-        if(bot == null) {
-	        String temp1[] = settings.getString("disabledchannels", "").split(",");
-	                
-	        for(int i = 0; i < temp1.length; i++) {
-	        	if(temp1[i].length() > 2) {
-		        	if(!groupDisable.contains(temp1[i])) {
-		        		groupDisable.add(temp1[i]);
-			        	Log.d(APPTAG, "FOUND DISABLED GROUP : " + temp1[i]);
-		        	}
-	        	}
-	        }
+        if (settings.getBoolean("hideTitles", false)) {
+        	titleIndicator.setVisibility(View.GONE);
+        } else {
+        	titleIndicator.setVisibility(View.VISIBLE);
         }
-        
-        Log.d(APPTAG, "LOADED DISABLED CHANNELS : " + settings.getString("disabledchannels", ""));
-        
-        /*
-        String temp2[] = settings.getString("watchchannels", "").split(",");
-        for(int i = 0; i < temp2.length; i++) {
-        	watchEnable.add(temp2[i]);
-        }
-        */
-    
-        attachToService();
-    }
-    
-    
-    @Override
-    public void onRestart() {
-    	super.onRestart();
-    }
-    
-    
-    @Override
-    public void onPause() {
-        super.onPause();
-        
-        if(AOTalk.this.bot != null) {
-	        if(settings.getBoolean("autoafk", false)) {
-	        	AOTalk.this.bot.setAFK(true);
-	        }
-        }
-        
-        savePreferences();
-	}
-    
-    
-    @Override
-    public void onStop() {
-    	super.onStop();
-   	
-    	savePreferences();
-    	unregisterReceivers();
-    }
-    
-    
-    @Override
-    public void onDestroy() {
-    	super.onDestroy();
-    }
-    
-    
-    private void savePreferences() {	
-		editor.putBoolean("savepref", SAVEPREF);
-		editor.putString("chatchannel", CHATCHANNEL);
-		editor.putString("messageto", MESSAGETO);
-		
-		String disabledChannels = "";
-		List<String> dc = AOTalk.this.bot.getDisabledGroups();
-		
-		for(int i = 0; i < dc.size(); i++) {
-			Log.d(APPTAG, "Added " + dc.get(i) + " to disabled channels");
-			if(dc.get(i).length() > 2) {
-				if(!disabledChannels.contains(dc.get(i))) {
-					disabledChannels += dc.get(i);
-					if(i < dc.size() - 1) {
-						disabledChannels += ",";
-					}
-				}
-			}
-		}
-		
-		editor.putString("disabledchannels", disabledChannels);
-        Log.d(APPTAG, "SAVING DISABLED CHANNELS : " + disabledChannels);
-		
-		/*
-		String watchChannels = "";
-		List<String> wc = AOTalk.this.bot.getWatchChannels();
-		
-		for(int i = 0; i < wc.size(); i++) {
-			watchChannels += wc.get(i);
-			if(i > 0 && i < wc.size() - 1) {
-				watchChannels += ",";
-			}
-		}
-		
-		editor.putString("watchchannels", watchChannels);
-		*/
-		
-		if(SAVEPREF) {
-			editor.putString("username", USERNAME);
-			editor.putString("password", PASSWORD);
-		} else {
-			editor.putString("username", "");
-			editor.putString("password", "");			
-		}
-		
-		editor.commit();
-    }
-	
-    
-    private void registerReceivers() {
-    	this.registerReceiver(messageReceiver, new IntentFilter(AOBotService.INFO_MESSAGE));    	
-	    this.registerReceiver(connectionReceiver, new IntentFilter(AOBotService.INFO_CONNECTION));    	
-    }
-    
-    
-    private void unregisterReceivers() {
-    	this.unregisterReceiver(messageReceiver);
-    	this.unregisterReceiver(connectionReceiver);
-    }
-    
-    
-	private class AOBotConnectionReceiver extends BroadcastReceiver {
-	    @Override
-	    public void onReceive(Context context, Intent intent) {
-	    	String value = intent.getStringExtra(AOBotService.EXTRA_CONNECTION);
-	    	
-	    	//Service wants server
-	    	if(value.equals(AOBotService.CON_SERVER)) {
-	    		setServer();
-	    	}
-	    	
-	    	//Service wants account information
-	    	if(value.equals(AOBotService.CON_ACCOUNT)) {
-		    	if(AOTalk.this.loader != null) {
-		    		AOTalk.this.loader.dismiss();
-		    		AOTalk.this.loader = null;
-		    	}
-	    		
-	    		setAccount();
-	    	}
-	    	
-	    	//Service wants character
-	    	if(value.equals(AOBotService.CON_CHARACTER)) {
-	    		setCharacter();
-	    	}
-	    	
-	    	//Service failed to log in
-	    	if(value.equals(AOBotService.CON_LFAILURE)) {
-		    	AOTalk.this.bot.appendToLog(
-		    		chat.parse(AOTalk.this.getString(R.string.could_not_log_in), ChatParser.TYPE_CLIENT_MESSAGE),
-		    		null,
-		    		null,
-		    		ChatParser.TYPE_CLIENT_MESSAGE
-		    	);
-		    }
-	    	
-	    	//Service failed to connect
-	    	if(value.equals(AOBotService.CON_CFAILURE)) {
-		    	AOTalk.this.bot.appendToLog(
-		    		chat.parse(AOTalk.this.getString(R.string.could_not_connect), ChatParser.TYPE_CLIENT_MESSAGE),
-		    		null,
-		    		null,
-		    		ChatParser.TYPE_CLIENT_MESSAGE
-		    	);
 
-		    	if(AOTalk.this.loader != null) {
-		    		AOTalk.this.loader.dismiss();
-		    		AOTalk.this.loader = null;
-		    	}
-	    	}
-	    	
-	    	//Service is connected
-	    	if(value.equals(AOBotService.CON_CONNECTED)) {
-	    		AOTalk.this.bot.appendToLog(
-	    			chat.parse(AOTalk.this.getString(R.string.connected), ChatParser.TYPE_CLIENT_MESSAGE),
-	    			null,
-	    			null,
-	    			ChatParser.TYPE_CLIENT_MESSAGE
-	    		);
-
-		    	if(AOTalk.this.loader != null) {
-		    		AOTalk.this.loader.dismiss();
-		    		AOTalk.this.loader = null;
-		    	}
-	    	}
-	    	
-	    	//Service is disconnected
-	    	if(value.equals(AOBotService.CON_DISCONNECTED)) {    	
-		    	if(AOTalk.this.loader != null) {
-	    			AOTalk.this.loader.dismiss();
-	    			AOTalk.this.loader = null;
-	    		}
-	    	}
-	    	
-	    	//Service got a channel invite
-	    	if(value.equals(AOBotService.CON_INVITE)) {
-		    	handleInvitation();
-	    	}
-	    	
-	    	getMessages();
-	    	Log.d(APPTAG, "AOBotConnectionReceiver received message");
-	    }
-	}
-	
-	
-	private class AOBotMessageReceiver extends BroadcastReceiver {
-	    @Override
-	    public void onReceive(Context context, Intent intent) {
-	    	getMessages();
-	    	Log.d(APPTAG, "AOBotMessageReceiver received message");
-	    }
-	}
-	
-	
-	private void attachToService() {
-		Intent serviceIntent = new Intent(this, AOBotService.class);
-	    
-	    conn = new ServiceConnection() {
-			@Override
-			public void onServiceConnected(ComponentName name, IBinder service) {
-				AOTalk.this.bot = ((AOBotService.ListenBinder) service).getService();
-				
-				AOTalk.this.bot.setDisabledGroups(groupDisable);
-				//AOTalk.this.bot.setEnabledWatchGroups(watchEnable);
-				
-				getMessages();
-				
-				AOTalk.this.messagelist.post(new Runnable() {
-					@Override
-					public void run() {
-						AOTalk.this.msgadapter.notifyDataSetChanged();
-			    		AOTalk.this.messagelist.setSelection(AOTalk.this.messages.size()-1);
-					}
-				});
-				
-		        if(settings.getBoolean("autoafk", false)) {
-		        	if(AOTalk.this.bot.getAFK()) {
-		        		AOTalk.this.bot.setAFK(false);
-		        	}
-		        }
-			}
-			
-			@Override
-			public void onServiceDisconnected(ComponentName name) {
-				AOTalk.this.bot = null;
-			}
-	    };
-
-	    this.getApplicationContext().startService(serviceIntent);
-	    this.getApplicationContext().bindService(serviceIntent, conn, 0);
-	    
-	    registerReceivers();
-	}
-    
-    
-    private void showSettings() {
-    	Intent intent = new Intent(this, Settings.class);
-        startActivity(intent);
+        bindService();
     }
     
-    
-    private void showMarket() {
-    	Intent intent = new Intent(this, Market.class);
-        startActivity(intent);
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unbindService();
     }
     
-    
-    private void showAbout() {
-    	Intent intent = new Intent(this, About.class);
-        startActivity(intent);
+    @Override
+    protected void onPause() {
+    	super.onPause();
+        unbindService();
     }
     
-	
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.layout.mainmenu, menu);
-		
-        return true;
-    }
-    
-    
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        MenuItem afkButton = (MenuItem) menu.findItem(R.id.afk);
-        MenuItem conButton = (MenuItem) menu.findItem(R.id.connect);
-        
-		if (afkButton != null) {
-	    	if(AOTalk.this.bot != null) {
-				if(AOTalk.this.bot.getAFK()) {
-		    		afkButton.setIcon(R.drawable.icon_afk_on);
-				} else {
-					afkButton.setIcon(R.drawable.icon_afk_off);
-				}
-	    	}
-		}
-		
-		if(AOTalk.this.bot != null) {
-			if(AOTalk.this.bot.getState() != Bot.State.DISCONNECTED) {
-				conButton.setIcon(R.drawable.icon_disconnect);
-				conButton.setTitle(getString(R.string.disconnect));
-			} else {
-				conButton.setIcon(R.drawable.icon_connect);
-				conButton.setTitle(getString(R.string.connect));
-			}
-		}
-		
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getSupportMenuInflater().inflate(R.menu.menu, menu);
 		return true;
-    }
+	}
 
-    
-    public boolean onOptionsItemSelected(MenuItem item) {
-    	switch (item.getItemId()) {
-	        case R.id.connect:
-	        	if(AOTalk.this.bot != null) {
-		        	if(AOTalk.this.bot.getState() == Bot.State.DISCONNECTED) {
-			        	AOTalk.this.bot.connect();
-			        	AOTalk.this.messages.clear();
-		        	} else {
-		        		AOTalk.this.bot.disconnect();
-		        	}
-	        	}
-	            return true;
-	        case R.id.clear:
-	        	clearLog();
-	        	return true;
-	        case R.id.settings:
-	        	showSettings();
-	        	return true;
-	        case R.id.afk:
-	        	if(AOTalk.this.bot != null) {
-	        		if(AOTalk.this.bot.getAFK()) {
-		        		AOTalk.this.bot.setAFK(false);
-	        		} else {
-		        		AOTalk.this.bot.setAFK(true);
-	        		}
-	        	}
-	        	return true;
-	        case R.id.about:
-	        	showAbout();
-	        	return true;
-	        case R.id.market:
-	        	showMarket();
-	        	return true;
-	        default:
-	            return super.onOptionsItemSelected(item);
-        }
-    }
+    @Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		if (item.getItemId() == R.id.connect) {
+			try {
+				Message msg = Message.obtain(null, ServiceTools.MESSAGE_STATUS);
+				msg.replyTo = serviceMessenger;
+				service.send(msg);
+			} catch (RemoteException e) {
+				Logging.log(APP_TAG, e.getMessage());
+			}
+			return true;
+		} else {
+			return super.onOptionsItemSelected(item);
+		}
+	}
+
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+	}
+
+	@Override
+	public void onPageScrollStateChanged(int arg0) {
+	}
+
+	@Override
+	public void onPageScrolled(int arg0, float arg1, int arg2) {
+	}
+
+	@Override
+	public void onPageSelected(int arg0) {
+	}
+
+	@Override
+	public boolean onPreferenceChange(Preference arg0, Object arg1) {
+		Logging.log(APP_TAG, "onPreferenceChange");
+		
+		if (arg0.getKey().equals("showOnlyOnline")) {
+			updateFriendList();
+		}
+		
+		return false;
+	}
 }

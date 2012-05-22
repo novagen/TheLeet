@@ -1,48 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest 
-xmlns:android="http://schemas.android.com/apk/res/android"
-package="com.rubika.aotalk"
-android:installLocation="internalOnly"
-android:versionCode="31" android:versionName="1.5.2">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.rubika.aotalk"
+    android:versionCode="73"
+    android:versionName="3.1.0" >
+
+    <uses-sdk android:minSdkVersion="7" android:targetSdkVersion="14" />
+    
+    <uses-permission android:name="android.permission.INTERNET" />
+   	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    
     <application
-    android:icon="@drawable/icon"
-    android:description="@string/app_description"
-    android:debuggable="false"
-    android:label="@string/app_name"
-    >
-        <activity 
-        android:name=".AOTalk"
-        android:configChanges="orientation"
+	android:theme="@style/AOTalkTheme"
+	android:icon="@drawable/ic_launcher"
+	android:label="@string/app_name"
+	>
+        <activity
+		android:name=".AOTalk"
+		android:label="@string/app_name"
+		android:configChanges="orientation|screenSize|keyboardHidden"
+       	android:windowSoftInputMode="stateHidden|adjustResize"
         android:launchMode="singleTop"
-        android:theme="@android:style/Theme.NoTitleBar"
-        android:label="@string/app_name"
-        >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+		>
+           <intent-filter>
+               <action android:name="android.intent.action.MAIN" />
+               <category android:name="android.intent.category.LAUNCHER" />
+           </intent-filter>
         </activity>
-        <activity 
-        android:name=".Market"
-        android:configChanges="orientation"
-        >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-        <activity 
-        android:name=".About"
-        android:configChanges="orientation"
-        >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
+        
+        <activity
+        android:name=".Preferences"
+		android:label="@string/preferences"
+		android:configChanges="orientation|screenSize|keyboardHidden"
+        android:windowSoftInputMode="stateHidden|adjustResize"
+        />
+        
+        <activity
+        android:name=".Help"
+		android:label="@string/help"
+		android:configChanges="orientation|screenSize|keyboardHidden"
+        android:windowSoftInputMode="stateHidden|adjustResize"
+        />
+        
         <activity
         android:name=".Information"
-        android:configChanges="orientation"
+		android:label="@string/app_name"
+        android:configChanges="orientation|screenSize|keyboardHidden"
+        android:windowSoftInputMode="stateHidden|adjustResize"
+		android:hardwareAccelerated="false"
         >
         	<intent-filter>
 			    <category android:name="android.intent.category.DEFAULT" />
@@ -59,45 +64,70 @@ android:versionCode="31" android:versionName="1.5.2">
 			    <action android:name="android.intent.action.VIEW" />
 			    <data android:scheme="itemref" />  
 			</intent-filter>
+        	<intent-filter>
+			    <category android:name="android.intent.category.DEFAULT" />
+			    <action android:name="android.intent.action.VIEW" />
+			    <data android:scheme="user" />  
+			</intent-filter>
         </activity>
+        
         <activity
-        android:name=".Settings"
-        android:configChanges="orientation"
-        />
+		android:label="@string/market_monitor"
+		android:name=".market.Market"
+		android:configChanges="orientation|screenSize|keyboardHidden"
+		>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        
         <activity
-        android:name=".MarketSettings"
-        android:configChanges="orientation"
-        />
-        <receiver 
-        android:name=".WidgetSmall" 
-        android:label="@string/widget_name_small"
-        >
+		android:label="@string/ao_universe"
+		android:name=".aou.AOU"
+		android:configChanges="orientation|screenSize|keyboardHidden"
+		>
             <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_provider_small" />
-        </receiver>
-        <receiver 
-        android:name=".WidgetLarge" 
-        android:label="@string/widget_name_large"
-        >
+        </activity>
+        
+        <activity
+		android:label="@string/ao_universe"
+		android:name=".aou.ActivityNews"
+		android:configChanges="orientation|screenSize|keyboardHidden"
+		>
             <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_provider_large" />
-        </receiver>
-		<activity android:name=".WidgetSmallConfig">
-    		<intent-filter>
-        		<action android:name=".WidgetSmallConfig" />
-    		</intent-filter>
-		</activity>
-		<activity android:name=".WidgetLargeConfig">
-    		<intent-filter>
-        		<action android:name=".WidgetLargeConfig" />
-    		</intent-filter>
-		</activity>
-		<service android:name=".AOBotService"></service>
-    </application>
-    <uses-sdk android:minSdkVersion="4" />
-    <uses-permission android:name="android.permission.INTERNET" />
-</manifest> 
+        </activity>
+        
+        <activity
+		android:label="@string/ao_universe"
+		android:name=".aou.ActivityCalendar"
+		android:configChanges="orientation|screenSize|keyboardHidden"
+		>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        
+        <activity
+		android:label="@string/ao_universe"
+		android:name=".aou.ActivityGuide"
+		android:configChanges="orientation|screenSize|keyboardHidden"
+		>
+        	<intent-filter>
+			    <category android:name="android.intent.category.DEFAULT" />
+			    <action android:name="android.intent.action.VIEW" />
+			    <data android:scheme="guideref" />  
+			</intent-filter>
+        </activity>
+        
+        <service android:name=".service.ClientService" />
+        </application>
+
+</manifest>

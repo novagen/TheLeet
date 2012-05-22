@@ -1,103 +1,150 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AnarchyTalk</string>
-    <string name="app_description">AO Chat Client</string>
-    <string name="widget_name_small">AnarchyTalk (4x1)</string>
-    <string name="widget_name_large">AnarchyTalk (4x2)</string>
-    <string name="welcome">Welcome to AnarchyTalk!</string>
-    <string name="widget_welcome">AnarchyTalk by Novagen</string>
-    <string name="about">\n\nMade by Novagen (RK1)\nBased on the Java AOChat API by Losobie</string>
-    <string name="aouniverse">\n\nIn cooperation with &lt;a href="http://www.ao-universe.com"&gt;AO-Universe&lt;/a&gt;</string>
-    <string name="connect">Connect</string>
-    <string name="authenticate">Authenticate</string>
-    <string name="login">Login</string>
-    <string name="disconnect">Disconnect</string>
-    <string name="connecting">Connecting</string>
-    <string name="disconnecting">Disconnecting</string>
-    <string name="logging_in">Logging in</string>
-    <string name="authenticating">Authenticating</string>
-    <string name="connected">Connected</string>
-    <string name="disconnected">Disconnected</string>
-    <string name="please_wait">Please wait...</string>
-    <string name="start">Start</string>
-    <string name="save">Save</string>
-    <string name="login_title">Login</string>
-    <string name="login_text">Please log in</string>
-    <string name="info">AO Chat Client</string>
-    <string name="send_to_title">Select target</string>
-    <string name="settings">Settings</string>
-    <string name="fullscreen">Fullscreen</string>
-    <string name="clear_log">Clear</string>
-    <string name="want_to_clear">Do you want to clear the chat log?</string>
-    <string name="loading_data">Loading data</string>
-    <string name="select_character">Select character</string>
-    <string name="select_server">Select server</string>
-    <string name="ok">OK</string>
-    <string name="cancel">Cancel</string>
-    <string name="add">Add</string>
-    <string name="remove">Remove</string>
-    <string name="friends">Friends</string>
-    <string name="add_friend">Add friend</string>
-    <string name="add_a_friend">Add a friend</string>
-    <string name="add_friend_to_buddy_list">Add a friend to your buddy list</string>
-    <string name="remove_friend">Remove friend</string>
-    <string name="remove_friend_from_buddy_list">Remove a friend from your buddy list</string>
-    <string name="friends_online">Friends Online</string>
-    <string name="join_group">Do you want to join this group?</string>
-    <string name="select_message">Select a message</string>
-    <string name="select_channel">Select channel</string>
-    <string name="tell">Tell</string>
-    <string name="private_message_to">Private message to</string>
-    <string name="group_message_to">Group message to</string>
-    <string name="clear_chat_log">Clear chat log</string>
-    <string name="disable_channels">Mute channels</string>
-    <string name="could_not_log_in">Could not log in, check your password</string>
-    <string name="could_not_connect">Could not connect</string>
-    <string name="logged_off">logged off</string>
-    <string name="logged_in">is logged in</string>
-    <string name="to">to</string>
-    <string name="group_kicked">You left the group</string>
-    <string name="group_joined">joined the group</string>
-    <string name="group_left">left the group</string>
-    <string name="config_icon">Select icon</string>
-    <string name="no_data">Sorry!\nNo data could be found, or the data is corrupted</string>
-    <string name="error_data">Error while downloading data</string>
-    <string name="afk">AFK</string>
-    <string name="watch_channels">Show in watch</string>
-    <string name="account">Account</string>
-    <string name="set_username">Set username</string>
-    <string name="username">Username</string>
-    <string name="edit_username">Edit your username</string>
-    <string name="set_password">Set password</string>
-    <string name="password">Password</string>
-    <string name="edit_password">Edit your password</string>
-    <string name="save_account">Save account</string>
-    <string name="save_account_info">Save your account information</string>
-    <string name="channels">Channels</string>
-    <string name="save_password">Save password</string>
-    <string name="user">User</string>
-    <string name="set_muted_channels">Set muted channels</string>
-    <string name="mute_channels">Mute channels</string>
-    <string name="select_channels_to_mute">Select the channels you want to mute</string>
-    <string name="other">Other</string>
-    <string name="auto_afk">Auto AFK</string>
-    <string name="go_afk_when">Go AFK when the program loses focus</string>
-    <string name="enable_watch">Enable Watch</string>
-    <string name="show_messages_on_watch">Show messages on your bluetooth watch (requires OpenWatch)</string>
-    <string name="added_to_buddy_list">added to your buddy list</string>
-    <string name="removed_from_buddy_list">removed from your buddy list</string>
-    <string name="remove_friend_confirm1">Are you sure you want to remove</string>
-    <string name="remove_friend_confirm2">from your buddy list?\n\nThis is will affect your ingame list!</string>
-    <string name="chatcmd_not_implemented">This chat command is not implemented</string>
-    <string name="market">Market</string>
-    <string name="update">Update</string>
-    <string name="menuabout">About</string>
-    <string name="aou">AOU</string>
-    <string name="market_server">Select server</string>
-    <string name="market_server_info">Server to monitor shopping channels on</string>
-    <string name="market_autoupdate">Automatic updates</string>
-    <string name="market_autoupdate_info">Get new market data automatically</string>
-    <string name="market_interval">Update interval</string>
-    <string name="market_interval_info">Time between automatic updates</string>
-    <string name="not_add_yourself">You can not add yourself as a friend</string>
+	<string name="username">Username</string>
+	<string name="password">Password</string>
+	<string name="save_account">Save account</string>
+	<string name="login_title">Login</string>
+	<string name="ok">OK</string>
+	<string name="cancel">Cancel</string>
+	<string name="close">Close</string>
+	<string name="connecting">Connecting</string>
+	<string name="disconnect">Disconnect</string>
+	<string name="disconnected">Disconnected</string>
+	<string name="please_wait">Please wait&#8230;</string>
+	<string name="select_server">Select server</string>
+	<string name="select_channel">Select channel</string>
+	<string name="select_account">Select account</string>
+	<string name="create_account">Create account</string>
+	<string name="select_character">Select character</string>
+	<string name="select_friend">Select friend</string>
+	<string name="select_action">Select action</string>
+	<string name="enter_name">Enter name</string>
+	<string name="settings">Settings</string>
+	<string name="connect">Connect</string>
+	<string name="add_account">Add account</string>
+	<string name="u_and_p_required">Username and password is required</string>
+	<string name="confirm_disconnect">Are you sure you want to disconnect?</string>
+	<string name="character_is_online">%s is online</string>
+	<string name="character_logged_in">%s logged in</string>
+	<string name="friend_status_description">Status</string>
+	<string name="manage">Manage</string>
+	<string name="no_messages">No messages</string>
+	<string name="edit">Edit</string>
+	<string name="delete">Delete</string>
+	<string name="delete_account">Delete account</string>
+	<string name="confirm_delete_account">Are you sure you want to delete the account?</string>
+	<string name="set_channel">Set channel</string>
+	<string name="reconnect_timeout" formatted="false">Could not reconnect in %s seconds. Giving up.</string>
+	<string name="offline_message_from" formatted="false">You got an offline message from %s</string>
+	<string name="user_offline_message_buffered" formatted="false">%s is offline, message has been buffered</string>
+	<string name="message_could_not_be_sent">Message could not be sent. The receivers inbox is full or the message is too long.</string>
+	<string name="message_to" formatted="false">to [%s]: %s</string>
+	<string name="tell" formatted="false">Tell: %s</string>
+	<string name="login_error">Failed to log in. Is your username and password correct?</string>
+	<string name="who_is" formatted="false">Who is %s</string>
+	<string name="no_data">Sorry!\nNo data could be found, or the data is corrupted</string>
+	<string name="chatcmd_not_implemented">This chat command is not implemented</string>
+	<string name="loading_data">Loading data</string>
+	<string name="added_to_buddy_list" formatted="false">%s added to your buddy list</string>
+	<string name="removed_from_buddy_list" formatted="false">%s removed from your buddy list</string>
+	<string name="not_add_yourself">You can not add yourself as a friend</string>
+	<string name="preferences">Settings</string>
+    <string name="no_news">Could not find any news</string>
+    <string name="no_calendar">Could not find any calendar events</string>
+    <string name="no_guides">Could not find any guides</string>
+    <string name="data_load_failed">Failed to load data</string>
+    <string name="share">Share</string>
+    <string name="search">Search</string>
+	<string name="ao_universe">AO Universe</string>
+	<string name="market_monitor">Shopping</string>
+	<string name="dots">&#8230;</string>
+	<string name="update">Update</string>
+	<string name="no_char_data">Could not find any character information</string>
+	<string name="no_char_title">Lookup failed</string>
+	<string name="about">About</string>
+	<string name="about_aotalk">Show help and license information</string>
+	<string name="visual">Visual</string>
+	<string name="fullscreen">Fullscreen</string>
+	<string name="fullscreen_about">Show AnarchyTalk in fullscreen</string>
+	<string name="market_server">Monitor server</string>
+	<string name="market_server_info">Server to monitor shopping channels on</string>
+	<string name="market_autoupdate">Automatic updates</string>
+	<string name="market_autoupdate_info">Get new market data automatically</string>
+	<string name="market_interval">Update interval</string>
+	<string name="market_interval_info">Time between automatic updates</string>
+	<string name="remove_friend_title" formatted="false">Remove %s</string>
+	<string name="friends">Friends</string>
+	<string name="add_friend">Add friend</string>
+	<string name="add_friend_to_buddy_list">Add a friend to your buddy list</string>
+	<string name="already_in_buddy_list" formatted="false">%s is already in your buddy list</string>
+	<string name="not_in_buddy_list" formatted="false">%s is not in your buddy list</string>
+	<string name="remove_friend">Remove friend</string>
+	<string name="remove_friend_from_buddy_list">Remove a friend from your buddy list</string>
+	<string name="remove_friend_confirm" formatted="false">Are you sure you want to remove %s from your buddy list?\n\nThis is will affect your ingame list!</string>
+	<string name="character_info" formatted="false"><Data><![CDATA[<h3>%s</h3>%s (%s)<br />%s %s<br /><br /><b>Level</b>: %d<br /><b>AI Level</b>:%s (%d)]]></Data></string>
+	<string name="character_info_org" formatted="false"><Data><![CDATA[<br /><br />%s<br />%s]]></Data></string>
+	<string name="automatic_reconnect">Reconnect automatically</string>
+	<string name="automatic_reconnect_info">Reconnect if the connection is lost</string>
+	<string name="connection">Connection</string>
+	<string name="whois">Lookup</string>
+	<string name="whois_fallback">Character lookup fallback</string>
+	<string name="whois_fallback_info">Fall back to bot lookup if AO web is unavailable</string>
+	<string name="whois_from_web">Lookups from AO web</string>
+	<string name="whois_from_web_info">Use AO web xml for character lookup</string>
+	<string name="notifications">Notifications</string>
+	<string name="enable_notifications">Enable notifications</string>
+	<string name="enable_notifications_info">Show notification when receiving a private message</string>
+	<string name="notification_sound">Notification sound</string>
+	<string name="notification_sound_info">Set the sound to play when receiving a private message</string>
+	<string name="not_connected">You are not connected</string>
+	<string name="gsp">GridStream Productions</string>
+	<string name="gsp2">A service of loudcity.net</string>
+	<string name="app_about">\n\nMade by Novagen (RK1)\nBased on the Java AOChat API by Losobie</string>
+	<string name="brought_to_you_by">\n\nBrought to you by</string>	<string name="show_only_online">Show only online</string>
+	<string name="show_only_online_info">Show only online friends in the friends list</string>
+	<string name="send_private_message">Send private message</string>
+	<string name="play">Play</string>
+	<string name="show_chat_when_online">Switch to chat view</string>
+	<string name="show_chat_when_online_info">Switch to the chat list when online</string>
+	<string name="help">Help</string>
+	<string name="unable_to_load_guide">Unable to load guide</string>
+	<string name="mute_channels">Muted channels</string>
+	<string name="select_channels_to_mute">Select the channels you want to mute</string>
+	<string name="disable_channels">Muted channels</string>
+	<string name="join_channel">Channel invitation</string>
+	<string name="joined_channel" formatted="false">[%s] %s joined the channel</string>
+	<string name="left_channel" formatted="false">[%s] %s left the channel</string>
+	<string name="kicked_from_channel" formatted="false">[%s] You were kicked from the channel</string>
+	<string name="you_were_invited" formatted="false">You have been invited to the channel %s</string>
+	<string name="you_were_invited_to_channel" formatted="false">You have been invited to %s\'s private channel. Do you wish to join?</string>
+	<string name="general">General</string>
+	<string name="search">Search</string>
+	<string name="widget_clear">By Novagen</string>
+	<string name="connection_error">Unable to connect to the server</string>
+	<string name="dialog_color_picker">Color Picker</string>
+	<string name="press_color_to_apply">Press on Color to apply</string>
+	<string name="resetcolors">Reset colors</string>
+	<string name="resetcolors_info">Reset all colors to default values</string>
+	<string name="resetcolors_text">Are you sure you want to reset the colors?\n\nIf you choose yes the settings view will close to load the new values</string>
+	<string name="colors">Colors</string>
+	<string name="colors_info">Select colors for different messages</string>
+	<string name="color_app">Application</string>
+	<string name="color_app_info">Select color for application messages</string>
+	<string name="color_sys">System</string>
+	<string name="color_sys_info">Select color for system messages</string>
+	<string name="color_prv">Private</string>
+	<string name="color_prv_info">Select color for private messages</string>
+	<string name="color_grp">Group</string>
+	<string name="color_grp_info">Select color for group messages</string>
+	<string name="color_org">Org</string>
+	<string name="color_org_info">Select color for org messages</string>
+	<string name="color_frn">Friend</string>
+	<string name="color_frn_info">Select color for friend log on / log off messages</string>
+	<string name="color_oth">Other</string>
+	<string name="color_oth_info">Select color for other messages</string>
+	<string name="forum">Forum</string>
+	<string name="web">Web</string>
+	<string name="hide_titles">Hide titles</string>
+	<string name="hide_titles_info">Hide the title bar</string>
 </resources>
