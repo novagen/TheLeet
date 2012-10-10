@@ -42,11 +42,8 @@ import org.w3c.dom.Text;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-
-import android.util.Log;
-
 public class ItemRef {
-	protected static final String APPTAG = "--> AOTalk::ItemRef";
+	protected static final String APP_TAG = "--> AOTalk::ItemRef";
 	private String retval = "";
 	
 	public String getData(String id, String ql) {
@@ -88,6 +85,15 @@ public class ItemRef {
 	        	xml = xml.replace(matcher.group(1), matcher.group(1).replaceAll("<", "&lt;").replaceAll(">", "&gt;"));
             }
             
+        	pattern = Pattern.compile(" name=\"(.*?)\" />", Pattern.DOTALL);
+            matcher = pattern.matcher(xml);
+
+            while(matcher.find()) {
+	        	xml = xml.replace(matcher.group(1), matcher.group(1).replaceAll("<b>", "").replaceAll("</b>", ""));
+            }
+            
+            Logging.log(APP_TAG, xml);
+            
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             
             try {
@@ -97,13 +103,13 @@ public class ItemRef {
                 is.setCharacterStream(new StringReader(xml));
                 doc = db.parse(is);
             } catch (ParserConfigurationException e) {
-                Log.e("Error: ", e.getMessage());
+            	Logging.log(APP_TAG, e.getMessage());
                 return null;
             } catch (SAXException e) {
-                Log.e("Error: ", e.getMessage());
+            	Logging.log(APP_TAG, e.getMessage());
                 return null;
             } catch (IOException e) {
-                Log.e("Error: ", e.getMessage());
+            	Logging.log(APP_TAG, e.getMessage());
                 return null;
             }
         
@@ -237,6 +243,10 @@ public class ItemRef {
 		                    			value = ItemValues.getExpansionPlayfield(Integer.parseInt(value));
 		                    		}
 		                    		
+		                    		if (stat.equals("CurrentPlayfield")) {
+		                    			value = ItemValues.getCurrentPlayfield(Integer.parseInt(value));
+		                    		}
+		                    		
 		                    		if (stat.equals("Faction")) {
 		                    			value = ItemValues.getFaction(Integer.parseInt(value));
 		                    		}
@@ -303,27 +313,35 @@ public class ItemRef {
 	    	                        if (nparams.getLength() > 1) {
 	    		                        if (i == 0) {
 	    		                        	if (funcName.equals("Modify") || funcName.equals("LockSkill") || funcName.equals("Skill")) {
-	    		                        		events += ItemValues.getSkill(Integer.parseInt(param.getTextContent()));
-	    		                        	} else if (funcName.equals("CastStunNano")) {
-	    		                        		events += ItemValues.lookupItemName(Integer.parseInt(param.getTextContent()));
+	    		                        		events += ItemValues.getSkill(Integer.parseInt(param.getFirstChild().getNodeValue()));
+	    		                        	} else if (funcName.equals("CastStunNano") || funcName.equals("AreaCastNano")) {
+	    		                        		events += ItemValues.lookupItemName(Integer.parseInt(param.getFirstChild().getNodeValue()));
 	        		                        } else if (funcName.equals("ResistNanoStrain")) {
-	    		                        		events += ItemValues.getNanoStrain(Integer.parseInt(param.getTextContent()));
+	    		                        		events += ItemValues.getNanoStrain(Integer.parseInt(param.getFirstChild().getNodeValue()));
 	    		                        	} else {
-	        		                        	events += param.getTextContent();
+	        		                        	events += param.getFirstChild().getNodeValue();
+	    		                        	}
+	    		                        } else if (i == 3) {
+	    		                        	if (funcName.equals("Teleport")) {
+	    		                        		events += ItemValues.getCurrentPlayfield(Integer.parseInt(param.getFirstChild().getNodeValue()));
+	    		                        	} else {
+	    		                        		events += param.getFirstChild().getNodeValue();
 	    		                        	}
 	    		                        } else {
 	    		                        	if (funcName.equals("AddSkill")) {
-	        		                        	int num = Integer.parseInt(param.getTextContent());
+	        		                        	int num = Integer.parseInt(param.getFirstChild().getNodeValue());
 	    		                        		events += ItemValues.getSkill(num);        		                        		
 	    		                        	} else {
-	    		                        		events += param.getTextContent();
+	    		                        		events += param.getFirstChild().getNodeValue();
 	    		                        	}
 	    		                        }
 	    	                        } else {
 	    	                        	if (funcName.equals("UploadNano") || funcName.equals("CastNano")) {
-			                        		events += ItemValues.lookupItemName(Integer.parseInt(param.getTextContent()));
+			                        		events += ItemValues.lookupItemName(Integer.parseInt(param.getFirstChild().getNodeValue()));
+	    	                        	} else if (funcName.equals("RemoveNanoStrain")) {
+    		                        		events += ItemValues.getNanoStrain(Integer.parseInt(param.getFirstChild().getNodeValue()));
 			                        	} else {
-			                        		events += param.getTextContent();
+			                        		events += param.getFirstChild().getNodeValue();
 			                        	}
 	    	                        }
 	    	                        
@@ -400,6 +418,10 @@ public class ItemRef {
 		    	retval += events;
 	    	}
 	    	
+	    	retval += "<br /><br />";
+	    	retval += "<font color=#999999>Recipes from AO RecipeBook</font>";
+	    	retval += "<br />";
+	    	retval += "<a href=\"aorbid://" + id + "\">Check for recipes</a>";
 	    	retval += "<br /><br />";
 	    	retval += "<font color=#999999>Data from Xyphos.org</font>";
 	    	retval += "<br />";

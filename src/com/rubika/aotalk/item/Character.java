@@ -1,5 +1,7 @@
 package com.rubika.aotalk.item;
 
+import java.util.Comparator;
+
 public class Character {
     public final String text;
     public final int icon;
@@ -19,4 +21,11 @@ public class Character {
     public int getType() {
     	return type;
     }
+    
+	public static class CustomComparator implements Comparator<Character> {
+	    @Override
+	    public int compare(Character character1, Character character2) {
+	        return character1.toString().compareTo(character2.toString());
+	    }
+	}
 }

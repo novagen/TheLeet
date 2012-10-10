@@ -30,9 +30,10 @@ public class Help extends SherlockActivity {
 	public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        setContentView(R.layout.help);
+        setContentView(R.layout.activity_help);
         
         final ActionBar bar = getSupportActionBar();
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
                 

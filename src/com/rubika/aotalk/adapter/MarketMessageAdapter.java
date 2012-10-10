@@ -59,7 +59,7 @@ public class MarketMessageAdapter extends BaseAdapter {
         
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = inflater.inflate(R.layout.marketmessage, null);
+            convertView = inflater.inflate(R.layout.message_market, null);
         }
         
         String name = entry.getCharacter();

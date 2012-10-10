@@ -72,7 +72,7 @@ public class PrivateChannelLeavePacket extends Packet {
             parser.close();
         } catch (IOException e) {
             throw new MalformedPacketException(
-                    "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.OUT));
+                    "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.TO_SERVER));
         }   // end catch
     }   // end PrivateChannelLeavePacket()
 
@@ -89,9 +89,9 @@ public class PrivateChannelLeavePacket extends Packet {
         return m_data;
     }
 
-    /** Always returns {@code Direction.IN} */
+    /** Always returns {@code Direction.TO_CLIENT} */
     public Direction getDirection() {
-        return Direction.OUT;
+        return Direction.TO_SERVER;
     }
 
     @Override

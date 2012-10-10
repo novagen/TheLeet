@@ -34,6 +34,8 @@ import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.ScaleAnimation;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
@@ -47,12 +49,13 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
 	private int COLOR_ORG;
 	private int COLOR_FRN;
 	
-	public ChatMessageAdapter(Context context, int textViewResourceId, List<ChatMessage> objects) {
+    private boolean animationEnabled;
+	
+	public ChatMessageAdapter(Context context, int textViewResourceId, List<ChatMessage> objects, boolean enableAnimations) {
 		super(context, textViewResourceId, objects);
 		settings = PreferenceManager.getDefaultSharedPreferences(context);
+		animationEnabled = enableAnimations;
 	}
-
-	protected static final String APP_TAG = "--> ChatMessageAdapter";
 
     public View getView(int position, View convertView, ViewGroup viewGroup) {
         ChatMessage entry = getItem(position);
@@ -66,7 +69,7 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
 
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = inflater.inflate(R.layout.chatmessage, null);
+            convertView = inflater.inflate(R.layout.message_chat, null);
         }
 
         TextView message = (TextView) convertView.findViewById(R.id.message);
@@ -108,6 +111,18 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
         message.setText(Html.fromHtml(text));
         message.setMovementMethod(LinkMovementMethod.getInstance());
                 
+		if (entry.showAnimation() && animationEnabled) {
+	        Animation animation = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF, (float)0.5, Animation.RELATIVE_TO_SELF, (float)1); 
+	        
+			animation.setDuration(200);
+			animation.setFillAfter(true);
+			
+			convertView.setAnimation(animation);
+			convertView.startAnimation(animation);
+			
+			entry.showAnimation(false);
+		}
+		
         return convertView;
     }
 }

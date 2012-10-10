@@ -24,6 +24,7 @@ public class Friend {
 	private boolean online;
 	private String name;
 	private int id;
+	private boolean aospeakstatus;
 	
 	public Friend() {
 	}
@@ -46,6 +47,10 @@ public class Friend {
 		this.online = online;
 	}
 	
+	public void setAOSpeakStatus(boolean aospeakstatus) {
+		this.aospeakstatus = aospeakstatus;
+	}
+	
 	public String getName() {
 		return this.name;
 	}
@@ -56,6 +61,10 @@ public class Friend {
 	
 	public boolean isOnline() {
 		return this.online;
+	}
+	
+	public boolean getAOSpeakStatus() {
+		return this.aospeakstatus;
 	}
 	
 	public static class CustomComparator implements Comparator<Friend> {

@@ -25,7 +25,7 @@ import java.sql.ResultSet;
 
 public interface Database {
 
-    public void connect(String host, int port, String database, String username, String password) throws Exception;
+    public void connect() throws Exception;
 
     public void disconnect() throws Exception;
 

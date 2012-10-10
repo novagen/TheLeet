@@ -6,6 +6,7 @@ import com.rubika.aotalk.item.Friend;
 import com.rubika.aotalk.R;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,16 +21,28 @@ public class FriendAdapter extends ArrayAdapter<Friend> {
 	@Override
 	public View getView(int arg0, View arg1, ViewGroup arg2) {
 		LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		View layout = inflater.inflate(R.layout.friend, null);
+		View layout = inflater.inflate(R.layout.list_item_friend, null);
 		
 		TextView t = (TextView)layout.findViewById(R.id.title);
         t.setText(getItem(arg0).getName());
         
+        Drawable online = getContext().getResources().getDrawable(R.drawable.presence_invisible);
+        Drawable aospeak = null;
+        
         if(getItem(arg0).isOnline()) {
-        	t.setCompoundDrawablesWithIntrinsicBounds(getContext().getResources().getDrawable(R.drawable.presence_online), null, null, null);
-        } else {
-        	t.setCompoundDrawablesWithIntrinsicBounds(getContext().getResources().getDrawable(R.drawable.presence_invisible), null, null, null);
+        	online = getContext().getResources().getDrawable(R.drawable.presence_online);
         }
+        
+        if(getItem(arg0).getAOSpeakStatus()) {
+        	aospeak = getContext().getResources().getDrawable(R.drawable.aospeak);	
+        }
+        
+        t.setCompoundDrawablesWithIntrinsicBounds(
+        		online, 
+        		null, 
+        		aospeak, 
+        		null
+        	);
 
 		return layout;
 	}

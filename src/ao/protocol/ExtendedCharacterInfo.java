@@ -89,7 +89,7 @@ public class ExtendedCharacterInfo {
         String display = (m_firstname.compareTo("") == 0 ? "" : m_firstname+" ");
         display += m_nickname;
         display += (m_firstname.compareTo("") == 0 ? "" : " "+m_lastname);
-        display += " ("+m_level+"/"+m_ailevel+" "+m_faction+" "+m_profession;
+        display += " ("+m_level+"/"+m_ailevel+" "+m_faction+" "+m_breed+" "+m_profession;
         display += (m_orgName != null ? ", "+m_orgRank+" of "+m_orgName : ", Not in org") + ")";
         return display;
     }

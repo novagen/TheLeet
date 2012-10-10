@@ -54,10 +54,24 @@ public class CharacterLookupPacket extends Packet {
      *         if name is null
      */
     public CharacterLookupPacket(String name) {
+        this(name, Direction.TO_SERVER);
+    }   // end CharacterLookupPacket()
+    
+    /**
+     * Creates a new instance of CharacterLookupPacket
+     * 
+     * @param name
+     *        the name of the character to lookup
+     * @param d
+     *        the direction that the packet is moving
+     * @throws NullPointerException
+     *         if name is null
+     */
+    public CharacterLookupPacket(String name, Direction d) {
         if (name == null) { throw new NullPointerException("No name was passed."); }
         
         m_name = name;
-        m_direction = Direction.OUT;
+        m_direction = d;
         m_id = -1;
         
         // Serialize the packet
@@ -107,7 +121,7 @@ public class CharacterLookupPacket extends Packet {
     /** Always returns {@value #TYPE} */
     public short getType() { return TYPE; }
     public byte[] getData() { return m_data; }
-    /** Always returns {@code Direction.OUT} */
+    /** Always returns {@code Direction.TO_SERVER} */
     public Direction getDirection() { return m_direction; }
     
     @Override

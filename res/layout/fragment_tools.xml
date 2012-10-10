@@ -44,6 +44,9 @@ android:background="@drawable/fragment_background"
 	    android:text="@string/gsp2"
 	    android:gravity="center"
 	    android:textSize="11dp"
+	    android:lines="1"
+	    android:maxLines="1"
+	    android:ellipsize="marquee"
 		/>
 	</RelativeLayout>
 	<RelativeLayout 
@@ -60,10 +63,11 @@ android:background="@drawable/fragment_background"
 		android:layout_width="wrap_content"
 	    android:layout_height="wrap_content"
 	    android:stretchMode="columnWidth"
-	    android:verticalSpacing="22dip"
+	    android:verticalSpacing="0dp"
 	    android:numColumns="auto_fit"
 	    android:scrollbars="none"
-	    android:columnWidth="120dp"
+	    android:columnWidth="115dp"
+	    android:layoutAnimation="@anim/grid_grow"
 	    />
 	</RelativeLayout>
 </RelativeLayout>

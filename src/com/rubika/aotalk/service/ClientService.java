@@ -1,17 +1,30 @@
 package com.rubika.aotalk.service;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.ByteArrayBuffer;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import com.jakewharton.notificationcompat2.NotificationCompat2;
 import com.rubika.aotalk.AOTalk;
 import com.rubika.aotalk.database.DatabaseHandler;
 import com.rubika.aotalk.item.Account;
@@ -33,18 +46,19 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
-import android.support.v4.app.NotificationCompat;
+
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.text.Html;
 import ao.chat.ChatClient;
-import ao.misc.ByteConvert;
+import ao.misc.Convert;
 import ao.misc.NameFormat;
 import ao.protocol.CharacterInfo;
 import ao.protocol.Client;
@@ -71,19 +85,19 @@ public class ClientService extends Service {
 
 	private int NOTIFICATION = 0;
 	private NotificationManager notificationManager;
-	private NotificationCompat.Builder notificationBuilder;
+	private NotificationCompat2.Builder notificationBuilder;
 	
 	private CharacterInfo currentCharacter;
-	private String currentTargetChannel = "";
-	private String currentTargetCharacter = "";
-	private String currentShowChannel = ServiceTools.CHANNEL_MAIN;
+	public String currentTargetChannel = "";
+	public String currentTargetCharacter = "";
+	public String currentShowChannel = ServiceTools.CHANNEL_MAIN;
 	private int notificationCounter;
-	private ChatClient chatClient;
+	public ChatClient chatClient;
 	private Account currentAccount;
 	private SharedPreferences settings;
-	private SharedPreferences.Editor editor;
-	private boolean manualLogin = false;
-	private boolean accountFailed = false;
+	public SharedPreferences.Editor editor;
+	public boolean manualLogin = false;
+	public boolean accountFailed = false;
 	
 	private String PLAYURL = "";
 
@@ -97,16 +111,24 @@ public class ClientService extends Service {
 	private AACPlayer aacPlayer;
 	private AudioManager audioManager;
 	
-	private List<String> channelsMuted = new ArrayList<String>();
+	private String currentTrack = null;
 	
-	private Messenger messenger = new Messenger(new IncomingHandler());
-	private ArrayList<Messenger> clients = new ArrayList<Messenger>();
+	public List<String> channelsMuted = new ArrayList<String>();
+	
+	private Messenger messenger = new Messenger(new IncomingHandler(this));
+
+	public ArrayList<Messenger> clients = new ArrayList<Messenger>();
 	private DatabaseHandler databaseHandler;
 	
-	private List<Channel> channelList = new ArrayList<Channel>();
-	private List<Channel> privateList = new ArrayList<Channel>();
-	private List<Channel> invitationList = new ArrayList<Channel>();
+	private Handler AOVoiceHandler = new Handler();
+	private long AOVoiceUpdateTime = 60000;
+	private boolean AOVoiceIsUpdating = false;
+	
+	public List<Channel> channelList = new ArrayList<Channel>();
+	public List<Channel> privateList = new ArrayList<Channel>();
+	public List<Channel> invitationList = new ArrayList<Channel>();
 	private List<Friend> friendList = new ArrayList<Friend>();
+	
 	private Context context;
 	
 	private Handler faceHandler = new Handler() {
@@ -122,35 +144,41 @@ public class ClientService extends Service {
 		return messenger.getBinder();
 	}
 
-	class IncomingHandler extends Handler {
-        @SuppressWarnings("unchecked")
+	private static class IncomingHandler extends Handler {
+		private final WeakReference<ClientService> clientService;
+		
+		public IncomingHandler(ClientService s) {
+			clientService = new WeakReference<ClientService>(s);
+		}
+		
+		@SuppressWarnings("unchecked")
 		@Override
         public void handleMessage(Message message) {
         	if (message != null) {
 	        	switch (message.what) {
 		            case ServiceTools.MESSAGE_PLAYER_PLAY:
-		            	play();
+		            	clientService.get().play();
 		            	break;
 		            case ServiceTools.MESSAGE_PLAYER_STOP:
-		            	stop();
+		            	clientService.get().stop();
 		            	break;
 		            case ServiceTools.MESSAGE_PRIVATE_CHANNEL_JOIN:
 		            	Channel invitationJoin = (Channel) message.obj;
-		            	privateList.add(invitationJoin);
+		            	clientService.get().privateList.add(invitationJoin);
 		            	
 		            	int removeThis = -1;
-		            	for (int i = 0; i < invitationList.size(); i++) {
-		            		if (invitationList.get(i).getID() == invitationJoin.getID()) {
+		            	for (int i = 0; i < clientService.get().invitationList.size(); i++) {
+		            		if (clientService.get().invitationList.get(i).getID() == invitationJoin.getID()) {
 		            			removeThis = i;
 		            		}
 		            	}
 		            	
 		            	if (removeThis >= 0) {
-		            		invitationList.remove(removeThis);
+		            		clientService.get().invitationList.remove(removeThis);
 		            	}
 		            	
 						try {
-							chatClient.acceptInvite(invitationJoin.getID());
+							clientService.get().chatClient.acceptInvite(invitationJoin.getID());
 						} catch (IOException e) {
 							Logging.log(APP_TAG, e.getMessage());
 						} catch (ClientStateException e) {
@@ -158,28 +186,28 @@ public class ClientService extends Service {
 						}
 
 						Message joined = Message.obtain(null, ServiceTools.MESSAGE_PRIVATE_CHANNEL);
-						joined.obj = privateList;
+						joined.obj = clientService.get().privateList;
 		            	
-						message(joined);
+						clientService.get().message(joined);
 
 						break;
 		            case ServiceTools.MESSAGE_PRIVATE_CHANNEL_DENY:
 		            	Channel invitationLeave = (Channel) message.obj;
-		            	privateList.remove(invitationLeave);
+		            	clientService.get().privateList.remove(invitationLeave);
 
 		            	removeThis = -1;
-		            	for (int i = 0; i < invitationList.size(); i++) {
-		            		if (invitationList.get(i).getID() == invitationLeave.getID()) {
+		            	for (int i = 0; i < clientService.get().invitationList.size(); i++) {
+		            		if (clientService.get().invitationList.get(i).getID() == invitationLeave.getID()) {
 		            			removeThis = i;
 		            		}
 		            	}
 		            	
 		            	if (removeThis >= 0) {
-		            		invitationList.remove(removeThis);
+		            		clientService.get().invitationList.remove(removeThis);
 		            	}
 		            	
 						try {
-							chatClient.denyInvite(invitationLeave.getID());
+							clientService.get().chatClient.denyInvite(invitationLeave.getID());
 						} catch (IOException e) {
 							Logging.log(APP_TAG, e.getMessage());
 						} catch (ClientStateException e) {
@@ -188,60 +216,77 @@ public class ClientService extends Service {
 						
 						break;
 		            case ServiceTools.MESSAGE_CLIENT_REGISTER:
-		            	ClientService.this.clientRegistered(message);
+		            	clientService.get().clientRegistered(message);
+		            	
+		            	Logging.log(APP_TAG, "Clients registered: " + clientService.get().clients.size());
+		            	
+		            	if (clientService.get().clients.size() > 0) {
+		            		clientService.get().AOVoiceHandler.removeCallbacks(clientService.get().AOVoiceUpdateTask);
+		            		clientService.get().AOVoiceHandler.post(clientService.get().AOVoiceUpdateTask);
+		            	} else {
+		            		clientService.get().AOVoiceHandler.removeCallbacks(clientService.get().AOVoiceUpdateTask);
+		            	}
+		            	
 		                break;
 		            case ServiceTools.MESSAGE_CLIENT_UNREGISTER:
-		            	clients.remove(message.replyTo);
+		            	clientService.get().clients.remove(message.replyTo);
+		            	
+		            	if (clientService.get().clients.size() == 0) {
+		            		clientService.get().AOVoiceHandler.removeCallbacks(clientService.get().AOVoiceUpdateTask);
+		            	}
+		            	
 		            	break;
 	                case ServiceTools.MESSAGE_CONNECT:
-                    	editor.putInt("lastAccount", ((Account) message.obj).getID());
-                    	editor.commit();
+	                	clientService.get().editor.putInt("lastAccount", ((Account) message.obj).getID());
+	                	clientService.get().editor.commit();
 
-                    	manualLogin = true;
-                    	accountFailed = false;
-                    	
-	                	ClientService.this.connect((Account) message.obj);
+	                	clientService.get().accountFailed = false;
+	                	clientService.get().manualLogin = true;
+	                	
+	                	clientService.get().connect((Account) message.obj);
 	                	
 	                	break;
 	                case ServiceTools.MESSAGE_SET_CHANNEL:
-	                	currentTargetChannel = (String)message.obj;
+	                	clientService.get().currentTargetChannel = (String)message.obj;
 	                	
-	                	editor.putString("currentChannel", currentTargetChannel);
-	                	editor.commit();
+	                	clientService.get().editor.putString("currentChannel", clientService.get().currentTargetChannel);
+	                	clientService.get().editor.commit();
 	                	
 	                	break;
 	                case ServiceTools.MESSAGE_SET_SHOW:
-	                	currentShowChannel = (String)message.obj;
+	                	clientService.get().currentShowChannel = (String)message.obj;
 	                	
 	                	break;
 	                case ServiceTools.MESSAGE_SET_CHARACTER:
-	                	if (chatClient != null && message.obj != null) {
-		                	currentTargetCharacter = (String) message.obj;
+	                	if (clientService.get().chatClient != null && message.obj != null) {
+	                		clientService.get().currentTargetCharacter = (String) message.obj;
 		                	
-		                	editor.putString("currentCharacter", currentTargetCharacter);
-		                	editor.commit();
+	                		clientService.get().editor.putString("currentCharacter", clientService.get().currentTargetCharacter);
+	                		clientService.get().editor.commit();
 	                	}
 	                	
 	                	break;
 	                case ServiceTools.MESSAGE_SEND:
-	                	ClientService.this.sendMessage((ChatMessage) message.obj, message.arg1);
+	                	clientService.get().sendMessage((ChatMessage) message.obj, message.arg1);
 	                	break;
 	                case ServiceTools.MESSAGE_STATUS:
-	                	if (chatClient.getState() != ChatClient.State.DISCONNECTED) {
-	                    	ClientService.this.message(Message.obtain(null, ServiceTools.MESSAGE_IS_CONNECTED, 0, 0));
+	                	if (clientService.get().chatClient.getState() == Client.ClientState.LOGGED_IN) {
+	                		clientService.get().message(Message.obtain(null, ServiceTools.MESSAGE_IS_CONNECTED, 0, 0));
 	                	} else {
-	                		ClientService.this.message(Message.obtain(null, ServiceTools.MESSAGE_IS_DISCONNECTED, 0, 0));
+	                		clientService.get().message(Message.obtain(null, ServiceTools.MESSAGE_IS_DISCONNECTED, 0, 0));
 	                	}
 	                	
 	                	break;
 	                case ServiceTools.MESSAGE_DISCONNECT:
-	                	editor.putBoolean("autoReconnect", false);
-                    	editor.putInt("lastAccount", 0);
-	                	editor.commit();
+	                	clientService.get().editor.putBoolean("reconnect", false);
+	                	clientService.get().editor.putInt("lastAccount", 0);
+	                	clientService.get().editor.commit();
 	                	
-	                	if (chatClient.getState() != ChatClient.State.DISCONNECTED) {
+	                	clientService.get().manualLogin = true;
+	                	
+	                	if (clientService.get().chatClient.getState() != Client.ClientState.DISCONNECTED) {
 	                		try {
-	                			chatClient.disconnect();
+	                			clientService.get().chatClient.disconnect();
 							} catch (IOException e) {
 								Logging.log(APP_TAG, e.getMessage());
 							}
@@ -249,11 +294,16 @@ public class ClientService extends Service {
 	                	
 	                    break;
 	                case ServiceTools.MESSAGE_CHARACTER:
-                    	editor.putBoolean("autoReconnect", true);
-                    	editor.commit();
+	                	if (clientService.get().settings.getBoolean("autoReconnect", true)) {
+	                		clientService.get().editor.putBoolean("reconnect", true);
+	                	} else {
+	                		clientService.get().editor.putBoolean("reconnect", false);
+	                	}
+	                	
+	                	clientService.get().editor.commit();
 
 	                	if (message.obj != null) {
-	                		ClientService.this.login((CharacterInfo) message.obj);
+	                		clientService.get().login((CharacterInfo) message.obj);
 	                	}
 	                	
 	                    break;
@@ -261,7 +311,7 @@ public class ClientService extends Service {
 	                	String nameAdd = (String) message.obj;
 	                	
 	                	if (!nameAdd.equals("")) {
-	                		addFriend(nameAdd);
+	                		clientService.get().addFriend(nameAdd);
 	                	}
 	                	
 	                	break;
@@ -269,19 +319,19 @@ public class ClientService extends Service {
 	                	String nameRemove = (String) message.obj;
 	                	
 	                	if (!nameRemove.equals("")) {
-	                		removeFriend(nameRemove);
+	                		clientService.get().removeFriend(nameRemove);
 	                	}
 	                	
 	                	break;
 	                case ServiceTools.MESSAGE_MUTED_CHANNELS:
-	                	channelList = (List<Channel>) message.obj;
-	                	channelsMuted.clear();
+	                	clientService.get().channelList = (List<Channel>) message.obj;
+	                	clientService.get().channelsMuted.clear();
 	                	
 	                	String muted = "";
 	                	
-	                	for (Channel channel : channelList) {
+	                	for (Channel channel : clientService.get().channelList) {
 	                		if (channel.getMuted()) {
-	                			channelsMuted.add(channel.getName());
+	                			clientService.get().channelsMuted.add(channel.getName());
 	                			if (muted.length() > 0) {
 	                				muted += ",";
 	                			}
@@ -290,13 +340,13 @@ public class ClientService extends Service {
 	                		}
 	                	}
 	                	
-	                	editor.putString("mutedChannels", muted);
-	                	editor.commit();
+	                	clientService.get().editor.putString("mutedChannels", muted);
+	                	clientService.get().editor.commit();
 	                	
 						Message msg = Message.obtain(null, ServiceTools.MESSAGE_CHANNEL);
-						msg.obj = channelList;
+						msg.obj = clientService.get().channelList;
 
-						message(msg);
+						clientService.get().message(msg);
 	                	
 	                	break;
 	                default:
@@ -321,7 +371,7 @@ public class ClientService extends Service {
 	    notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
 	    notificationManager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-        notificationBuilder = new NotificationCompat.Builder(this);
+        notificationBuilder = new NotificationCompat2.Builder(this);
         
         notificationBuilder.setContentIntent(PendingIntent.getActivity(this, 0, notificationIntent, 0));
         notificationBuilder.setContentTitle(getString(R.string.app_name));
@@ -363,13 +413,14 @@ public class ClientService extends Service {
 			public void loggedIn(Client bot) {
 				Logging.log(APP_TAG, "Logged in");
 				
-            	chatClient.start();
+            	manualLogin = false;
+				chatClient.start();
 			}
 
 			@Override
 			public void started(Client bot) {
 				Logging.log(APP_TAG, "Started");
-		        startForeground(NOTIFICATION, notificationBuilder.getNotification());
+		        startForeground(NOTIFICATION, notificationBuilder.build());
 
 		        setNotification(
 						String.format(getString(R.string.character_is_online), currentCharacter.getName()),
@@ -415,7 +466,7 @@ public class ClientService extends Service {
 			@Override
 			public void disconnected(Client bot) {
 				Logging.log(APP_TAG, "Disconnected");
-				
+								
 				if (currentCharacter != null) {
 					setNotification(
 							getString(R.string.disconnected),
@@ -433,7 +484,7 @@ public class ClientService extends Service {
 						);
 				}
 				
-				message(Message.obtain(null, ServiceTools.MESSAGE_DISCONNECTED, (settings.getBoolean("autoReconnect", false)? 1 : 0), 0));
+				message(Message.obtain(null, ServiceTools.MESSAGE_DISCONNECTED, (settings.getBoolean("reconnect", true)? 1 : 0), 0));
 				
 				friendList.clear();
 				channelList.clear();
@@ -442,13 +493,12 @@ public class ClientService extends Service {
 				
 				Logging.log(APP_TAG, "accountFailed: " + accountFailed);
 				
-				if (!settings.getBoolean("autoReconnect", true) || accountFailed) {
+				if (!settings.getBoolean("reconnect", true) || accountFailed) {
 					Logging.log(APP_TAG, "Skipping automatic reconnect");
 					currentAccount = null;
 					currentCharacter = null;
 				} else {
 					Logging.log(APP_TAG, "Automatic reconnect");
-                	manualLogin = false;
                 	accountFailed = false;
 					connect(currentAccount);
 				}
@@ -472,19 +522,31 @@ public class ClientService extends Service {
 
 				//Character list packet
 				if(packet.getType() == CharacterListPacket.TYPE) {
-	                if (!manualLogin) {
+	                CharacterInfo[] cl = ((CharacterListPacket) packet).getCharacters();
+					
+	                if (settings.getBoolean("reconnect", true) && !manualLogin) {
 	                	if (currentCharacter != null) {
-	                		login(currentCharacter);
+    						login(currentCharacter);
 	                	} else {
 	                		if (settings.getInt("lastCharacter", 0) != 0) {
-	                			for (int i = 0; i < ((CharacterListPacket) packet).getNumCharacters(); i++) {
-		                			if (((CharacterListPacket) packet).getCharacter(i).getID() == settings.getInt("lastCharacter", 0)) {
-		                				login(((CharacterListPacket) packet).getCharacter(i));
+	                			CharacterInfo cu = null;
+	                			
+	                			for (CharacterInfo c : cl) {
+		    	                	Logging.log(APP_TAG, "user: " + c.getName() + ", status: " + c.getOnline());
+
+		    	                	if (c.getID() == settings.getInt("lastCharacter", 0) /*&& !ServiceTools.intToBoolean(c.getOnline())*/) {
+		                				cu = c;
 		                			}
 		                		}
+	                			
+	                			
+	                			if (cu != null) {
+	                				login(cu);
+	                			}
 	                		}
 	                	}
-	                	manualLogin = true;
+	                	
+	                	manualLogin = false;
 	                } else {
 						msg = Message.obtain(null, ServiceTools.MESSAGE_CHARACTERS);
 		                msg.obj = (CharacterListPacket) packet;
@@ -498,7 +560,7 @@ public class ClientService extends Service {
 				}
 
 				//Private message
-				if(packet.getType() == PrivateMessagePacket.TYPE && packet.getDirection() == Packet.Direction.IN) {
+				if(packet.getType() == PrivateMessagePacket.TYPE && packet.getDirection() == Packet.Direction.TO_CLIENT) {
 					if(chatClient.getCharTable().getName(((PrivateMessagePacket)packet).getCharID()).equals(NameFormat.format(ServiceTools.BOTNAME)) 
 							&& ((PrivateMessagePacket)packet).getMessage().contains("::AOTalk::")) {
 						String whoisName = "";	
@@ -560,7 +622,7 @@ public class ClientService extends Service {
 				}
 				
 				//Chat group message
-				if(packet.getType() == ChannelMessagePacket.TYPE && packet.getDirection() == Packet.Direction.IN) {
+				if(packet.getType() == ChannelMessagePacket.TYPE && packet.getDirection() == Packet.Direction.TO_CLIENT) {
 					if (!channelsMuted.contains(chatClient.getGroupTable().getName(((ChannelMessagePacket)packet).getGroupID()))) {
 						databaseHandler.addPost(
 								((ChannelMessagePacket)packet).display(chatClient.getCharTable(), chatClient.getGroupTable()),
@@ -575,7 +637,7 @@ public class ClientService extends Service {
 				}
 				
 				//System message
-				if(packet.getType() == SystemMessagePacket.TYPE && packet.getDirection() == Packet.Direction.IN) {
+				if(packet.getType() == SystemMessagePacket.TYPE && packet.getDirection() == Packet.Direction.TO_CLIENT) {
 					// Got offline message
 					if(((SystemMessagePacket)packet).getMsgType().equals("a460d92")) {
 						databaseHandler.addPost(
@@ -613,7 +675,7 @@ public class ClientService extends Service {
 				}
 				
 				//Broadcast message
-				if(packet.getType() == BroadcastMessagePacket.TYPE && packet.getDirection() == Packet.Direction.IN) {
+				if(packet.getType() == BroadcastMessagePacket.TYPE && packet.getDirection() == Packet.Direction.TO_CLIENT) {
 					databaseHandler.addPost(
 							((BroadcastMessagePacket)packet).display(chatClient.getCharTable(), chatClient.getGroupTable()),
 							ServiceTools.CHANNEL_SYSTEM,
@@ -700,6 +762,9 @@ public class ClientService extends Service {
 						msg = Message.obtain(null, ServiceTools.MESSAGE_FRIEND);
 						msg.obj = friendList;
 	                }
+					
+            		AOVoiceHandler.removeCallbacks(AOVoiceUpdateTask);
+            		AOVoiceHandler.post(AOVoiceUpdateTask);
 				}
 				
 				//Group announcement
@@ -724,7 +789,7 @@ public class ClientService extends Service {
 							enabled = false;
 						}
 						
-						channelList.add(new Channel(((ChannelUpdatePacket)packet).getGroupName(), ByteConvert.byteToInt(((ChannelUpdatePacket)packet).getGroupID()), enabled, muted));
+						channelList.add(new Channel(((ChannelUpdatePacket)packet).getGroupName(), Convert.byteToInt(((ChannelUpdatePacket)packet).getGroupID()), enabled, muted));
 						
 						msg = Message.obtain(null, ServiceTools.MESSAGE_CHANNEL);
 						msg.obj = channelList;
@@ -855,26 +920,46 @@ public class ClientService extends Service {
         aacPlayer.setDecodeBufferCapacityMs(AACPlayer.DEFAULT_DECODE_BUFFER_CAPACITY_MS);
         
 		PlayerCallback playerCallback = new PlayerCallback() {
+			@Override
 		    public void playerStarted() {
 		        isPlaying = true;
 				setNotificationPlaying(true);
 		    }
 		    
+			@Override
 		    public void playerPCMFeedBuffer(boolean isPlaying, int bufSizeMs, int bufCapacityMs) {
 		    }
 		    
+			@Override
 		    public void playerStopped(int perf) {
 				audioManager.setStreamMute(AudioManager.STREAM_MUSIC, false);
+				currentTrack = null;
 		        isPlaying = false;
 				setNotificationPlaying(false);
 		    }
 		    
+			@Override
 		    public void playerException(Throwable t) {
 		        if (retryOnFailure) {
 		        	aacPlayer.stop();
 					play();
 		        }
 		    }
+
+			@Override
+			public void playerMetadata(String key, String value) {
+				Logging.log(APP_TAG, key + " : " + value);
+				
+				if (key != null) {
+					if (key.equals("StreamTitle")) {
+						currentTrack = value;
+						
+						Message message = Message.obtain(null, ServiceTools.MESSAGE_PLAYER_TRACK, 0, 0);
+						message.obj = value;
+						message(message);
+					}
+				}
+			}
 		};
 		
 		aacPlayer.setPlayerCallback(playerCallback);
@@ -906,7 +991,7 @@ public class ClientService extends Service {
 		
 		phoneManager.listen(phoneListener, PhoneStateListener.LISTEN_CALL_STATE);
 		
-        if (settings.getBoolean("autoReconnect", true) && !accountFailed) {
+        if (settings.getBoolean("reconnect", true) && !accountFailed) {
         	Account account = databaseHandler.getAccount(settings.getInt("lastAccount", 0));
         	connect(account);
         }
@@ -921,13 +1006,13 @@ public class ClientService extends Service {
         return START_STICKY;
     }
 	
-	private void clientRegistered(Message message) {
+	public void clientRegistered(Message message) {
 		clients.add(message.replyTo);
 		
 	    Message msg = Message.obtain();
 	    
 		if (chatClient != null) {
-	    	if (chatClient.getState() != ChatClient.State.DISCONNECTED) {
+	    	if (chatClient.getState() != Client.ClientState.DISCONNECTED) {
 	        	if (currentCharacter != null) {
 	        		msg.arg1 = currentCharacter.getID();
 	        	} else {
@@ -969,6 +1054,7 @@ public class ClientService extends Service {
 	    registerData.add(isPlaying);
 	    registerData.add(invitationList);
 	    registerData.add(privateList);
+	    registerData.add(currentTrack);
 	
 	    msg.obj = registerData;
 	    
@@ -976,7 +1062,7 @@ public class ClientService extends Service {
 	    ClientService.this.message(msg);		
 	}
 
-	private boolean sendMessage(ChatMessage message, int show) {
+	public boolean sendMessage(ChatMessage message, int show) {
 		Logging.log(APP_TAG, "sendMessage\nChannel: " + message.getChannel() + "\nCharacter: " + message.getCharacter());
 		
 		if (!message.getCharacter().equals("")) {
@@ -1017,6 +1103,9 @@ public class ClientService extends Service {
 		return true;
 	}
 	
+	private long lastNotificationSound = 0;
+	private long timeBetweenNotificationSounds = 2000;
+	
 	private void setNotification(String message, String ticker, boolean persistent, boolean update) {
 		Logging.log(APP_TAG, "Notifications: " + notificationCounter);
 		
@@ -1029,13 +1118,14 @@ public class ClientService extends Service {
 	    notificationBuilder.setNumber(notificationCounter);
 	    notificationBuilder.setTicker(ticker);
 	    
-	    if (ticker != null && update && settings.getString("notificationSound", null) != null) {
+	    if (ticker != null && update && settings.getString("notificationSound", null) != null && System.currentTimeMillis() - lastNotificationSound > timeBetweenNotificationSounds) {
 	    	notificationBuilder.setSound(Uri.parse(settings.getString("notificationSound", null)));
+	    	lastNotificationSound = System.currentTimeMillis();
 	    } else {
 	    	notificationBuilder.setSound(null);
 	    }
-		
-	    notificationManager.notify(NOTIFICATION, notificationBuilder.getNotification());
+			    
+	    notificationManager.notify(NOTIFICATION, notificationBuilder.build());
 		
 		if (!persistent && !isPlaying) {
 			notificationManager.cancel(NOTIFICATION);
@@ -1047,7 +1137,7 @@ public class ClientService extends Service {
 	private void setNotificationFace(Bitmap face) {
 		if (face != null) {
 		    notificationBuilder.setLargeIcon(face);
-		    notificationManager.notify(NOTIFICATION, notificationBuilder.getNotification());
+		    notificationManager.notify(NOTIFICATION, notificationBuilder.build());
 		} else {
 		    Logging.log(APP_TAG, "Character image is NULL");
 		}
@@ -1057,7 +1147,7 @@ public class ClientService extends Service {
 		if (isplaying) {
 	    	notificationBuilder.setSmallIcon(R.drawable.ic_gridstream);
 	    	
-	    	if (chatClient.getState() == Client.State.DISCONNECTED) {
+	    	if (chatClient.getState() == Client.ClientState.DISCONNECTED) {
 	    		notificationBuilder.setLargeIcon(((BitmapDrawable)getResources().getDrawable(R.drawable.ic_notification)).getBitmap());
 	    		notificationBuilder.setContentText("GridStream is playing");
 	    		notificationBuilder.setContentTitle(getString(R.string.app_name));
@@ -1067,14 +1157,14 @@ public class ClientService extends Service {
 	    	notificationBuilder.setSmallIcon(R.drawable.ic_notification);
 	    }
 	    
-	    notificationManager.notify(NOTIFICATION, notificationBuilder.getNotification());
+	    notificationManager.notify(NOTIFICATION, notificationBuilder.build());
 	    
-	    if (chatClient.getState() == Client.State.DISCONNECTED && !isPlaying) {
+	    if (chatClient.getState() == Client.ClientState.DISCONNECTED && !isPlaying) {
 	    	notificationManager.cancel(NOTIFICATION);
 	    }
 	}
 	
-	private boolean message(Message message) {
+	public boolean message(Message message) {
 		if (message != null) {
 			for (int  i = clients.size() - 1; i >= 0; i--) {
 	            try {
@@ -1089,14 +1179,128 @@ public class ClientService extends Service {
 		
 		return false;
 	}
+	
+	private class UpdateAOVoice extends AsyncTask<Void, Void, String> {
+		protected String doInBackground(Void... str) {
+			AOVoiceIsUpdating = true;
+			updateAOVoiceData();
+	    	 
+			return null;
+		}
 
-	private void connect(Account acc) {
+		protected void onPostExecute(String result) {
+			Message msg = Message.obtain(null, ServiceTools.MESSAGE_FRIEND);
+			msg.obj = friendList;
+			message(msg);
+	    	 
+	    	AOVoiceIsUpdating = false;
+		}
+	}
+
+	private void updateAOVoiceData() {
+		HttpClient httpclient;
+		HttpPost httppost;
+		HttpResponse response;
+		HttpEntity entity;
+		InputStream is;
+		BufferedReader reader;
+		StringBuilder sb;
+		String line;
+		String resultData = null;
+		JSONArray jArray;
+		JSONObject json_data;
+
+		try {
+    		httpclient = new DefaultHttpClient();
+	        httppost = new HttpPost("http://api.aospeak.com/online/" + chatClient.getDimensionID() +  "/");
+	        	        
+	        response = httpclient.execute(httppost);
+	        entity = response.getEntity();
+	        is = entity.getContent();
+	        
+	    	try{
+	    		reader = new BufferedReader(new InputStreamReader(is, "iso-8859-1"), 8);
+    	        sb = new StringBuilder();
+    	        line = null;
+    	        
+    	        while ((line = reader.readLine()) != null) {
+    	        	sb.append(line + "\n");
+    	        }
+    	        
+    	        is.close();
+    	 
+    			Logging.log(APP_TAG, sb.toString());
+
+    	        resultData = sb.toString();
+	    	} catch(Exception e){
+	    	    Logging.log(APP_TAG, e.toString());
+	    	}
+    	} catch(Exception e){
+    		Logging.log(APP_TAG, e.toString());
+    	}
+		
+    	try{
+    		if(resultData != null) {
+	    		if((!resultData.startsWith("null"))) {
+	    			jArray = new JSONArray(resultData);
+	    			
+    	        	try {
+		    			for(Friend f : friendList) {
+	    	        		f.setAOSpeakStatus(false);
+	    	        	}
+    	        	} catch (ConcurrentModificationException e) {
+    	        		Logging.log(APP_TAG, e.getMessage());
+    	        	}
+    	        		    				    			
+	    	        for(int i = jArray.length() - 1; i >= 0; i--){
+	    	        	json_data = jArray.getJSONObject(i);
+		                
+	    	        	Logging.log(APP_TAG, json_data.getString("name"));
+	    	        	
+	    	        	try {
+		    	        	for(Friend f : friendList) {
+		    	        		if (f.getName().toLowerCase().equals(json_data.getString("name").toLowerCase())) {
+		    	    	        	Logging.log(APP_TAG, json_data.getString("name") + " is online at AOSpeak");
+		    	        			f.setAOSpeakStatus(true);
+		    	        		}
+		    	        	}
+	    	        	} catch (ConcurrentModificationException e) {
+	    	        		Logging.log(APP_TAG, e.getMessage());
+	    	        	}
+	    	        }
+	    		}
+    		}
+    	} catch(JSONException e){
+    		Logging.log(APP_TAG, e.toString());
+    	}
+	}
+		
+	private Runnable AOVoiceUpdateTask = new Runnable() {
+		public void run() {
+			Logging.log(APP_TAG, "Running AOVoiceUpdate");
+			
+			if (chatClient.getState() == Client.ClientState.LOGGED_IN && !AOVoiceIsUpdating) {
+		    	Logging.log(APP_TAG, "User is logged in, fetching AOVoice data and updating friends");
+		    	new UpdateAOVoice().execute();
+			} else {
+		    	Logging.log(APP_TAG, "User is NOT logged in or update already running, no need to fetch data");
+			}
+
+			if (clients.size() > 0) {
+				AOVoiceHandler.postDelayed(this, AOVoiceUpdateTime);
+			} else {
+				AOVoiceHandler.removeCallbacks(this);
+			}
+		}
+	};
+
+	public void connect(Account acc) {
 		if (acc != null) {
 			currentAccount = acc;
 			
 			new Thread(new Runnable() { 
 	            public void run(){
-	        		if (settings.getBoolean("autoReconnect", false)) {
+	        		if (settings.getBoolean("reconnect", true)) {
 	        			try {
 	                        synchronized (this) {
 	                            long startTime = System.currentTimeMillis();
@@ -1134,7 +1338,7 @@ public class ClientService extends Service {
 	}
 	
 	private void authenticate() {
-		if (chatClient.getState() == Client.State.CONNECTED) {
+		if (chatClient.getState() == Client.ClientState.CONNECTED) {
 			try {
 				if (currentAccount != null) {
 					chatClient.authenticate(currentAccount.getUsername(), currentAccount.getPassword());
@@ -1149,7 +1353,7 @@ public class ClientService extends Service {
 		}
 	}
 	
-	private void login(final CharacterInfo character) {
+	public void login(final CharacterInfo character) {
 		if (character != null) {
 			currentCharacter = character;
 			
@@ -1157,7 +1361,6 @@ public class ClientService extends Service {
 	            public void run(){
 					try {
 						Logging.log(APP_TAG, "Logging in");
-						manualLogin = true;
 						chatClient.login(character);
 					} catch (IOException e) {
 	                	message(Message.obtain(null, ServiceTools.MESSAGE_CONNECTION_ERROR, 0, 0));
@@ -1171,8 +1374,8 @@ public class ClientService extends Service {
 		}
 	}
 
-	private boolean addFriend(final String name) {
-		if (chatClient.getState() != ChatClient.State.DISCONNECTED) {
+	public boolean addFriend(final String name) {
+		if (chatClient.getState() != Client.ClientState.DISCONNECTED) {
 			if (NameFormat.format(currentCharacter.getName()).equals(NameFormat.format(name))) {
 				Logging.toast(context, getString(R.string.not_add_yourself));
 				
@@ -1207,8 +1410,8 @@ public class ClientService extends Service {
 		return false;
 	}
 
-	private boolean removeFriend(final String name) {
-		if (chatClient.getState() != ChatClient.State.DISCONNECTED) {
+	public boolean removeFriend(final String name) {
+		if (chatClient.getState() != Client.ClientState.DISCONNECTED) {
 			List<Friend> tempList = new ArrayList<Friend>();
 			tempList.addAll(friendList);
 			
@@ -1254,7 +1457,7 @@ public class ClientService extends Service {
 		return false;
 	}
 
-	private void play() {
+	public void play() {
 		aacPlayer.stop();
 		
 		if (PLAYURL.equals("")) {
@@ -1300,7 +1503,7 @@ public class ClientService extends Service {
 	    }
 	}
 
-	private void stop() {
+	public void stop() {
 		audioManager.setStreamMute(AudioManager.STREAM_MUSIC, true);
 		aacPlayer.stop();
 	}

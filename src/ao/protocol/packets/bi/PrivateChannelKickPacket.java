@@ -35,7 +35,11 @@ public class PrivateChannelKickPacket extends Packet  {
     private final Direction m_direction;
     
     public PrivateChannelKickPacket(int id) {
-        m_direction = Direction.OUT;
+        this(id, Direction.TO_SERVER);
+    }   // end PrivateChannelKickPacket()
+    
+    public PrivateChannelKickPacket(int id, Direction d) {
+        m_direction = d;
         m_id = id;
 
         // Serialize the packet

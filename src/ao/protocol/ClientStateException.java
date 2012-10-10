@@ -32,11 +32,7 @@ package ao.protocol;
  */
 public class ClientStateException extends RuntimeException {
     
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = -1733242975299634046L;
-	private final Client.State m_currentState, m_requiredState;
+    private final Client.ClientState m_currentState, m_requiredState;
     
     /** 
      * Creates a new instance of AOBotStateException. 
@@ -48,15 +44,15 @@ public class ClientStateException extends RuntimeException {
      * @param requiredState
      *        the state that the bot should have been in at the time this exception was thrown
      */
-    public ClientStateException(String message, Client.State currentState, Client.State requiredState) {
+    public ClientStateException(String message, Client.ClientState currentState, Client.ClientState requiredState) {
         super(message);
         m_currentState  = currentState;
         m_requiredState = requiredState;
     }   // end AOBotStateException()
     
     /** Returns the state of the bot at the time this exception was thrown. */
-    public Client.State getCurrentState() { return m_currentState; }
+    public Client.ClientState getCurrentState() { return m_currentState; }
     /** Returns the state that the bot should have been in at the time this exception was thrown. */
-    public Client.State getRequiredState() { return m_requiredState; }
+    public Client.ClientState getRequiredState() { return m_requiredState; }
     
 }   // end class AOBotStateException

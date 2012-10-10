@@ -20,6 +20,7 @@
 
 package ao.protocol;
 
+import ao.misc.Convert;
 import java.math.BigInteger;
 import java.util.Random;
 
@@ -86,7 +87,7 @@ public class LoginKeyGenerator {
         else if (accountName == null) { throw new NullPointerException("No user name was given."); }
         else if (password == null) { throw new NullPointerException("No password was given."); }
         else {
-            return generateLoginKey( serverSeed, generateLocalSeed(16), accountName, password );
+            return generateLoginKey( serverSeed, generateLocalSeed(16), accountName, password, P, G1, G2);
         }   // end else
     }   // end generateLoginKey()
 
@@ -113,10 +114,10 @@ public class LoginKeyGenerator {
      * @see #generateLoginKey(String, String, String)
      * @see <a href="http://en.wikipedia.org/wiki/Diffie-Hellman_key_exchange">Diffie-Hellman Key Exchange</a>
      */
-    private static String generateLoginKey(String serverSeed, String localSeed, String accountName, String password) {
+    private static String generateLoginKey(String serverSeed, String localSeed, String accountName, String password, BigInteger prime, BigInteger g1, BigInteger g2) {
         BigInteger bigLocalSeed = new BigInteger(localSeed, 16);
-        BigInteger bigDecryptionKey = G2.modPow(bigLocalSeed, P);
-        BigInteger bigEncyrptionKey = G1.modPow(bigLocalSeed, P);
+        BigInteger bigDecryptionKey = g2.modPow(bigLocalSeed, prime);
+        BigInteger bigEncyrptionKey = g1.modPow(bigLocalSeed, prime);
         
         String encryptionKey      = truncateEncryptionKey(bigEncyrptionKey.toString(16), 32);
         String loginData          = accountName + "|" + serverSeed + "|" + password;
@@ -188,12 +189,8 @@ public class LoginKeyGenerator {
      *        the login data that will be encrypted
      * @return 
      *        the encrypted login data
-     *
-     * @see #generateLoginKey(String, String, String)
-     * @see #generateLoginKey(String, String, String, String)
-     * @see #tea(int[], int[])
      */
-    private static String encrypt(String encryptionKey, String loginData) {
+    public static String encrypt(String encryptionKey, String loginData) {
         if (encryptionKey.length() < 32) { throw new IllegalArgumentException("The encryption key is too short."); }
         
         String prefix          = generatePrefix(8);
@@ -203,8 +200,8 @@ public class LoginKeyGenerator {
         String unencrypted = prefix + loginDataLength + loginData + pad;
         String encrypted   = "";
         
-        int[] encryptionKeyInts = hexStringToIntArray(encryptionKey);
-        int[] unencryptedInts   = stringToIntArray(unencrypted);
+        int[] encryptionKeyInts = Convert.hexStringToIntArray(encryptionKey);
+        int[] unencryptedInts   = Convert.stringToIntArray(unencrypted);
         
         int[] oldBlock = { 0, 0 };
         int[] newBlock = { 0, 0 };
@@ -218,14 +215,14 @@ public class LoginKeyGenerator {
                 newBlock[1] ^= oldBlock[1];
             }   // end if
             
-            tea(newBlock, encryptionKeyInts);
+            Tea.encrypt(newBlock, encryptionKeyInts);
             
             oldBlock[0] = newBlock[0];
             oldBlock[1] = newBlock[1];
             
-            encrypted += blockToHexString(newBlock);
+            encrypted += Convert.intArrayToHexString(newBlock);
         }   // end for
-
+        
         return encrypted;
     }   // end encrypt()
     
@@ -293,120 +290,4 @@ public class LoginKeyGenerator {
         
         return pad;
     }   // end generatePad()
-    
-    /**
-     * Turns a hexadecimal string into a sequence of integers.
-     * This function is used to turn the 128 bit encryption key from 
-     * a hexadecimal string into a sequence of four integers; 
-     * so that it can be used in {@link #tea(int[], int[])}
-     * to encrypt the login data.
-     *
-     * @param key 
-     *        the hexadecimal string that will be turned into a sequence of integers
-     * @return 
-     *        the sequence of integers created from the hexadecimal string
-     *
-     * @see #encrypt(String, String)
-     * @see #tea(int[], int[])
-     */ 
-    private static int[] hexStringToIntArray(String key) {
-        int[] keyInts = new int[key.length() / 8];
-        
-        for (int i = 0, j = 0; i < keyInts.length; ++i, j += 8) {
-            // keyInts[i] = (int)Long.parseLong( key.substring(j, j + 8), 16 );
-            
-            keyInts[i] |= Integer.parseInt( key.substring(j,     j + 2), 16 );
-            keyInts[i] |= Integer.parseInt( key.substring(j + 2, j + 4), 16 ) <<  8;
-            keyInts[i] |= Integer.parseInt( key.substring(j + 4, j + 6), 16 ) << 16;
-            keyInts[i] |= Integer.parseInt( key.substring(j + 6, j + 8), 16 ) << 24;
-        }   // end for
-        return keyInts;
-    }   // end hexStringToIntArray()
-
-    /**
-     * Turns a sequence of characters into a sequence of integers.
-     * This function is used to turn the unencrypted login data
-     * from a sequence of characters to a sequence of integers;
-     * so that it can be encrypted with {@link #tea(int[], int[])}.
-     *
-     * @param s 
-     *        the sequence of characters that will be turned into a sequence of integers
-     * @return 
-     *        the sequence of integers created from the sequence of characters
-     *
-     * @see #encrypt(String, String)
-     * @see #tea(int[], int[])
-     */ 
-    private static int[] stringToIntArray(String s) {
-        int[] ai = new int[s.length() / 4];
-        
-        for (int i = 0, j = 0; i < ai.length; ++i, j += 4) {
-            ai[i] |= (s.charAt(j    ) & 0xff);
-            ai[i] |= (s.charAt(j + 1) & 0xff) <<  8;
-            ai[i] |= (s.charAt(j + 2) & 0xff) << 16;
-            ai[i] |= (s.charAt(j + 3) & 0xff) << 24;
-        }   // end for
-        return ai;
-    }   // end stringToIntArray()
-    
-    /**
-     * This function implements the 
-     * <a href="http://en.wikipedia.org/wiki/Tiny_Encryption_Algorithm">Tiny Encryption Algorithm (TEA)</a>
-     * to encrypt a 64 bit block of data using a 128 bit key.
-     *
-     * @param block
-     *        a two integer (64 bit) block to encrypt
-     * @param key
-     *        a four integer (128 bit) key to use in encrypting the block 
-     *
-     * @see #encrypt(String, String)
-     * @see #hexStringToIntArray(String)
-     * @see #stringToIntArray(String)
-     * @see <a href="http://en.wikipedia.org/wiki/Tiny_Encryption_Algorithm">Tiny Encryption Algorithm (TEA)</a>
-     */
-    private static void tea(int[] block, int[] key) {
-        int i = block[0];
-        int j = block[1];
-        int sum   = 0;
-        int delta = 0x9e3779b9;
-        
-        for (int k = 0; k < 32; ++k) {
-            sum += delta;
-            i += (j << 4 & 0xfffffff0) + key[0] ^ j + sum ^ (j >> 5 & 0x7ffffff) + key[1];
-            j += (i << 4 & 0xfffffff0) + key[2] ^ i + sum ^ (i >> 5 & 0x7ffffff) + key[3];
-        }   // end for
-
-        block[0] = i;
-        block[1] = j;
-    }   // end tea()
-    
-    /**
-     * Turns a 64 bit block of encrypted binary data into a hexadecimal string.
-     *
-     * @param block
-     *        the 64 bit block that will be used to create the hexadecimal string
-     * @return
-     *        a hexadecimal string created from the block
-     *
-     * @see #encrypt(String, String)
-     * @see #tea(int[], int[])
-     * @see <a href="http://en.wikipedia.org/wiki/Tiny_Encryption_Algorithm">Tiny Encryption Algorithm (TEA)</a>
-     */
-    private static String blockToHexString(int[] block) {
-        String output = "";
-        for (int i = 0; i < block.length; i++) {
-            // output += String.format("%08x, block[i]);
-            
-            output += String.format(
-                "%02x%02x%02x%02x",
-                block[i]       & 0xff, 
-                block[i] >>  8 & 0xff,
-                block[i] >> 16 & 0xff,
-                block[i] >> 24 & 0xff
-            );
-        }   // end for
-        return output;
-    }   // end blockToHexString()
-
-    
 }   // end class LoginKeyGenerator

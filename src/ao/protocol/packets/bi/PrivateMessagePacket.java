@@ -51,6 +51,10 @@ public class PrivateMessagePacket extends MessagePacket {
     private final byte[]    m_data;
     private final Direction m_direction;
     
+    public PrivateMessagePacket(int characterID, String msg){
+        this(characterID, msg, Direction.TO_SERVER);
+    }
+    
     /** 
      * Creates a new instance of PrivateMessagePacket
      *
@@ -139,7 +143,7 @@ public class PrivateMessagePacket extends MessagePacket {
     public String display(CharacterIDTable charTable, GroupTable groupTable) {
         String name = (charTable == null ? null : charTable.getName(m_characterID));
         
-        return (m_direction == Direction.IN ? "from " : "to ") 
+        return (m_direction == Direction.TO_CLIENT ? "from " : "to ") 
             + "[" + (name == null ? Integer.toHexString( m_characterID ) : name) + "]: " 
             + m_msg;
     }   // end log()

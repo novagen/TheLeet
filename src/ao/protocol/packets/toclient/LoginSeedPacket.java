@@ -93,7 +93,7 @@ public class LoginSeedPacket extends Packet {
             parser.close();
         } catch (IOException e) {
             throw new MalformedPacketException(
-                    "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.IN));
+                    "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.TO_CLIENT));
         }   // end catch
     }   // end LoginSeedPacket()
 
@@ -111,9 +111,9 @@ public class LoginSeedPacket extends Packet {
         return m_data;
     }
 
-    /** Always returns {@code Direction.IN} */
+    /** Always returns {@code Direction.TO_CLIENT} */
     public Direction getDirection() {
-        return Direction.IN;
+        return Direction.TO_CLIENT;
     }
 
     @Override

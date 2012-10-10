@@ -34,8 +34,7 @@ public class PacketSerializer {
     
     private ByteArrayOutputStream m_buffer;
     private DataOutputStream      m_output;
-    @SuppressWarnings("unused")
-	private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
+    private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
     
     /** Creates a new instance of PacketSerializer */
     public PacketSerializer() {

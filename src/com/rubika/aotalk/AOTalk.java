@@ -1,22 +1,9 @@
 package com.rubika.aotalk;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.Vector;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
@@ -30,7 +17,6 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -40,8 +26,6 @@ import android.os.RemoteException;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceManager;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.text.Editable;
 import android.text.Html;
@@ -50,18 +34,14 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnKeyListener;
-import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.GridView;
 import android.widget.ImageButton;
-import android.widget.ListView;
 import android.widget.Spinner;
-import android.widget.TextView;
 import ao.misc.NameFormat;
 import ao.protocol.CharacterInfo;
 import ao.protocol.DimensionAddress;
@@ -87,33 +67,32 @@ import com.rubika.aotalk.item.Character;
 import com.rubika.aotalk.item.ChatMessage;
 import com.rubika.aotalk.item.Friend;
 import com.rubika.aotalk.item.Tool;
+import com.rubika.aotalk.map.Map;
 import com.rubika.aotalk.market.Market;
+import com.rubika.aotalk.recipebook.RecipeBook;
 import com.rubika.aotalk.service.ClientService;
 import com.rubika.aotalk.service.ServiceTools;
+import com.rubika.aotalk.towerwars.Towerwars;
 import com.rubika.aotalk.util.Logging;
-import com.rubika.aotalk.util.RestClient;
 import com.viewpagerindicator.TitlePageIndicator;
-import com.viewpagerindicator.TitleProvider;
 
 public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPageChangeListener, OnPreferenceChangeListener {
 	private static final String APP_TAG = "--> AnarchyTalk";
-	public static boolean LOGGING_ENABLED = false;
 	
-	private Messenger service = null;
-	private Context context;
+	public Messenger service = null;
+	private static Context context;
 	private boolean serviceIsBound = false;	
 	private ProgressDialog loader;
-	private DatabaseHandler databaseHandler;
+	private static DatabaseHandler databaseHandler;
 	private ChatMessageAdapter messageAdapter;
 	private ChannelAdapter channelAdapter;
-	private GridAdapter gridAdapter;
+	public GridAdapter gridAdapter;
 	private FriendAdapter friendAdapter;
 	private int selectedAccountToManage = 0;
+	private List<SherlockFragment> fragments;
 	
-	private static long gspUpdateInterval = 30000;
-
 	private static ImageButton play;
-	private static boolean isPlaying = false;
+	public boolean isPlaying = false;
 
 	private String currentTargetChannel = "";
 	private String currentTargetCharacter = "";
@@ -130,8 +109,10 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	private List<Channel> channelList = new ArrayList<Channel>();
 	private List<Channel> privateList = new ArrayList<Channel>();
 	private List<Friend> friendList = new ArrayList<Friend>();
+	
+	public String currentTrack = null;
 			
-	private final Messenger serviceMessenger = new Messenger(new ServiceHandler());
+	public final Messenger serviceMessenger = new Messenger(new ServiceHandler());
 
 	class ServiceHandler extends Handler {
 	    @SuppressWarnings("unchecked")
@@ -191,6 +172,9 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	    	        updateConnectionButton();
 	    	        handleInvitations((List<Channel>)registerData.get(7));
 	    	        
+	    	        currentTrack = (String) registerData.get(9);
+	            	updatePlayerTrack();
+	    	        
 	    	        if (channelList.size() > 0 && settings.getBoolean("showChatWhenOnline", true)) {
 						fragmentPager.setCurrentItem(1);
 	    	        }
@@ -224,6 +208,17 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	            	break;
 	            case ServiceTools.MESSAGE_CONNECTION_ERROR:
 	    	        hideLoader();
+	    	        
+	    	        friendList.clear();
+	    	        channelList.clear();
+	    	        
+	    	        ((EditText) findViewById(R.id.input)).setHint(getString(R.string.disconnected));
+	    	        
+	            	updateMessages();
+	    	        updateChannelList();
+	    	        updateFriendList();
+	    	        updateConnectionButton();
+	    	        
 	            	Logging.toast(context, getString(R.string.connection_error));
 	    	        
 	                break;
@@ -266,9 +261,15 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	                break;
 	            case ServiceTools.MESSAGE_PLAYER_STOPPED:
 	            	isPlaying = false;
+	            	currentTrack = null;
 	            	updatePlayer();
 
 	                break;
+	            case ServiceTools.MESSAGE_PLAYER_TRACK:
+	            	currentTrack = (String) message.obj;
+	            	updatePlayerTrack();
+	            	
+	            	break;
 	            case ServiceTools.MESSAGE_PRIVATE_CHANNEL_INVITATION:
 	            	handleInvitations((List<Channel>) message.obj);
 	            	
@@ -332,6 +333,14 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
         	Logging.log(APP_TAG, "Player stopped");
         	play.setImageResource(R.drawable.ic_menu_play);			
 		}
+	}
+	
+	private void updatePlayerTrack() {
+    	FragmentTools fragment = (FragmentTools)fragments.get(0);
+
+    	if (fragment != null && currentTrack != null) {
+    		fragment.updateTitle(currentTrack);
+    	}
 	}
 	
 	private ServiceConnection serviceConnection = new ServiceConnection() {
@@ -590,7 +599,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	}
 	
 	private void updateConnectionButton() {
-		if (channelList.size() > 0) {
+		if (channelList.size() > 1) {
 			gridAdapter.getItem(0).setName(getString(R.string.disconnect));
 		} else {
 			gridAdapter.getItem(0).setName(getString(R.string.connect));
@@ -717,31 +726,47 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 
 	private synchronized void getMessages() {
     	if (currentUserID != 0) {
-	    	messageAdapter.clear();
 	    	
-	    	List<ChatMessage> newMessages = databaseHandler.getAllPostsForUser(currentUserID, currentServerID, currentShowChannel);
+	    	List<ChatMessage> newMessages = databaseHandler.getAllPostsForUser(
+	    			currentUserID, 
+	    			currentServerID, 
+	    			currentShowChannel
+	    		);
+	    	
+		    messageAdapter.clear();
 	    	
 	    	for (ChatMessage message : newMessages) {
+	    		message.showAnimation(false);
 	    		messageAdapter.add(message);
-		    	messageAdapter.notifyDataSetChanged();
 	    	}
+	    	
+	    	messageAdapter.notifyDataSetChanged();
     	}
 	}
 	
 	private synchronized void updateMessages() {
-    	if (currentUserID != 0 && messageAdapter.getCount() > 0) {
-	    	List<ChatMessage> newMessages = databaseHandler.getNewPostsForUser(currentUserID, messageAdapter.getItem(messageAdapter.getCount() - 1).getId(), currentServerID, currentShowChannel);
+		if (currentUserID != 0 && messageAdapter.getCount() > 0) {
+    		List<ChatMessage> newMessages = databaseHandler.getNewPostsForUser(
+	    			currentUserID, 
+	    			messageAdapter.getItem(messageAdapter.getCount() - 1).getId(), 
+	    			currentServerID, 
+	    			currentShowChannel
+	    		);
 	    	
 	    	for (ChatMessage message : newMessages) {
+	    		//message.showAnimation(false);
 	    		messageAdapter.add(message);
-		    	messageAdapter.notifyDataSetChanged();
+	    	}
+	    	
+	    	if (newMessages.size() > 0) {
+	    		messageAdapter.notifyDataSetChanged();
 	    	}
     	}
     	
     	if (currentUserID != 0 && messageAdapter.getCount() == 0) {
     		getMessages();
     	}
-	}
+ 	}
 	
 	private void setAccount() {
 		final List<Account> accounts = new DatabaseHandler(context).getAllAccounts();
@@ -1075,11 +1100,15 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 			for (int i = 0; i < charpacket.getNumCharacters(); i++) {
 				listItems.add(new Character(charpacket.getCharacter(i).getName(), 0, 0));
 			}
+			
+			if (settings.getBoolean("sortLoginCharacters", false)) {
+				Collections.sort(listItems, new Character.CustomComparator());
+			}
 
 			AlertDialog.Builder builder = new AlertDialog.Builder(this);
 			builder.setTitle(getString(R.string.select_character));
 			builder.setAdapter(
-				new CharacterAdapter(this, R.layout.listitem, listItems),
+				new CharacterAdapter(this, R.layout.list_item, listItems),
 				new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, final int item) {
 						showLoader(getString(R.string.connecting));
@@ -1307,7 +1336,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	private List<Tool> getToolItems() {
 		List<Tool> toolList = new ArrayList<Tool>();
 		
-		toolList.add(new Tool(getString(R.string.connect), R.drawable.iws_repeat, new View.OnClickListener() {
+		toolList.add(new Tool(getString(R.string.connect), R.drawable.icon_refresh, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				try {
@@ -1319,15 +1348,15 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 				}
 			}
 		}));
-		
-		toolList.add(new Tool(getString(R.string.whois), R.drawable.iws_search, new View.OnClickListener() {
+
+		toolList.add(new Tool(getString(R.string.whois), R.drawable.icon_search, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				manualWhoIs();
 			}
 		}));
 		
-		toolList.add(new Tool(getString(R.string.market_monitor), R.drawable.iws_shopping, new View.OnClickListener() {
+		toolList.add(new Tool(getString(R.string.market_monitor), R.drawable.icon_shopping, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(context, Market.class);
@@ -1335,23 +1364,49 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 			}
 		}));
 		
-		toolList.add(new Tool(getString(R.string.ao_universe), R.drawable.iws_games, new View.OnClickListener() {
+		toolList.add(new Tool(getString(R.string.ao_universe), R.drawable.icon_puzzle, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(context, AOU.class);
 				startActivity(intent);
 			}
 		}));
-		
-		toolList.add(new Tool(getString(R.string.help), R.drawable.iws_help, new View.OnClickListener() {
+		toolList.add(new Tool(getString(R.string.recipebook), R.drawable.icon_books, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				Intent intent = new Intent(context, Help.class);
+				Intent intent = new Intent(context, RecipeBook.class);
+				startActivity(intent);
+			}
+		}));
+
+		toolList.add(new Tool(getString(R.string.towerwars), R.drawable.icon_chess, new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(context, Towerwars.class);
 				startActivity(intent);
 			}
 		}));
 		
-		toolList.add(new Tool(getString(R.string.preferences), R.drawable.iws_tools, new View.OnClickListener() {
+
+		toolList.add(new Tool(getString(R.string.map), R.drawable.icon_globe, new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(context, Map.class);
+				startActivity(intent);
+			}
+		}));
+
+		/*
+		toolList.add(new Tool(getString(R.string.media), R.drawable.icon_television, new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(context, Media.class);
+				startActivity(intent);
+			}
+		}));
+		*/
+		
+		toolList.add(new Tool(getString(R.string.preferences), R.drawable.icon_process, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(context, Preferences.class);
@@ -1361,359 +1416,9 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		
 		return toolList;
 	}
-
-	public static class FragmentTools extends SherlockFragment {
-		private AOTalk activity;
-		private TextView title;
-		private Timer timer;
-		private GridAdapter adapter;
-		
-		final Handler handler = new Handler();
-		
-		static FragmentTools newInstance(AOTalk activity, GridAdapter adapter) {
-			FragmentTools f = new FragmentTools(activity, adapter);
-	        return f;
-	    }
-		
-		public FragmentTools(AOTalk activity, GridAdapter adapter) {
-			this.activity = activity;
-			this.adapter = adapter;
-		}
-		
-		@Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-        }	
-
-		@Override
-		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-			Logging.log("FragmentTools", "onCreateView");
-			
-			if (container == null) {
-	            return null;
-	        }
-
-			View fragmentTools = inflater.inflate(R.layout.fragment_tools, container, false);
-			
-			GridView grid = (GridView) fragmentTools.findViewById(R.id.grid);
-			grid.setAdapter(adapter);
-			
-			title = (TextView) fragmentTools.findViewById(R.id.gsptext);
-			play = (ImageButton) fragmentTools.findViewById(R.id.gspplay);
-			
-			if (isPlaying) {
-	            timer = new Timer();
-	            timer.schedule(new TimerTask() {
-	                @Override
-	                public void run() {
-	                    handler.post(new Runnable() {
-	                        public void run() {
-	                            try {
-	                            	Logging.log("TASK", "Updating GSP title");
-	                            	new GetGSPTitle().execute();
-	                            } catch (Exception e) {
-	        						Logging.log(APP_TAG, e.getMessage());
-	                            }
-	                        }
-	                    });
-	                }
-	            }, 0, gspUpdateInterval);
-
-	            play.setImageResource(R.drawable.ic_menu_stop);
-			} else {
-				play.setImageResource(R.drawable.ic_menu_play);
-			}
-			
-			play.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					if (isPlaying) {
-		                if (activity.service != null) {
-							Message msg = Message.obtain(null, ServiceTools.MESSAGE_PLAYER_STOP);
-			                msg.replyTo = activity.serviceMessenger;
-			                try {
-			                	activity.service.send(msg);
-							} catch (RemoteException e) {
-								Logging.log(APP_TAG, e.getMessage());
-							}
-
-			                play.setImageResource(R.drawable.button_play);
-							isPlaying = false;
-							
-							if (timer != null) {
-								timer.cancel();
-								timer.purge();
-								timer = null;
-							}
-							
-							title.setText(getString(R.string.gsp2));
-		                } else {
-		                	Logging.log(APP_TAG, "service is NULL");
-		                }
-					} else {
-		                if (activity.service != null) {
-			                Message msg = Message.obtain(null, ServiceTools.MESSAGE_PLAYER_PLAY);
-			                msg.replyTo = activity.serviceMessenger;
-			                
-			                try {
-			                	activity.service.send(msg);
-							} catch (RemoteException e) {
-								Logging.log(APP_TAG, e.getMessage());
-							}
-							
-							play.setImageResource(R.drawable.button_stop);
-							isPlaying = true;
-							
-							if (timer != null) {
-								timer.cancel();
-								timer.purge();								
-							}
-							
-				            timer = new Timer();
-				            timer.schedule(new TimerTask() {
-				                @Override
-				                public void run() {
-				                    handler.post(new Runnable() {
-				                        public void run() {
-				                            try {
-				                            	Logging.log("TASK", "Updating GSP title");
-				                            	new GetGSPTitle().execute();
-				                            } catch (Exception e) {
-				        						Logging.log(APP_TAG, e.getMessage());
-				                            }
-				                        }
-				                    });
-				                }
-				            }, 0, gspUpdateInterval);
-		                } else {
-		                	Logging.log(APP_TAG, "service is NULL");
-		                }
-					}
-				}
-			});
-			
-			return fragmentTools;
-		}
-
-		@Override
-	    public void onActivityCreated(Bundle savedInstanceState) {
-			Logging.log("FragmentChat", "onActivityCreated");
-	        super.onActivityCreated(savedInstanceState);
-	    }
-		
-		private void updateTitle(String text) {
-			title.setText(text);
-		}
-		
-		private class GetGSPTitle extends AsyncTask<URL, Integer, Long> {
-			private String text = "";
-			
-			protected void onProgressUpdate(Integer... progress) {
-			}
-		
-			protected void onPostExecute(Long result) {
-				updateTitle(text);
-			}
-			
-			protected void onPreExecute() {
-			}
-
-			@Override
-			protected Long doInBackground(URL... arg0) {
-				Logging.log("DOWNLOAD", "doInBackground");
-				
-				HttpClient client = new DefaultHttpClient();
-				HttpResponse response = null;
-								
-			    HttpGet httpget = new HttpGet("http://s7.viastreaming.net:7350/");
-			    httpget.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-			    httpget.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.151 Safari/535.19");
-				
-				try {
-					Logging.log("DOWNLOAD", "running download");
-
-					response = client.execute(httpget);
-				} catch (Exception e) {
-					Logging.log(APP_TAG, e.getMessage());
-				}
-
-				if (response != null) {
-					InputStream in;
-					Logging.log("DOWNLOAD", "Response NOT NULL");
-
-					try {
-						in = response.getEntity().getContent();
-						String result = RestClient.convertStreamToString(in);
-						
-						Logging.log("REST", "RESULT\n" + result);
-
-						if (result != null) {
-							Pattern pattern = Pattern.compile("Current Song: </font></td><td><font class=default><b>(.*?)</b>");
-							Matcher matcher = pattern.matcher(result);
-					        
-							while(matcher.find()) {
-								text = matcher.group(1).trim();
-								Logging.log("TEXT", text);
-					        }
-						}
-					} catch (IllegalStateException e) {
-						Logging.log(APP_TAG, e.getMessage());
-					} catch (IOException e) {
-						Logging.log(APP_TAG, e.getMessage());
-					}
-				} else {
-					Logging.log("DOWNLOAD", "Response NULL");
-				}
-
-				return null;
-			}
-		}
-	}
-
-	public static class FragmentChat extends SherlockFragment {
-		private ChatMessageAdapter messageAdapter;
-		private OnItemLongClickListener clickListener;
-		private View.OnClickListener channelListener;
-		private OnKeyListener keyListener;
-		
-		static FragmentChat newInstance(ChatMessageAdapter messageAdapter, OnItemLongClickListener clickListener, View.OnClickListener channelListener, OnKeyListener keyListener) {
-			FragmentChat f = new FragmentChat(messageAdapter, clickListener, channelListener, keyListener);
-	        return f;
-	    }
-		
-		public FragmentChat(ChatMessageAdapter messageAdapter, OnItemLongClickListener clickListener, View.OnClickListener channelListener, OnKeyListener keyListener) {
-			this.messageAdapter = messageAdapter;
-			this.clickListener = clickListener;
-			this.channelListener = channelListener;
-			this.keyListener = keyListener;
-		}
-		
-		@Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-        }	
-		
-		@Override
-		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-			Logging.log("FragmentChat", "onCreateView");
-			
-			if (container == null) {
-	            return null;
-	        }
-			
-			View fragmentChat = inflater.inflate(R.layout.fragment_chat, container, false);
-			
-			((ListView) fragmentChat.findViewById(R.id.messagelist)).setAdapter(messageAdapter);
-			((ListView) fragmentChat.findViewById(R.id.messagelist)).setOnItemLongClickListener(clickListener);
-	        
-	        ((ImageButton) fragmentChat.findViewById(R.id.channel)).setOnClickListener(channelListener);
-	        ((EditText) fragmentChat.findViewById(R.id.input)).setOnKeyListener(keyListener);
-			
-			return fragmentChat;
-		}
-		
-		@Override
-	    public void onActivityCreated(Bundle savedInstanceState) {
-			Logging.log("FragmentChat", "onActivityCreated");
-	        super.onActivityCreated(savedInstanceState);
-	    }
-	}
 	
-	public static class FragmentFriends extends SherlockFragment {
-		private FriendAdapter friendAdapter;
-		private OnItemLongClickListener clickListener;
-		private TextWatcher keyListener;
-		private AOTalk activity;
-		
-		static FragmentFriends newInstance(AOTalk activity, FriendAdapter friendAdapter, OnItemLongClickListener clickListener, TextWatcher keyListener) {
-			FragmentFriends f = new FragmentFriends(activity, friendAdapter, clickListener, keyListener);
-	        return f;
-	    }
-		
-		public FragmentFriends(AOTalk activity, FriendAdapter friendAdapter, OnItemLongClickListener clickListener, TextWatcher keyListener) {
-			this.activity = activity;
-			this.friendAdapter = friendAdapter;
-			this.clickListener = clickListener;
-			this.keyListener = keyListener;
-		}
-		
-		@Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-        }	
-		
-		@Override
-		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-			Logging.log("FragmentFriends", "onCreateView");
-			
-			if (container == null) {
-	            return null;
-	        }
-			
-			final View fragmentFriends = inflater.inflate(R.layout.fragment_friends, container, false);
-			((ListView) fragmentFriends.findViewById(R.id.friendlist)).setAdapter(friendAdapter);
-			((ListView) fragmentFriends.findViewById(R.id.friendlist)).setOnItemLongClickListener(clickListener);
-			
-			((EditText) fragmentFriends.findViewById(R.id.input)).addTextChangedListener(keyListener);
-			((ImageButton) fragmentFriends.findViewById(R.id.add_friend)).setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-			    	if (((EditText) fragmentFriends.findViewById(R.id.input)).getText().toString().length() > 0) {
-						Message msg = Message.obtain(null, ServiceTools.MESSAGE_FRIEND_ADD);
-				        msg.replyTo = activity.serviceMessenger;
-				        msg.obj = NameFormat.format(((EditText) fragmentFriends.findViewById(R.id.input)).getText().toString().trim());
-				        
-				        try {
-				        	activity.service.send(msg);
-						} catch (RemoteException e) {
-							Logging.log(APP_TAG, e.getMessage());
-						}
-						
-						((EditText) fragmentFriends.findViewById(R.id.input)).setText("");
-			    	}
-				}
-			});
-			
-			return fragmentFriends;
-		}
-		
-		@Override
-	    public void onActivityCreated(Bundle savedInstanceState) {
-			Logging.log("FragmentFriends", "onActivityCreated");
-	        super.onActivityCreated(savedInstanceState);
-	    }
-	}
-	
-	public static class FragmentAdapter extends FragmentPagerAdapter implements TitleProvider {
-		private List<SherlockFragment> fragments;
-
-		public FragmentAdapter(FragmentManager fm, List<SherlockFragment> fragments) {
-			super(fm);
-			this.fragments = fragments;
-		}
-
-		@Override
-		public SherlockFragment getItem(int position) {
-			return this.fragments.get(position);
-		}
-
-		@Override
-		public int getCount() {
-			return this.fragments.size();
-		}
-
-		@Override
-		public String getTitle(int position) {
-			switch (position) {
-			case 0:
-				return "TOOLS";
-			case 1:
-				return "CHAT";
-			case 2:
-				return "FRIENDS";
-			}
-			return null;
-		}
+	public static Context getContext() {
+		return context;
 	}
 		
     @Override
@@ -1728,7 +1433,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
         	editor.putBoolean("firstRun", false);
         	editor.commit();
         }
-
+        
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         
         setContentView(R.layout.main);
@@ -1740,7 +1445,8 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		channelAdapter.add(new Channel(getString(R.string.app_name), 0, true, false));
 		
 		actionBar = getSupportActionBar();
-
+		
+		actionBar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
 		actionBar.setDisplayShowTitleEnabled(false);
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);		
 		actionBar.setListNavigationCallbacks(channelAdapter, new OnNavigationListener() {
@@ -1798,14 +1504,14 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		loader.setCancelable(false);
 
         databaseHandler = new DatabaseHandler(this);
-        messageAdapter = new ChatMessageAdapter(context, android.R.layout.simple_dropdown_item_1line, new ArrayList<ChatMessage>());
+        messageAdapter = new ChatMessageAdapter(context, android.R.layout.simple_dropdown_item_1line, new ArrayList<ChatMessage>(), settings.getBoolean("enableAnimations", true));
 		
         OnItemLongClickListener chatFragmentClickListener = new OnItemLongClickListener() {
 			@Override
 			public boolean onItemLongClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
 				final ChatMessage message = messageAdapter.getItem(arg2);
 				
-				if (!message.getChannel().equals(ServiceTools.CHANNEL_SYSTEM) && message.getCharacter() != null && !message.getCharacter().isEmpty()) {
+				if (!message.getChannel().equals(ServiceTools.CHANNEL_SYSTEM) && message.getCharacter() != null && message.getCharacter().length() > 0) {
 					int diff = 0;
 					
 					if (message.getCharacter().equals(currentCharacterName)) {
@@ -2042,7 +1748,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
         
 		gridAdapter = new GridAdapter(this, R.id.grid, getToolItems());
 
-		List<SherlockFragment> fragments = new Vector<SherlockFragment>();
+		fragments = new Vector<SherlockFragment>();
         fragments.add(FragmentTools.newInstance((AOTalk)this, gridAdapter));
         fragments.add(FragmentChat.newInstance(messageAdapter, chatFragmentClickListener, inputChannelClick, inputTextClick));
         fragments.add(FragmentFriends.newInstance((AOTalk)this, friendAdapter, friendFragmentClickListener, friendFragmentTextListener));
@@ -2086,6 +1792,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        
         unbindService();
     }
     
@@ -2111,6 +1818,25 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 			} catch (RemoteException e) {
 				Logging.log(APP_TAG, e.getMessage());
 			}
+			return true;
+		} else if (item.getItemId() == R.id.lookup) {
+			manualWhoIs();
+			return true;
+		} else if (item.getItemId() == R.id.market) {
+			Intent intent = new Intent(context, Market.class);
+			startActivity(intent);
+			return true;
+		} else if (item.getItemId() == R.id.aou) {
+			Intent intent = new Intent(context, AOU.class);
+			startActivity(intent);
+			return true;
+		} else if (item.getItemId() == R.id.aorb) {
+			Intent intent = new Intent(context, RecipeBook.class);
+			startActivity(intent);
+			return true;
+		} else if (item.getItemId() == R.id.preferences) {
+			Intent intent = new Intent(context, Preferences.class);
+			startActivity(intent);
 			return true;
 		} else {
 			return super.onOptionsItemSelected(item);

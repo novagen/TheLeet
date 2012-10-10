@@ -38,17 +38,19 @@ import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.view.Window;
+import com.rubika.aotalk.Preferences;
 import com.rubika.aotalk.R;
 import com.rubika.aotalk.adapter.MarketMessageAdapter;
 import com.rubika.aotalk.item.MarketMessage;
 import com.rubika.aotalk.util.ChatParser;
+import com.rubika.aotalk.util.Logging;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -56,7 +58,7 @@ import android.widget.TextView;
 import android.widget.AdapterView.OnItemLongClickListener;
 
 public class Market extends SherlockActivity {
-	protected static final String APPTAG = "--> AOTalk::Market";
+	protected static final String APP_TAG = "--> AOTalk::Market";
 	
 	private ListView marketlist;
 	private List<MarketMessage> marketposts;
@@ -87,7 +89,7 @@ public class Market extends SherlockActivity {
 	private StringBuilder sb;
 	private String line;
 	
-	private JSONArray jArray;
+	private JSONArray json_array;
 	private JSONObject json_data;
 	
     private Handler handler = new Handler();
@@ -97,19 +99,12 @@ public class Market extends SherlockActivity {
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         
         settings = PreferenceManager.getDefaultSharedPreferences(this);
-       
-        /*
-        if (settings.getBoolean("fullscreen", false)) {
-        	getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        } else {
-        	getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        }
-        */
         
-        setContentView(R.layout.market);
+        setContentView(R.layout.activity_market);
 
         final ActionBar bar = getSupportActionBar();
         
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
 
@@ -185,10 +180,10 @@ public class Market extends SherlockActivity {
 		public void run() {
 			String statustext = "";
 			setSupportProgressBarIndeterminateVisibility(Boolean.FALSE);
-			
-			if(settings.getString("marketserver", SERVER).equals("1")) {
+						
+			if(settings.getString("server", SERVER).equals("1")) {
 				statustext = "Atlantean";
-			} else if(settings.getString("marketserver", SERVER).equals("2")) {
+			} else if(settings.getString("server", SERVER).equals("2")) {
 				statustext = "Rimor";
 			} else {
 				statustext = "TestLive";
@@ -206,7 +201,7 @@ public class Market extends SherlockActivity {
     	mode = "?mode=json";
     	order = "&order=desc";
     	time = "&time=" + lastfetch; 	
-    	server = "&server=" + (Integer.parseInt(SERVER) - 1);
+    	server = "&server=" + (Integer.parseInt(settings.getString("server", SERVER)) - 1);
     	
     	limit = "";
     	if(lastfetch == 0) {
@@ -224,7 +219,7 @@ public class Market extends SherlockActivity {
     	try{
     		httpclient = new DefaultHttpClient();
 	        httppost = new HttpPost(url);
-	        
+	        	        
 	        response = httpclient.execute(httppost);
 	        entity = response.getEntity();
 	        is = entity.getContent();
@@ -243,11 +238,11 @@ public class Market extends SherlockActivity {
     	 
     	        return sb.toString();
 	    	} catch(Exception e){
-	    	    Log.e(APPTAG, "Error converting result " + e.toString());
+	    	    Logging.log(APP_TAG, "Error converting result " + e.toString());
 	    	    return null;
 	    	}
     	} catch(Exception e){
-	        Log.e(APPTAG, "Error in http connection " + e.toString());
+    		Logging.log(APP_TAG, "Error in http connection " + e.toString());
 	        return null;
     	}
     }
@@ -256,10 +251,10 @@ public class Market extends SherlockActivity {
     	try{
     		if(resultData != null) {
 	    		if((!resultData.startsWith("null"))) {
-	    			jArray = new JSONArray(resultData);
+	    			json_array = new JSONArray(resultData);
 	    				    			
-	    	        for(int i = jArray.length() - 1; i >= 0; i--){
-	    	        	json_data = jArray.getJSONObject(i);
+	    	        for(int i = json_array.length() - 1; i >= 0; i--){
+	    	        	json_data = json_array.getJSONObject(i);
 		                
 	    	        	int side = 0;
 	    	        	
@@ -295,7 +290,7 @@ public class Market extends SherlockActivity {
     			handler.post(setError);
     		}
     	} catch(JSONException e){
-    	        Log.e(APPTAG, "Error parsing data " + e.toString());
+    		Logging.log(APP_TAG, "Error parsing data " + e.toString());
     	}
     	
     	handler.post(setDone);
@@ -349,6 +344,10 @@ public class Market extends SherlockActivity {
 	        return true;
     	} else if (item.getItemId() == R.id.update) {
 			handler.post(update);
+			return true;
+		} else if (item.getItemId() == R.id.preferences) {
+			Intent intent = new Intent(this, Preferences.class);
+			startActivity(intent);
 			return true;
 		} else {
 			return super.onOptionsItemSelected(item);

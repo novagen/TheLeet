@@ -53,11 +53,12 @@
     <string name="no_news">Could not find any news</string>
     <string name="no_calendar">Could not find any calendar events</string>
     <string name="no_guides">Could not find any guides</string>
+    <string name="no_recipes">Could not find any recipes</string>
     <string name="data_load_failed">Failed to load data</string>
     <string name="share">Share</string>
     <string name="search">Search</string>
 	<string name="ao_universe">AO Universe</string>
-	<string name="market_monitor">Shopping</string>
+	<string name="market_monitor">Market</string>
 	<string name="dots">&#8230;</string>
 	<string name="update">Update</string>
 	<string name="no_char_data">Could not find any character information</string>
@@ -68,7 +69,10 @@
 	<string name="fullscreen">Fullscreen</string>
 	<string name="fullscreen_about">Show AnarchyTalk in fullscreen</string>
 	<string name="market_server">Monitor server</string>
-	<string name="market_server_info">Server to monitor shopping channels on</string>
+	<string name="market_server_info">Server to monitor market channels on</string>
+	<string name="tower_server">Tower wars server</string>
+	<string name="tower_server_info">Server to show tower wars information on</string>
+	<string name="map">Atlas</string>
 	<string name="market_autoupdate">Automatic updates</string>
 	<string name="market_autoupdate_info">Get new market data automatically</string>
 	<string name="market_interval">Update interval</string>
@@ -86,7 +90,10 @@
 	<string name="character_info_org" formatted="false"><Data><![CDATA[<br /><br />%s<br />%s]]></Data></string>
 	<string name="automatic_reconnect">Reconnect automatically</string>
 	<string name="automatic_reconnect_info">Reconnect if the connection is lost</string>
-	<string name="connection">Connection</string>
+	<string name="enable_debug_output">Enable debug data</string>
+	<string name="enable_debug_output_info">Print debug data to logcat</string>
+	<string name="sort_login_characters">Sort names at login</string>
+	<string name="sort_login_characters_info">Alphabetically sort your characters when logging in</string>
 	<string name="whois">Lookup</string>
 	<string name="whois_fallback">Character lookup fallback</string>
 	<string name="whois_fallback_info">Fall back to bot lookup if AO web is unavailable</string>
@@ -144,7 +151,19 @@
 	<string name="color_oth">Other</string>
 	<string name="color_oth_info">Select color for other messages</string>
 	<string name="forum">Forum</string>
+	<string name="other_settings">Other settings</string>
 	<string name="web">Web</string>
 	<string name="hide_titles">Hide titles</string>
 	<string name="hide_titles_info">Hide the title bar</string>
+	<string name="recipebook">RecipeBook</string>
+	<string name="back">Back</string>
+	<string name="connection">Connection</string>
+	<string name="towerwars">Tower Wars</string>
+	<string name="media">Media</string>
+	<string name="defender_title">Defender</string>
+	<string name="attacker_title">Attacker</string>
+	<string name="server">Prefered server</string>
+	<string name="server_info">Server used for Market and Tower wars</string>
+	<string name="enable_animations">Enable animations</string>
+	<string name="enable_animations_info">Turn on some funky animations</string>
 </resources>

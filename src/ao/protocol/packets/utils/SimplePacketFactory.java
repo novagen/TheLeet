@@ -93,27 +93,27 @@ public class SimplePacketFactory implements PacketFactory {
 
             //Bidirectional Packets
             case CharacterLookupPacket.TYPE:
-                return new CharacterLookupPacket(data, Packet.Direction.IN);    // TYPE 21
+                return new CharacterLookupPacket(data, Packet.Direction.TO_CLIENT);    // TYPE 21
             case PrivateMessagePacket.TYPE:
-                return new PrivateMessagePacket(data, Packet.Direction.IN);   // TYPE 30
+                return new PrivateMessagePacket(data, Packet.Direction.TO_CLIENT);   // TYPE 30
             case FriendUpdatePacket.TYPE:
-                return new FriendUpdatePacket(data, Packet.Direction.IN);          // TYPE 40
+                return new FriendUpdatePacket(data, Packet.Direction.TO_CLIENT);          // TYPE 40
             case FriendRemovePacket.TYPE:
-                return new FriendRemovePacket(data, Packet.Direction.IN);          // TYPE 41
+                return new FriendRemovePacket(data, Packet.Direction.TO_CLIENT);          // TYPE 41
             case PrivateChannelInvitePacket.TYPE:
-                return new PrivateChannelInvitePacket(data, Packet.Direction.IN);    // TYPE 50
+                return new PrivateChannelInvitePacket(data, Packet.Direction.TO_CLIENT);    // TYPE 50
             case PrivateChannelKickPacket.TYPE:
-                return new PrivateChannelKickPacket(data, Packet.Direction.IN);      // TYPE 51
+                return new PrivateChannelKickPacket(data, Packet.Direction.TO_CLIENT);      // TYPE 51
             case PrivateChannelMessagePacket.TYPE:
-                return new PrivateChannelMessagePacket(data, Packet.Direction.IN);    // TYPE 57
+                return new PrivateChannelMessagePacket(data, Packet.Direction.TO_CLIENT);    // TYPE 57
             case ChannelMessagePacket.TYPE:
-                return new ChannelMessagePacket(data, Packet.Direction.IN, database);   // TYPE 65
+                return new ChannelMessagePacket(data, database, Packet.Direction.TO_CLIENT);   // TYPE 65
             case PingPacket.TYPE:
-                return new PingPacket(data, Packet.Direction.IN);   // TYPE 100
+                return new PingPacket(data, Packet.Direction.TO_CLIENT);   // TYPE 100
                 
             //Unparsed Packets
             default:
-                return new UnparsablePacket(type, data, Packet.Direction.IN);
+                return new UnparsablePacket(type, data, Packet.Direction.TO_CLIENT);
         }   // end switch
     }   // end toPacket()
 }   // end class SimplePacketFactory

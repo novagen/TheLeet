@@ -104,7 +104,7 @@ public class LoginRequestPacket extends Packet {
             parser.close();
         } catch (IOException e) {
             throw new MalformedPacketException(
-                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.OUT)
+                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.TO_SERVER)
             );
         }   // end catch
     }   // end LoginRequestPacket()
@@ -122,8 +122,8 @@ public class LoginRequestPacket extends Packet {
     /** Always returns {@value #TYPE} */
     public short getType() { return TYPE; }
     public byte[] getData() { return m_data; }
-    /** Always returns {@code Direction.OUT} */
-    public Direction getDirection() { return Direction.OUT; }
+    /** Always returns {@code Direction.TO_SERVER} */
+    public Direction getDirection() { return Direction.TO_SERVER; }
     
     @Override
     public String toString() {

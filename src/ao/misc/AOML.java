@@ -3,7 +3,7 @@ package ao.misc;
 public class AOML {
     public static String Blob(String name, String content){
         String message = "<a href=\"text://";
-        message += content.replaceAll("\"", "&quot;");
+        message += content.replaceAll("\"", "'");
         message += "\">"+name+"</a>";
         return message;
     }
@@ -15,5 +15,12 @@ public class AOML {
         message += content.replaceAll("\'", "&#39;");
         message += "\'>"+name+"</a>";
         return message;
+    }
+    
+    /*
+     * Cleans a string with html encoding characters
+     */
+    public static String cleanString(String s){
+        return s.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     }
 }

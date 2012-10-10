@@ -37,8 +37,12 @@ public class FriendRemovePacket extends MessagePacket {
     private final Direction m_direction;
     
     public FriendRemovePacket(int characterID) {
+        this(characterID, Direction.TO_SERVER);
+    }   // end FriendRemovePacket()
+    
+    public FriendRemovePacket(int characterID, Direction d) {
         m_characterID = characterID;
-        m_direction   = Direction.OUT;
+        m_direction   = d;
         
         // Serialize the packet
         PacketSerializer serializer =
@@ -73,7 +77,7 @@ public class FriendRemovePacket extends MessagePacket {
             parser.close();
         } catch (IOException e) {
             throw new MalformedPacketException(
-                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.IN)
+                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.TO_CLIENT)
             );
         }   // end catch
     }   // end FriendRemovePacket()

@@ -35,7 +35,11 @@ public class PrivateChannelInvitePacket extends Packet  {
     private final Direction m_direction;
     
     public PrivateChannelInvitePacket(int id) {
-        m_direction = Direction.OUT;
+        this(id, Direction.TO_SERVER);
+    }   // end PrivateChannelInvitePacket()
+    
+    public PrivateChannelInvitePacket(int id, Direction d) {
+        m_direction = d;
         m_id = id;
 
         // Serialize the packet

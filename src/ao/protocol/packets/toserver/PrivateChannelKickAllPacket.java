@@ -35,7 +35,7 @@ public class PrivateChannelKickAllPacket extends Packet  {
     public short getType() { return TYPE; }
     public byte[] getData() { return m_data; }
     /** Returns whether this message was recieved or sent by the client */
-    public Direction getDirection() { return Direction.OUT; }
+    public Direction getDirection() { return Direction.TO_SERVER; }
 
     @Override
     public String toString() {

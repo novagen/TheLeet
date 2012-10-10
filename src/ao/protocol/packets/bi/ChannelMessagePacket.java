@@ -32,9 +32,6 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 
 /**
- * <p></p>
- *
- * <p>FIXME: What is the last string used for?</p>
  *
  * <p>PACKET TYPE: {@value #TYPE}
  * <br>FORMAT:      GISS/GSS
@@ -69,7 +66,7 @@ public class ChannelMessagePacket extends MessagePacket {
     
     /** 
      * Creates a new instance of ChannelMessagePacket
-     * (outcoming only)
+     * (outgoing only)
      *
      * @param groupID
      *        the ID of the group that the message will be sent to
@@ -79,7 +76,7 @@ public class ChannelMessagePacket extends MessagePacket {
      *        ???
      */
     public ChannelMessagePacket(byte[] groupID, String msg, String str) {
-        this(groupID, -1, msg, str, Direction.OUT);
+        this(groupID, -1, msg, str, Direction.TO_SERVER);
     }   // end ChannelMessagePacket()
     
     /** 
@@ -91,6 +88,8 @@ public class ChannelMessagePacket extends MessagePacket {
      *        the ID of the character that sent this message
      * @param msg
      *        the message that was be sent
+     * @param d
+     *        the direction that the message was sent
      */
     public ChannelMessagePacket(byte[] groupID, int characterID, String msg, Direction d) {
         this(groupID, characterID, msg, "\0", d);
@@ -107,6 +106,8 @@ public class ChannelMessagePacket extends MessagePacket {
      *        the message that was be sent
      * @param str
      *        ???
+     * @param d
+     *        the direction that the message was sent
      */
     public ChannelMessagePacket(byte[] groupID, int characterID, String msg, String str, Direction d) {
         m_groupID     = groupID;
@@ -121,7 +122,7 @@ public class ChannelMessagePacket extends MessagePacket {
             new PacketSerializer( 4 + 5 + 4 + m_msg.length() + m_str.length() );
         serializer.write40Bit(m_groupID);
         
-        if (m_direction == Direction.IN) {
+        if (m_direction == Direction.TO_CLIENT) {
             serializer.write(m_characterID);
         }   // end if
         
@@ -137,12 +138,16 @@ public class ChannelMessagePacket extends MessagePacket {
      *
      * @param data
      *        the binary data of this packet (without the type and length bytes)
+     * @param db
+     *        the mdb database that will be used for extended messages
+     * @param d
+     *        the direction that the packet is being sent
      * @throws NullPointerException
      *         if data is null
      * @throws AOMalformedPacketException
      *         if the packet is malformed
      */
-    public ChannelMessagePacket(byte[] data, Direction d, MMDBDatabase db) throws MalformedPacketException {
+    public ChannelMessagePacket(byte[] data, MMDBDatabase db, Direction d) throws MalformedPacketException {
         if (data == null) { throw new NullPointerException("No binary data was passed."); }
         
         try {
@@ -153,7 +158,7 @@ public class ChannelMessagePacket extends MessagePacket {
             // Parse the packet
             m_groupID = parser.parse40Bit();
             
-            if (m_direction == Direction.IN) {
+            if (m_direction == Direction.TO_CLIENT) {
                 m_characterID = parser.parseInt();
             } else {
                 m_characterID = -1;

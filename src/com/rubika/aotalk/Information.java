@@ -25,6 +25,7 @@ import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.view.MenuItem;
 import com.rubika.aotalk.item.ChatMessage;
+import com.rubika.aotalk.recipebook.RecipeBook;
 import com.rubika.aotalk.service.ClientService;
 import com.rubika.aotalk.service.ServiceTools;
 import com.rubika.aotalk.util.ItemRef;
@@ -108,9 +109,10 @@ public class Information extends SherlockActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.information);
+        setContentView(R.layout.activity_information);
                 
         final ActionBar bar = getSupportActionBar();
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
         
@@ -205,6 +207,11 @@ public class Information extends SherlockActivity {
 	    		        info.loadData(ServiceTools.HTML_START + getString(R.string.chatcmd_not_implemented) + "<br />'" + chatcmd + "'" + ServiceTools.HTML_END, "text/html", "UTF-8");
 	    		    	info.setVisibility(View.VISIBLE);
 	    	        }
+	    		} else if (url.startsWith("aorbid://")) {
+					intent = new Intent(Information.this, RecipeBook.class);
+					intent.putExtra("id", url.replace("aorbid://", ""));
+					intent.setData(Uri.parse(url));
+					startActivity(intent);
 	            } else {
 					intent = new Intent(Information.this, Information.class);
 					intent.setData(Uri.parse(url));
@@ -253,7 +260,10 @@ public class Information extends SherlockActivity {
 	        	text = text.replace(
 	        		"<img src=tdb://" + matcher.group(1) + ">", ""
 	        	);
-	        }	        
+	        }
+	        
+	        //text = text.replace("--------------------------------------------------------------", "------------------------------------------------------------");
+	        text = text.replace("--------------------------------------------------------------", "<hr />");
 	        
 	        Logging.log(APP_TAG, text);
 	        
@@ -301,17 +311,6 @@ public class Information extends SherlockActivity {
     @Override
     protected void onResume() {
     	super.onResume();
-    	
-    	/*
-        if (settings.getBoolean("fullscreen", false)) {
-        	getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        } else {
-        	getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        }
-        
-        getWindow().getDecorView().invalidate();
-        */
-        
     	bindService();
     }
     
@@ -331,7 +330,7 @@ public class Information extends SherlockActivity {
 	private Messenger service = null;
 	final Messenger messenger = new Messenger(new IncomingHandler());
 	
-	class IncomingHandler extends Handler {
+	static class IncomingHandler extends Handler {
 		@Override
 	    public void handleMessage(Message message) {
 	    	switch (message.what) {

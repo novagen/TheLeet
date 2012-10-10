@@ -32,13 +32,17 @@ import java.io.IOException;
  */
 public interface Client extends Runnable {
     
-    /** AOBot.State defines the various states that a bot can be in at any point in time. */
-    public enum State {
+    public enum Game {
+        AO, AOC, TSW;
+    }
+    
+    /** AOBot.ClientState defines the various states that a bot can be in at any point in time. */
+    public enum ClientState {
         DISCONNECTED, CONNECTED, AUTHENTICATED, LOGGED_IN;
-    }   // end enum State
+    }   // end enum ClientState
     
     /** Returns the current state of this bot. */
-    State getState();
+    ClientState getState();
     
     /** 
      * Returns the character that the bot is logged in as 
@@ -52,14 +56,14 @@ public interface Client extends Runnable {
     /**
      * Reads the next packet from the server. 
      * 
-     * @throws AOBotStateException if the bot is in the {@link State#DISCONNECTED} state
+     * @throws AOBotStateException if the bot is in the {@link ClientState#DISCONNECTED} state
      * @throws IOException if an error occurred while attempting to read a packet
      */
     Packet nextPacket() throws IOException;
     /**
      * Sends a packet to the server. 
      * 
-     * @throws AOBotStateException if the bot is in the {@link State#DISCONNECTED} state
+     * @throws AOBotStateException if the bot is in the {@link ClientState#DISCONNECTED} state
      * @throws IOException if an error occurred while attempting to send a packet
      */
     void sendPacket(Packet packet) throws IOException;
@@ -70,7 +74,7 @@ public interface Client extends Runnable {
      * {@code connect( server.getURL(), server.getPort() )}
      * 
      * @throws NullPointerException if {@code server} is null
-     * @throws BotStateException if the bot is not in the {@link State#DISCONNECTED} state
+     * @throws BotStateException if the bot is not in the {@link ClientState#DISCONNECTED} state
      * @throws IOException if an error occurred while attempting to connect to the server
      *
      * @see ao.protocol.DimensionAddress
@@ -79,28 +83,28 @@ public interface Client extends Runnable {
     /**
      * Connects the bot to the server. 
      * 
-     * @throws BotStateException if the bot is not in the {@link State#DISCONNECTED} state
+     * @throws BotStateException if the bot is not in the {@link ClientState#DISCONNECTED} state
      * @throws IOException if an error occurred while attempting to connect to the server
      */
     void connect(String server, int port) throws IOException;
     /**
      * Authenticates a user with the server.
      * 
-     * @throws BotStateException if the bot is not in the {@link State#CONNECTED} state
+     * @throws BotStateException if the bot is not in the {@link ClientState#CONNECTED} state
      * @throws IOException if an error occurred while attempting to authenticate the client with the server
      */
     void authenticate(String userName, String password) throws IOException;
     /**
      * Logs a character into the server. 
      * 
-     * @throws BotStateException if the bot is not in the {@link State#AUTHENTICATED} state
+     * @throws BotStateException if the bot is not in the {@link ClientState#AUTHENTICATED} state
      * @throws IOException if an error occurred while attempting to log the client into the server
      */
     void login(CharacterInfo character) throws IOException;
     /**
      * Starts the bot. 
      * 
-     * @throws BotStateException if the bot is not in the {@link State#LOGGED_IN} state
+     * @throws BotStateException if the bot is not in the {@link ClientState#LOGGED_IN} state
      */
     void start();
     /** 

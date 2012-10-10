@@ -33,8 +33,7 @@ import java.nio.charset.Charset;
 public class PacketParser {
 
     private DataInputStream m_input;
-    @SuppressWarnings("unused")
-	private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
+    private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
     /** 
      * Creates a new instance of AOPacketParser 

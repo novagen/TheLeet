@@ -25,6 +25,7 @@ public class ActivityCalendar extends SherlockActivity {
 
         final ActionBar bar = getSupportActionBar();
         
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
         
@@ -79,8 +80,8 @@ public class ActivityCalendar extends SherlockActivity {
     
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		getSupportMenuInflater().inflate(R.menu.menu_aou, menu);
-    	return true;
+		//getSupportMenuInflater().inflate(R.menu.menu_aou, menu);
+    	return super.onCreateOptionsMenu(menu);
 	}
 	
 	@Override

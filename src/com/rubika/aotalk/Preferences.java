@@ -71,7 +71,6 @@ public class Preferences extends SherlockPreferenceActivity  {
 	private CheckBoxPreference checkboxPrefWhoisFallback;
 
 	class IncomingHandler extends Handler {
-		@SuppressWarnings("unchecked")
 		@Override
 	    public void handleMessage(Message message) {
 	    	switch (message.what) {
@@ -91,7 +90,6 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    }
 	}
 	
-	@SuppressWarnings("deprecation")
 	@Override 
 	protected void onCreate(Bundle savedInstanceState) { 
 	    super.onCreate(savedInstanceState); 
@@ -100,6 +98,7 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    
         final ActionBar bar = getSupportActionBar();
         
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
 	            
@@ -109,7 +108,6 @@ public class Preferences extends SherlockPreferenceActivity  {
 	private PreferenceScreen prefScreen;
 	private PreferenceCategory prefCat;
 	
-	@SuppressWarnings("deprecation")
 	private PreferenceScreen createPreferenceHierarchy() {        
 		prefManager = getPreferenceManager();
 		PreferenceScreen root = prefManager.createPreferenceScreen(this);
@@ -168,6 +166,15 @@ public class Preferences extends SherlockPreferenceActivity  {
 			}
 	    });
 	    root.addPreference(prefScreen);
+
+        ListPreference server = new ListPreference(this);
+		server.setKey("server");
+        server.setTitle(getString(R.string.server));
+        server.setSummary(getString(R.string.server_info));
+        server.setEntries(R.array.server);
+        server.setEntryValues(R.array.server_values);
+        server.setDefaultValue("1");
+        root.addPreference(server);
 	    
         //Colors
         prefScreen = prefManager.createPreferenceScreen(this);
@@ -336,15 +343,6 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    prefCat = new PreferenceCategory(this);
 	    prefCat.setTitle(getString(R.string.market_monitor));
         root.addPreference(prefCat);
-
-        ListPreference server = new ListPreference(this);
-        server.setKey("marketserver");
-        server.setTitle(getString(R.string.market_server));
-        server.setSummary(getString(R.string.market_server_info));
-        server.setEntries(R.array.marketservers);
-        server.setEntryValues(R.array.marketservers_values);
-        server.setDefaultValue("1");
-        root.addPreference(server);
         
         EditTextPreference interval = new EditTextPreference(this);
         interval.setKey("marketinterval");
@@ -361,6 +359,32 @@ public class Preferences extends SherlockPreferenceActivity  {
         root.addPreference(autoupdate);
         
         
+	    // Other settings
+	    prefCat = new PreferenceCategory(this);
+	    prefCat.setTitle(getString(R.string.other_settings));
+        root.addPreference(prefCat);
+
+        CheckBoxPreference checkboxDebugOutput = new CheckBoxPreference(this);
+        checkboxDebugOutput.setKey("enableDebug");
+        checkboxDebugOutput.setTitle(getString(R.string.enable_debug_output));
+        checkboxDebugOutput.setSummary(getString(R.string.enable_debug_output_info));
+        checkboxDebugOutput.setDefaultValue(false);
+        root.addPreference(checkboxDebugOutput);
+
+        CheckBoxPreference checkboxSortLoginCharacters = new CheckBoxPreference(this);
+        checkboxSortLoginCharacters.setKey("sortLoginCharacters");
+        checkboxSortLoginCharacters.setTitle(getString(R.string.sort_login_characters));
+        checkboxSortLoginCharacters.setSummary(getString(R.string.sort_login_characters_info));
+        checkboxSortLoginCharacters.setDefaultValue(false);
+        root.addPreference(checkboxSortLoginCharacters);
+
+        CheckBoxPreference checkboxEnableAnimations = new CheckBoxPreference(this);
+        checkboxEnableAnimations.setKey("enableAnimations");
+        checkboxEnableAnimations.setTitle(getString(R.string.enable_animations));
+        checkboxEnableAnimations.setSummary(getString(R.string.enable_animations_info));
+        checkboxEnableAnimations.setDefaultValue(true);
+        root.addPreference(checkboxEnableAnimations);
+       
 	    return root;
 	}
 	

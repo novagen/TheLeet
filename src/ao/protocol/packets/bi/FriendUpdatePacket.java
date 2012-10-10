@@ -35,32 +35,25 @@ public class FriendUpdatePacket extends MessagePacket {
     private final byte[]    m_data;
     private final int       m_characterID;
     private final boolean   m_online;
-    private final boolean	m_friend;
+    private final boolean   m_friend;
     private final String    m_flags;
     private final Direction m_direction;
     
+    //Shortened method for chat clients
     public FriendUpdatePacket(int characterID, boolean friend) {
-        m_characterID = characterID;
-        m_friend = friend;
-        if(friend){
-        	m_flags = "\1";
-        } else {
-        	m_flags = "\0";
-        }
-        m_online = false;
-        m_direction   = Direction.OUT;
-        
-        // Serialize the packet
-        PacketSerializer serializer =
-            new PacketSerializer( 4 + 4 + m_flags.length() );
-        serializer.write(m_characterID);
-        serializer.write(m_flags);
-        
-        m_data = serializer.getResult();
-        serializer.close();
+        this(characterID, false, friend, Direction.TO_SERVER);
+    }
+    
+    public FriendUpdatePacket(int characterID, boolean online, boolean friend, Direction d) {
+        this(characterID, online, (friend ? "\1" : "\0"), d);
     }   // end FriendUpdatePacket()
     
+    //Shortened method for chat clients
     public FriendUpdatePacket(int characterID, String flags) {
+        this(characterID, false, flags, Direction.TO_SERVER);
+    }
+    
+    public FriendUpdatePacket(int characterID, boolean online, String flags, Direction d) {
         m_characterID = characterID;
         m_flags = flags;
         if(flags.compareTo("\0") == 0){
@@ -68,14 +61,15 @@ public class FriendUpdatePacket extends MessagePacket {
         } else {
         	m_friend = true;
         }
-        m_online = false;
-        m_direction   = Direction.OUT;
+        m_online = online;
+        m_direction = d;
         
         // Serialize the packet
         PacketSerializer serializer =
             new PacketSerializer( 4 + 4 + flags.length() );
         serializer.write(m_characterID);
-        serializer.write(flags);
+        if(d == Direction.TO_CLIENT) serializer.write((m_online ? 1 : 0));
+        serializer.write(m_flags);
         
         m_data = serializer.getResult();
         serializer.close();
@@ -117,8 +111,9 @@ public class FriendUpdatePacket extends MessagePacket {
 
             parser.close();
         } catch (IOException e) {
+            e.printStackTrace();
             throw new MalformedPacketException(
-                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.IN)
+                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.TO_CLIENT)
             );
         }   // end catch
     }   // end FriendUpdatePacket()

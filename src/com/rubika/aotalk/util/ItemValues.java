@@ -31,6 +31,8 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import com.rubika.aotalk.service.ServiceTools;
+
 import android.util.Log;
 
 public class ItemValues {
@@ -69,13 +71,25 @@ public class ItemValues {
 		{
 			put(0, "Rubi-Ka");
 			put(1, "ShadowLands");
+			put(6011, "Arid Rift");
 		}
 	};
+	
+	private static Map<Integer, String> currentPlayfieldList = new HashMap<Integer, String>() {
+		private static final long serialVersionUID = 13L;
+		{
+			put(6011, "Arid Rift");
+		}
+	};
+		
 	
 	private static Map<Integer, String> nanoStrainList = new HashMap<Integer, String>() {
 		private static final long serialVersionUID = 5L;
 		{
+			put(6, "DOT_DoctorTypeA");
+			put(7, "DOT_DoctorTypeB");
 			put(8, "DOT_Nanotechnician");
+			put(9, "DOT_Agent");
 			put(10, "DOT_NanotechnicianTypeB");
 			put(13, "Blindness");
 			put(135, "Trader_SkillTransferTargetDebuff_Deprive");
@@ -83,9 +97,11 @@ public class ItemValues {
 			put(145, "Snare");
 			put(146, "Root");
 			put(147, "MezzStun");
+			put(186, "DoctorInitDebuffLine");
 			put(223, "Adventurer_Polymorphs");
 			put(239, "NanoShutdownDebuff");
 			put(282, "CompleteHealingLine");
+			put(582, "DOT Strain C");
 			put(679, "Freak Strength Self Stun");
 			put(703, "Path of Darkness Debuff");
 			put(705, "Road To Darkness Debuff");
@@ -322,6 +338,7 @@ public class ItemValues {
 			put(477, "MaxReflectedEnergyAC");
 			put(535, "HealModifier");
 			put(536, "NanoDamage");
+			put(566, "GaurdianOfShadows");
 		}
 	};
 	
@@ -349,6 +366,14 @@ public class ItemValues {
 		}
 	}
 	
+	public static String getCurrentPlayfield(int id) {
+		if (currentPlayfieldList.containsKey(id)) {
+			return currentPlayfieldList.get(id);
+		} else {
+			return String.valueOf(id);
+		}
+	}
+
 	public static String padLeft(String s, int n) {
 	    return String.format("%1$#" + n + "s", s).replaceAll(" ", "0");  
 	}
@@ -574,7 +599,7 @@ public class ItemValues {
             
 			try {
 				in = response.getEntity().getContent();
-				String result = RestClient.convertStreamToString(in);
+				String result = ServiceTools.convertStreamToString(in);
 				                
     			if (result != null) {
     				JSONObject jsondata = new JSONObject(result);

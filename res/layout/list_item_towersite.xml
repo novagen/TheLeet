@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout 
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:padding="5dp"
+>
+    <TextView
+    android:id="@+id/target"
+    android:textSize="14dp"
+    android:textColor="@color/subgrey"
+    android:layout_gravity="center_vertical"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" 
+    android:layout_alignParentTop="true"
+    android:layout_alignParentRight="true"
+	android:shadowColor="@color/textshadow"
+	android:shadowDx="1"
+	android:shadowDy="1"
+	android:shadowRadius="3"
+    />
+    <TextView
+    android:id="@+id/text"
+    android:textSize="14dp"
+    android:textColor="@color/mainwhite"
+    android:layout_gravity="center_vertical"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" 
+    android:layout_alignParentLeft="true"
+    android:layout_toLeftOf="@id/target"
+    android:textStyle="bold"
+	android:shadowColor="@color/textshadow"
+	android:shadowDx="1"
+	android:shadowDy="1"
+	android:shadowRadius="3"
+    />
+    <TextView
+    android:id="@+id/status"
+    android:textSize="12dp"
+    android:textColor="@color/mainwhite"
+    android:layout_gravity="center_vertical"
+    android:layout_width="wrap_content"
+    android:layout_alignParentLeft="true"
+    android:layout_height="wrap_content" 
+    android:layout_below="@id/text"
+	android:shadowColor="@color/textshadow"
+	android:shadowDx="1"
+	android:shadowDy="1"
+	android:shadowRadius="3"
+    />
+    <TextView
+    android:id="@+id/level"
+    android:textSize="12dp"
+    android:textColor="#DDDDDD"
+    android:layout_gravity="center_vertical"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" 
+    android:layout_alignParentRight="true"
+    android:layout_below="@id/text"
+	android:shadowColor="@color/textshadow"
+	android:shadowDx="1"
+	android:shadowDy="1"
+	android:shadowRadius="3"
+    />
+</RelativeLayout>

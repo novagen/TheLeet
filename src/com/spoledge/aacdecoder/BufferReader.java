@@ -19,10 +19,10 @@
 */
 package com.spoledge.aacdecoder;
 
+import android.util.Log;
+
 import java.io.InputStream;
 import java.io.IOException;
-
-import com.rubika.aotalk.util.Logging;
 
 
 /**
@@ -68,7 +68,7 @@ public class BufferReader implements Runnable {
         }
     }
 
-    private static String APP_TAG = "--> AnarchyTalk::BufferReader";
+    private static String LOG = "BufferReader";
 
     int capacity;
 
@@ -105,7 +105,7 @@ public class BufferReader implements Runnable {
         this.capacity = capacity;
         this.is = is;
 
-        Logging.log(APP_TAG, "init(): capacity=" + capacity);
+        Log.d( LOG, "init(): capacity=" + capacity );
 
         buffers = new Buffer[3];
 
@@ -126,7 +126,7 @@ public class BufferReader implements Runnable {
      * Changes the capacity of the buffer.
      */
     public synchronized void setCapacity( int capacity ) {
-        Logging.log(APP_TAG, "setCapacity(): " + capacity);
+        Log.d( LOG, "setCapacity(): " + capacity );
         this.capacity = capacity;
     }
 
@@ -135,7 +135,7 @@ public class BufferReader implements Runnable {
      * The main loop.
      */
     public void run() {
-        Logging.log(APP_TAG, "run() started....");
+        Log.d( LOG, "run() started...." );
 
         int cap = capacity;
         int total = 0;
@@ -145,7 +145,7 @@ public class BufferReader implements Runnable {
             total = 0;
 
             if (cap != buffer.data.length) {
-                Logging.log(APP_TAG, "run() capacity changed: " + buffer.data.length + " -> " + cap);
+                Log.d( LOG, "run() capacity changed: " + buffer.data.length + " -> " + cap);
                 buffers[ indexMine ] = buffer = null;
                 buffers[ indexMine ] = buffer = new Buffer( cap );
             }
@@ -158,7 +158,7 @@ public class BufferReader implements Runnable {
                     else total += n;
                 }
                 catch (IOException e) {
-                    Logging.log(APP_TAG, e.getMessage());
+                    Log.e( LOG, "Exception when reading: " + e );
                     stopped = true;
                 }
             }
@@ -170,9 +170,9 @@ public class BufferReader implements Runnable {
                 int indexNew = (indexMine + 1) % buffers.length;
 
                 while (!stopped && indexNew == indexBlocked) {
-                    Logging.log(APP_TAG, "run() waiting....");
+                    Log.d( LOG, "run() waiting...." );
                     try { wait(); } catch (InterruptedException e) {}
-                    Logging.log(APP_TAG, "run() awaken");
+                    Log.d( LOG, "run() awaken" );
                 }
 
                 indexMine = indexNew;
@@ -180,7 +180,7 @@ public class BufferReader implements Runnable {
             }
         }
 
-        Logging.log(APP_TAG, "run() stopped.");
+        Log.d( LOG, "run() stopped." );
     }
 
 
@@ -210,9 +210,9 @@ public class BufferReader implements Runnable {
         int indexNew = (indexBlocked + 1) % buffers.length;
 
         while (!stopped && indexNew == indexMine) {
-            Logging.log(APP_TAG, "next() waiting....");
+            Log.d( LOG, "next() waiting...." );
             try { wait(); } catch (InterruptedException e) {}
-            Logging.log(APP_TAG, "next() awaken");
+            Log.d( LOG, "next() awaken" );
         }
 
         if (indexNew == indexMine) return null;

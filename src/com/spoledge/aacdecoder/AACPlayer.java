@@ -19,13 +19,14 @@
 */
 package com.spoledge.aacdecoder;
 
+import android.util.Log;
+
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.IOException;
 
 import java.net.URL;
 import java.net.URLConnection;
-
-import com.rubika.aotalk.util.Logging;
 
 
 /**
@@ -62,7 +63,7 @@ public class AACPlayer {
     public static final int DEFAULT_DECODE_BUFFER_CAPACITY_MS = 700;
 
 
-    private static final String APP_TAG = "--> AnarchyTalk::AACPlayer";
+    private static final String LOG = "AACPlayer";
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -70,6 +71,7 @@ public class AACPlayer {
     ////////////////////////////////////////////////////////////////////////////
 
     protected boolean stopped;
+    protected boolean metadataEnabled = true;
 
     protected int audioBufferCapacityMs;
     protected int decodeBufferCapacityMs;
@@ -207,6 +209,23 @@ public class AACPlayer {
 
 
     /**
+     * Returns the flag if metadata information is enabeld / sent to PlayerCallback.
+     */
+    public boolean getMetadataEnabled() {
+        return metadataEnabled;
+    }
+
+
+    /**
+     * Sets the flag if metadata information is enabeld / sent to PlayerCallback.
+     * This is enabled by default.
+     */
+    public void setMetadataEnabled( boolean metadataEnabled ) {
+        this.metadataEnabled = metadataEnabled;
+    }
+
+
+    /**
      * Plays a stream asynchronously.
      * This method starts a new thread.
      * @param url the URL of the stream or file
@@ -229,7 +248,7 @@ public class AACPlayer {
                     play( url, expectedKBitSecRate );
                 }
                 catch (Exception e) {
-                    Logging.log(APP_TAG, e.getMessage());
+                    Log.e( LOG, "playAsync():", e);
 
                     if (playerCallback != null) playerCallback.playerException( e );
                 }
@@ -255,12 +274,13 @@ public class AACPlayer {
     public void play( String url, int expectedKBitSecRate ) throws Exception {
         if (url.indexOf( ':' ) > 0) {
             URLConnection cn = new URL( url ).openConnection();
-            cn.connect();
 
-            dumpHeaders( cn );
+            prepareConnection( cn );
+            cn.connect();
+            processHeaders( cn );
 
             // TODO: try to get the expectedKBitSecRate from headers
-            play( cn.getInputStream(), expectedKBitSecRate);
+            play( getInputStream( cn ), expectedKBitSecRate);
         }
         else play( new FileInputStream( url ), expectedKBitSecRate );
     }
@@ -330,7 +350,7 @@ public class AACPlayer {
         try {
             Decoder.Info info = decoder.start( reader );
 
-            Logging.log(APP_TAG, "play(): samplerate=" + info.getSampleRate() + ", channels=" + info.getChannels());
+            Log.d( LOG, "play(): samplerate=" + info.getSampleRate() + ", channels=" + info.getChannels());
 
             profSampleRate = info.getSampleRate() * info.getChannels();
 
@@ -360,14 +380,14 @@ public class AACPlayer {
                 profSamples += nsamp;
                 profCount++;
 
-                Logging.log(APP_TAG, "play(): decoded " + nsamp + " samples");
+                Log.d( LOG, "play(): decoded " + nsamp + " samples" );
 
                 if (nsamp == 0 || stopped) break;
                 if (!pcmfeed.feed( decodeBuffer, nsamp ) || stopped) break;
 
                 int kBitSecRate = computeAvgKBitSecRate( info );
                 if (Math.abs(expectedKBitSecRate - kBitSecRate) > 1) {
-                    Logging.log(APP_TAG, "play(): changing kBitSecRate: " + expectedKBitSecRate + " -> " + kBitSecRate);
+                    Log.i( LOG, "play(): changing kBitSecRate: " + expectedKBitSecRate + " -> " + kBitSecRate );
                     reader.setCapacity( computeInputBufferSize( kBitSecRate, decodeBufferCapacityMs ));
                     expectedKBitSecRate = kBitSecRate;
                 }
@@ -384,15 +404,15 @@ public class AACPlayer {
 
             int perf = 0;
 
-            if (profCount > 0) Logging.log(APP_TAG, "play(): average decoding time: " + profMs / profCount + " ms");
+            if (profCount > 0) Log.i( LOG, "play(): average decoding time: " + profMs / profCount + " ms");
 
             if (profMs > 0) {
                 perf = (int)((1000*profSamples / profMs - profSampleRate) * 100 / profSampleRate);
 
-                Logging.log(APP_TAG, "play(): average rate (samples/sec): audio=" + profSampleRate
-                        + ", decoding=" + (1000*profSamples / profMs)
-                        + ", audio/decoding= " + perf
-                        + " %  (the higher, the better; negative means that decoding is slower than needed by audio)");
+                Log.i( LOG, "play(): average rate (samples/sec): audio=" + profSampleRate
+                    + ", decoding=" + (1000*profSamples / profMs)
+                    + ", audio/decoding= " + perf
+                    + " %  (the higher, the better; negative means that decoding is slower than needed by audio)");
             }
 
             if (pcmfeedThread != null) pcmfeedThread.join();
@@ -427,10 +447,69 @@ public class AACPlayer {
     }
 
 
+    /**
+     * Prepares the connection.
+     * This method is called before a connection is opened.
+     * Actually sets "Icy-MetaData" header to "1" if metadata are enabled.
+     */
+    protected void prepareConnection( URLConnection conn ) {
+        // request for dynamic metadata:
+        if (metadataEnabled) conn.setRequestProperty("Icy-MetaData", "1");
+    }
+
+
+    /**
+     * Gets the input stream from the connection.
+     * Actually returns the underlying stream or IcyInputStream.
+     */
+    protected InputStream getInputStream( URLConnection conn ) throws Exception {
+        String smetaint = conn.getHeaderField( "icy-metaint" );
+        InputStream ret = conn.getInputStream();
+
+        if (!metadataEnabled) {
+            Log.i( LOG, "Metadata not enabled" );
+        }
+        else if (smetaint != null) {
+            int period = -1;
+            try {
+                period = Integer.parseInt( smetaint );
+            }
+            catch (Exception e) {
+                Log.e( LOG, "The icy-metaint '" + smetaint + "' cannot be parsed: '" + e );
+            }
+
+            if (period > 0) {
+                Log.i( LOG, "The dynamic metainfo is sent every " + period + " bytes" );
+
+                ret = new IcyInputStream( ret, period, playerCallback );
+            }
+        }
+        else Log.i( LOG, "This stream does not provide dynamic metainfo" );
+
+        return ret;
+    }
+
+
+    /**
+     * This method is called after the connection is established.
+     */
+    protected void processHeaders( URLConnection cn ) {
+        dumpHeaders( cn );
+
+        if (playerCallback != null) {
+            for (java.util.Map.Entry<String, java.util.List<String>> me : cn.getHeaderFields().entrySet()) {
+                for (String s : me.getValue()) {
+                    playerCallback.playerMetadata( me.getKey(), s );
+                }
+            }
+        }
+    }
+
+
     protected void dumpHeaders( URLConnection cn ) {
         for (java.util.Map.Entry<String, java.util.List<String>> me : cn.getHeaderFields().entrySet()) {
             for (String s : me.getValue()) {
-                Logging.log(APP_TAG, "header: key=" + me.getKey() + ", val=" + s);                
+                Log.d( LOG, "header: key=" + me.getKey() + ", val=" + s);
             }
         }
     }

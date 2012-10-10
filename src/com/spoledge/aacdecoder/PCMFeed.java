@@ -19,11 +19,11 @@
 */
 package com.spoledge.aacdecoder;
 
-import com.rubika.aotalk.util.Logging;
-
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+
+import android.util.Log;
 
 
 /**
@@ -47,7 +47,7 @@ import android.media.AudioTrack;
  */
 public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateListener {
 
-    private static final String APP_TAG = "--> AnarchyTalk::PCMFeed";
+    private static final String LOG = "PCMFeed";
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -245,7 +245,16 @@ public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateLis
      */
     public void onPeriodicNotification( AudioTrack track ) {
         if (playerCallback != null) {
-            int buffered = writtenTotal - track.getPlaybackHeadPosition()*channels;
+            int buffered = 0;
+
+            try {
+                buffered = writtenTotal - track.getPlaybackHeadPosition()*channels;
+            }
+            catch (IllegalStateException e) {
+                Log.e( LOG, "onPeriodicNotification(): illegal state=" + track.getPlayState());
+                return;
+            }
+
             int ms = samplesToMs( buffered, sampleRate, channels );
 
             playerCallback.playerPCMFeedBuffer( isPlaying, ms, bufferSizeInMs );
@@ -261,16 +270,16 @@ public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateLis
      * The main execution loop which should be executed in its own thread.
      */
     public void run() {
-        Logging.log(APP_TAG, "run(): sampleRate=" + sampleRate + ", channels=" + channels
-                + ", bufferSizeInBytes=" + bufferSizeInBytes
-                + " (" + bufferSizeInMs + " ms)");
+        Log.d( LOG, "run(): sampleRate=" + sampleRate + ", channels=" + channels
+            + ", bufferSizeInBytes=" + bufferSizeInBytes
+            + " (" + bufferSizeInMs + " ms)");
 
         AudioTrack atrack = new AudioTrack(
                                 AudioManager.STREAM_MUSIC,
                                 sampleRate,
                                 channels == 1 ?
-                                    AudioFormat.CHANNEL_OUT_MONO :
-                                    AudioFormat.CHANNEL_OUT_STEREO,
+                                    AudioFormat.CHANNEL_CONFIGURATION_MONO :
+                                    AudioFormat.CHANNEL_CONFIGURATION_STEREO,
                                 AudioFormat.ENCODING_PCM_16BIT,
                                 bufferSizeInBytes,
                                 AudioTrack.MODE_STREAM );
@@ -294,14 +303,14 @@ public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateLis
 
             do {
                 if (writtenNow != 0) {
-                    Logging.log(APP_TAG, "too fast for playback, sleeping...");
+                    Log.d( LOG, "too fast for playback, sleeping...");
                     try { Thread.sleep( 50 ); } catch (InterruptedException e) {}
                 }
 
                 int written = atrack.write( lsamples, writtenNow, ln );
 
                 if (written < 0) {
-                    Logging.log(APP_TAG, "error in playback feed: " + written);
+                    Log.e( LOG, "error in playback feed: " + written );
                     stopped = true;
                     break;
                 }
@@ -313,12 +322,12 @@ public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateLis
 
                 if (!isPlaying) {
                     if (buffered*2 >= bufferSizeInBytes) {
-                        Logging.log(APP_TAG, "start of AudioTrack - buffered " + buffered + " samples");
+                        Log.d( LOG, "start of AudioTrack - buffered " + buffered + " samples");
                         atrack.play();
                         isPlaying = true;
                     }
                     else {
-                        Logging.log(APP_TAG, "start buffer not filled enough - AudioTrack not started yet");
+                        Log.d( LOG, "start buffer not filled enough - AudioTrack not started yet");
                     }
                 }
 
@@ -333,7 +342,7 @@ public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateLis
         atrack.flush();
         atrack.release();
 
-        Logging.log(APP_TAG, "run() stopped.");
+        Log.d( LOG, "run() stopped." );
     }
 
 

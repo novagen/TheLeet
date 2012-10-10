@@ -1,7 +1,9 @@
 package com.rubika.aotalk.service;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -33,7 +35,6 @@ import org.xml.sax.SAXException;
 
 import com.rubika.aotalk.R;
 import com.rubika.aotalk.util.Logging;
-import com.rubika.aotalk.util.RestClient;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -55,10 +56,13 @@ public class ServiceTools {
 	
 	public static final String HTML_START = 
 		"<html><head></head><style type=\"text/css\">" +
-		"body { background-color:#344a53; color:#ffffff; font-size:0.9em; overflow:hidden; }" +
-		"a { color:#9191ff; }" +
+		"body { background-color:#466C7A; color:#ffffff; font-size:0.9em; overflow:hidden; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }" +
+		"a { color:#9FBCFF; }" +
 		".item { float:right; }" +
+		"hr { height:0px; overflow:hidden; border-bottom:1px solid #2b4751; }" + 
+		"img { box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.3); border:1px solid #222222; padding:1px; background-color:#FFFFFF; }" +
 		".icon { margin:0 5px 0 0; position:relative; top:-2px; vertical-align:middle; }" +
+		".item { background-color:#FFFFFF; }" +
 		"</style><body>";
 	public static final String HTML_END   = "<div style=\"clear:both;\"></div></body></html>";
 	
@@ -104,6 +108,7 @@ public class ServiceTools {
 	public static final int MESSAGE_PLAYER_STOPPED = 33;
 	public static final int MESSAGE_PLAYER_PLAY = 34;
 	public static final int MESSAGE_PLAYER_STOP = 35;
+	public static final int MESSAGE_PLAYER_TRACK = 41;
 	
 	// Channel types
 	public static final String CHANNEL_MAIN = "main";
@@ -140,7 +145,7 @@ public class ServiceTools {
 
 			try {
 				in = response.getEntity().getContent();
-				String result = RestClient.convertStreamToString(in);
+				String result = convertStreamToString(in);
 
 				if (result != null) {
 					Pattern pattern = Pattern.compile("<pictureurl>(.*?)</pictureurl>");
@@ -159,7 +164,14 @@ public class ServiceTools {
 		}
 
 		if (imagepath != null) {
-			currentUserImage = cropImage(resizeImage(downloadImage(context, imagepath), 108, 72));
+			currentUserImage = cropImage(
+				resizeImage(
+					downloadImage(context, imagepath), 
+					(int)Math.round(context.getResources().getDimensionPixelSize(android.R.dimen.notification_large_icon_height) * 1.5), 
+					context.getResources().getDimensionPixelSize(android.R.dimen.notification_large_icon_width)
+				), 
+				context
+			);
 		}
 		
 		if (currentUserImage != null) {
@@ -167,6 +179,33 @@ public class ServiceTools {
 		} else {
 			return ((BitmapDrawable)context.getResources().getDrawable(R.drawable.ic_notification)).getBitmap();
 		}
+	}
+	
+	public static boolean intToBoolean(int intValue)
+	{
+		return (intValue != 0);
+	}
+	
+	public static String convertStreamToString(InputStream is) {
+		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+		StringBuilder sb = new StringBuilder();
+
+		String line = null;
+		try {
+			while ((line = reader.readLine()) != null) {
+				sb.append(line + "\n");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				is.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return sb.toString();
 	}
 	
 	public static List<String> getUserData(Context context, String username, int server) {
@@ -185,6 +224,7 @@ public class ServiceTools {
             HttpResponse httpResponse = httpClient.execute(httpPost);
             HttpEntity httpEntity = httpResponse.getEntity();
             xml = EntityUtils.toString(httpEntity);
+            Logging.log(APP_TAG, xml);
         } catch (UnsupportedEncodingException e) {
 			Logging.log(APP_TAG, e.getMessage());
         } catch (ClientProtocolException e) {
@@ -251,7 +291,11 @@ public class ServiceTools {
 		                	charName += "\'";
 		                }
 		                
-		                charName += t.getTextContent().trim();
+		                if (t.getFirstChild() != null) {
+		                	if (t.getFirstChild().getNodeValue() != null) {
+			                	charName += t.getFirstChild().getNodeValue().trim();
+			                }
+		                }
 		                
 	                	if (t.getNodeName().equals("nick")) {
 		                	charName += "\' ";
@@ -269,38 +313,38 @@ public class ServiceTools {
                 	Node t = nt.item(x);
 
                 	if (t.getNodeName().equals("level")) {
-            			level = Integer.parseInt(t.getTextContent());
+            			level = Integer.parseInt(t.getFirstChild().getNodeValue());
             		}
             		
             		if (t.getNodeName().equals("breed")) {
-            			breed = t.getTextContent();
+            			breed = t.getFirstChild().getNodeValue();
             		}
             		
             		if (t.getNodeName().equals("gender")) {
-            			gender = t.getTextContent();
+            			gender = t.getFirstChild().getNodeValue();
             			if (gender.equals("Nano")) {
             				gender = "Nanomage";
             			}
             		}
             		
             		if (t.getNodeName().equals("faction")) {
-            			faction = t.getTextContent();
+            			faction = t.getFirstChild().getNodeValue();
             		}
             		
             		if (t.getNodeName().equals("profession")) {
-            			profession = t.getTextContent();
+            			profession = t.getFirstChild().getNodeValue();
             		}
             		
             		if (t.getNodeName().equals("profession_title")) {
-            			profession_title = t.getTextContent();
+            			profession_title = t.getFirstChild().getNodeValue();
             		}
             		
             		if (t.getNodeName().equals("defender_rank")) {
-            			defender_rank = t.getTextContent();
+            			defender_rank = t.getFirstChild().getNodeValue();
             		}
             		
             		if (t.getNodeName().equals("defender_rank_id")) {
-            			defender_rank_id = Integer.parseInt(t.getTextContent());
+            			defender_rank_id = Integer.parseInt(t.getFirstChild().getNodeValue());
             		}
                 }
             }
@@ -314,11 +358,11 @@ public class ServiceTools {
                 	Node t = nt.item(x);
                 		
             		if (t.getNodeName().equals("organization_name")) {
-            			organization_name = t.getTextContent();
+            			organization_name = t.getFirstChild().getNodeValue();
             		}
             		
             		if (t.getNodeName().equals("rank")) {
-            			rank = t.getTextContent();
+            			rank = t.getFirstChild().getNodeValue();
             		}
                 }
             }
@@ -358,11 +402,33 @@ public class ServiceTools {
 		return charData;
 	}
 	
-	private static Bitmap cropImage(Bitmap bitmap) {
-		Logging.log("ServiceTools", "cropImage");
+	public static Bitmap cropImage(Bitmap bitmap, Context context) {
+		Logging.log(APP_TAG, "cropImage");
 		
 	    if (bitmap != null) {
-	    	return Bitmap.createBitmap(bitmap, 0, 18, 72, 72);
+	    	if (bitmap.getWidth() > 0 && bitmap.getHeight() > 0 && bitmap.getHeight() > bitmap.getWidth()) {
+		    	int startY = 0;
+		    	
+		    	if (bitmap.getHeight() - bitmap.getWidth()  > 1) {
+		    		startY = Math.round((bitmap.getHeight() - bitmap.getWidth()) / 2);
+		    	}
+		    	
+		    	if (startY + bitmap.getWidth() > bitmap.getHeight()) {
+		    		startY = 0;
+		    	}
+		    	
+		    	Logging.log(APP_TAG, "startY: " + startY + ", w: " + bitmap.getWidth() + ", h: " + bitmap.getHeight());
+	    		
+	    		bitmap = Bitmap.createBitmap(
+		    			bitmap, 
+		    			0, 
+		    			startY, 
+		    			bitmap.getWidth(),
+		    			bitmap.getWidth()
+		    		);
+	    	}
+	    	
+	    	return bitmap;
 	    } else {
 	    	return null;
 	    }
@@ -370,20 +436,29 @@ public class ServiceTools {
 	
 	
 	public static Bitmap resizeImage(Bitmap bitmap, int height, int width) {
-		Logging.log("ServiceTools", "resizeImage");
+		Logging.log(APP_TAG, "resizeImage");
 
 		if (bitmap != null) {
-			int currentWidth = bitmap.getWidth();
-			int currentHeight = bitmap.getHeight();
-	
-			float scaleWidth = ((float) width) / currentWidth;
-			float scaleHeight = ((float) height) / currentHeight;
-	
-			Matrix matrix = new Matrix();
-			matrix.postScale(scaleWidth, scaleHeight);
-	
-			Bitmap resizedBitmap = Bitmap.createBitmap(bitmap, 0, 0, currentWidth, currentHeight, matrix, false);
-			return resizedBitmap;
+	    	if (bitmap.getWidth() > 0 && bitmap.getHeight() > 0) {
+				int currentWidth = bitmap.getWidth();
+				int currentHeight = bitmap.getHeight();
+		
+				float scaleWidth = ((float) width) / currentWidth;
+				float scaleHeight = ((float) height) / currentHeight;
+				
+				if (width > currentWidth || height > currentHeight) {
+					scaleWidth = 1;
+					scaleHeight = 1;
+				}
+		
+				Matrix matrix = new Matrix();
+				matrix.postScale(scaleWidth, scaleHeight);
+		
+				Bitmap resizedBitmap = Bitmap.createBitmap(bitmap, 0, 0, currentWidth, currentHeight, matrix, false);
+				return resizedBitmap;
+	    	} else {
+	    		return null;
+	    	}
 		} else {
 			return null;
 		}
@@ -391,7 +466,7 @@ public class ServiceTools {
 	
 	
 	private static Bitmap downloadImage(Context context, String path) {
-		Logging.log("ServiceTools", "downloadImage");
+		Logging.log(APP_TAG, "downloadImage");
 
 		try {
 			URL url = new URL(path);

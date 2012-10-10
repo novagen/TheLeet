@@ -22,18 +22,19 @@ public class GridAdapter extends ArrayAdapter<Tool> {
 
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
-        if (convertView == null) {
+        
+		if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.grid_item, null);
         }
 
         Tool item = getItem(position);
         TextView tv = (TextView) convertView.findViewById(R.id.grid_item_text);
-        
+       
 		tv.setText(item.getName());
 		tv.setCompoundDrawablesWithIntrinsicBounds(null, context.getResources().getDrawable(item.getIcon()), null, null);
 		tv.setOnClickListener(item.getOnClick());
-
+		
 		return convertView;
 	}
 }

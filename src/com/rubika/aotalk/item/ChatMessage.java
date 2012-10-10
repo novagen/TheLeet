@@ -28,6 +28,7 @@ public class ChatMessage {
     private String channel;
     private long id;
     private int server;
+    private boolean doAnimation = true;
     
     // Constructor for the ChatMessage class
     public ChatMessage() {
@@ -109,5 +110,13 @@ public class ChatMessage {
 
 	public void setServer(int server) {
 		this.server = server;
+	}
+	
+	public boolean showAnimation() {
+		return this.doAnimation;
+	}
+	
+	public void showAnimation(boolean doAnimation) {
+		this.doAnimation = doAnimation;
 	}
 }

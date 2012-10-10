@@ -30,11 +30,7 @@ import java.io.IOException;
  */
 public class MalformedPacketException extends IOException {
     
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 7248390085059178749L;
-	private final UnparsablePacket m_packet;
+    private final UnparsablePacket m_packet;
     
     /** Creates a new instance of AOMalformedPacketException */
     public MalformedPacketException(String message, UnparsablePacket packet) {

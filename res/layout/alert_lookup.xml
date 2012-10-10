@@ -19,8 +19,8 @@ android:gravity="center"
 	android:id="@+id/server"
 	android:layout_width="fill_parent"
 	android:layout_height="wrap_content"
-	android:entries="@array/marketservers"
-	android:entryValues="@array/marketservers_values"
+	android:entries="@array/server"
+	android:entryValues="@array/server_values"
 	android:prompt="@string/select_server"
 	/>
 </LinearLayout>

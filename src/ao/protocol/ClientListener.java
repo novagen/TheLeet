@@ -1,5 +1,5 @@
 /*
- * BotListener.java
+ * ClientListener.java
  *
  * Created on July 24, 2007, 8:07 PM
  *************************************************************************

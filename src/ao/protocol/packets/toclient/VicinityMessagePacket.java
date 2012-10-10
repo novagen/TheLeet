@@ -113,7 +113,7 @@ public class VicinityMessagePacket extends MessagePacket {
             parser.close();
         } catch (IOException e) {
             throw new MalformedPacketException(
-                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.IN)
+                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.TO_CLIENT)
             );
         }   // end catch
     }   // end VicinityMessagePacket()
@@ -127,8 +127,8 @@ public class VicinityMessagePacket extends MessagePacket {
     /** Always returns {@value #TYPE} */
     public short getType() { return TYPE; }
     public byte[] getData() { return m_data; }
-    /** Always returns {@code Direction.IN} */
-    public Direction getDirection() { return Direction.IN; }
+    /** Always returns {@code Direction.TO_CLIENT} */
+    public Direction getDirection() { return Direction.TO_CLIENT; }
     
     @Override
     public String toString() {

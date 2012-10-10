@@ -104,7 +104,7 @@ public class SystemMessagePacket extends Packet {
 
         } catch (IOException e) {
             throw new MalformedPacketException(
-                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.IN)
+                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.TO_CLIENT)
             );
         }   // end catch
     }   // end SystemMessagePacket()
@@ -112,11 +112,12 @@ public class SystemMessagePacket extends Packet {
     /** Always returns {@value #TYPE} */
     public short getType() { return TYPE; }
     public byte[] getData() { return m_data; }
+    public String getMessage(){ return m_msg; }
     public String getMsgType() { return Integer.toHexString(m_messageID); }
     public int getCharID() { return m_clientID; }
 
-    /** Always returns {@code Direction.IN} */
-    public Direction getDirection() { return Direction.IN; }
+    /** Always returns {@code Direction.TO_CLIENT} */
+    public Direction getDirection() { return Direction.TO_CLIENT; }
 
     public String display(){
         return m_ex_msg.getFormattedMessage();

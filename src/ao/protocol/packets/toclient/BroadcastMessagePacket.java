@@ -81,7 +81,10 @@ public class BroadcastMessagePacket extends MessagePacket {
                 new PacketSerializer(4 + m_source.length() + m_msg.length() + m_str.length());
         serializer.write(m_source);
         serializer.write(m_msg);
-        serializer.write(m_str);
+        //serializer.write(m_str);
+        serializer.write((byte)0x0);
+        serializer.write((byte)0x1);
+        serializer.write((byte)0x0);
 
         m_data = serializer.getResult();
         serializer.close();
@@ -114,7 +117,7 @@ public class BroadcastMessagePacket extends MessagePacket {
             parser.close();
         } catch (IOException e) {
             throw new MalformedPacketException(
-                    "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.IN));
+                    "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.TO_CLIENT));
         }   // end catch
     }   // end BroadcastMessagePacket()
 
@@ -140,9 +143,9 @@ public class BroadcastMessagePacket extends MessagePacket {
         return m_data;
     }
 
-    /** Always returns {@code Direction.IN} */
+    /** Always returns {@code Direction.TO_CLIENT} */
     public Direction getDirection() {
-        return Direction.IN;
+        return Direction.TO_CLIENT;
     }
 
     @Override

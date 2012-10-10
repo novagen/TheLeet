@@ -70,7 +70,7 @@ public class ChatCommandPacket extends Packet  {
             parser.close();
         } catch (IOException e) {
             throw new MalformedPacketException(
-                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.OUT)
+                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.TO_SERVER)
             );
         }   // end catch
     }   // end ChatCommandPacket()
@@ -83,7 +83,7 @@ public class ChatCommandPacket extends Packet  {
     public short getType() { return TYPE; }
     public byte[] getData() { return m_data; }
     /** Returns whether this message was recieved or sent by the client */
-    public Direction getDirection() { return Direction.OUT; }
+    public Direction getDirection() { return Direction.TO_SERVER; }
 
     @Override
     public String toString() {

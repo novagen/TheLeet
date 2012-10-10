@@ -5,9 +5,13 @@ import com.actionbarsherlock.app.ActionBar.Tab;
 import com.actionbarsherlock.app.SherlockFragment;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.app.SherlockListFragment;
+import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
+import com.rubika.aotalk.Preferences;
+import com.rubika.aotalk.R;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentTransaction;
 
@@ -15,10 +19,10 @@ public class AOU extends SherlockFragmentActivity {
 	protected static final String APPTAG = "--> AOTalk::AOU";
 	public static final String NEWS_URL    	      = "http://www.ao-universe.com/files/_xml/news_1_3.xml";
 	public static final String CALENDAR_URL 	  = "http://www.ao-universe.com/files/_xml/calendar_1_38_bot.xml";
-	public static final String GUIDES_FOLDERS_URL = "http://www.ao-universe.com/mobile/parser.php?mode=list&bot=aotalk";
-	public static final String GUIDES_FOLDER_URL  = "http://www.ao-universe.com/mobile/parser.php?mode=list&id=%s&bot=aotalk";
-	public static final String GUIDES_INFO_URL    = "http://www.ao-universe.com/mobile/parser.php?mode=view&id=%s&bot=aotalk";
-	public static final String GUIDES_SEARCH_URL  = "http://www.ao-universe.com/mobile/parser.php?mode=search&search=%s&bot=aotalk";
+	public static final String GUIDES_FOLDERS_URL = "http://www.ao-universe.com/mobile/parser.php?mode=list&bot=aotalk&output=html";
+	public static final String GUIDES_FOLDER_URL  = "http://www.ao-universe.com/mobile/parser.php?mode=list&id=%s&bot=aotalk&output=html";
+	public static final String GUIDES_INFO_URL    = "http://www.ao-universe.com/mobile/parser.php?mode=view&id=%s&bot=aotalk&output=html";
+	public static final String GUIDES_SEARCH_URL  = "http://www.ao-universe.com/mobile/parser.php?mode=search&search=%s&bot=aotalk&output=html";
 	private static Context context;
 	
 	@Override
@@ -28,23 +32,25 @@ public class AOU extends SherlockFragmentActivity {
         context = this;
         
         final ActionBar bar = getSupportActionBar();
+        
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         bar.setDisplayHomeAsUpEnabled(true);
         
         bar.addTab(bar.newTab()
                 .setText("News")
-                .setTabListener(new TabListener<LoaderNews.DataListFragment>(
-                        this, "news", LoaderNews.DataListFragment.class)));
+                .setTabListener(new TabListener<FragmentActivityNews.DataListFragment>(
+                        this, "news", FragmentActivityNews.DataListFragment.class)));
         
         bar.addTab(bar.newTab()
                 .setText("Guides")
-                .setTabListener(new TabListener<LoaderGuides.DataListFragment>(
-                        this, "guides", LoaderGuides.DataListFragment.class)));
+                .setTabListener(new TabListener<FragmentActivityGuides.DataListFragment>(
+                        this, "guides", FragmentActivityGuides.DataListFragment.class)));
         
         bar.addTab(bar.newTab()
                 .setText("Calendar")
-                .setTabListener(new TabListener<LoaderCalendar.DataListFragment>(
-                        this, "calendar", LoaderCalendar.DataListFragment.class)));
+                .setTabListener(new TabListener<FragmentActivityCalendar.DataListFragment>(
+                        this, "calendar", FragmentActivityCalendar.DataListFragment.class)));
 
         if (savedInstanceState != null) {
             bar.setSelectedNavigationItem(savedInstanceState.getInt("tab", 0));
@@ -55,6 +61,12 @@ public class AOU extends SherlockFragmentActivity {
     protected void onResume() {
     	super.onResume();
     }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getSupportMenuInflater().inflate(R.menu.menu_aou, menu);
+        return true;
+    }
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
@@ -62,6 +74,10 @@ public class AOU extends SherlockFragmentActivity {
 	        case android.R.id.home:
 	            finish();
 	            return true;
+			case R.id.preferences:
+				Intent intent = new Intent(this, Preferences.class);
+				startActivity(intent);
+				return true;
 	        default:
 	            return super.onOptionsItemSelected(item);
 	    }

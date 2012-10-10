@@ -27,7 +27,7 @@ package ao.protocol.packets;
  */
 public abstract class Packet {
     
-    public enum Direction {IN, OUT};
+    public enum Direction {TO_CLIENT, TO_SERVER};
     
     /** Returns the type of this packet. */
     public abstract short getType();

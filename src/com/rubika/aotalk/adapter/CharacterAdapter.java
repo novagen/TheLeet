@@ -27,7 +27,7 @@ public class CharacterAdapter extends BaseAdapter {
 		View layout = new View(context);
 		
 		if(listItems.get(position) != null) {
-       		layout = inflater.inflate(R.layout.listitem, null);
+       		layout = inflater.inflate(R.layout.list_item, null);
 	
 	        TextView t = (TextView)layout.findViewById(R.id.title);
 	        t.setText(listItems.get(position).text);

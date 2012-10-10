@@ -146,11 +146,11 @@ public class CharacterListPacket extends Packet {
             parser.close();
         } catch (IOException e) {
             throw new MalformedPacketException(
-                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.IN)
+                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.TO_CLIENT)
             );
         } catch (ArrayIndexOutOfBoundsException e) {
             throw new MalformedPacketException(
-                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.IN)
+                "The packet could not be parsed.", e, new UnparsablePacket(TYPE, data, Direction.TO_CLIENT)
             );
         }   // end catch
     }   // end CharacterListPacket()
@@ -159,12 +159,14 @@ public class CharacterListPacket extends Packet {
     public int getNumCharacters() { return m_characters.length; }
     /** Returns a specific character. */
     public CharacterInfo getCharacter(int index) { return m_characters[index]; }
+    /** Returns a array of characters. */
+    public CharacterInfo[] getCharacters() { return m_characters; }
     
     /** Always returns {@value #TYPE} */
     public short getType() { return TYPE; }
     public byte[] getData() { return m_data; }
-    /** Always returns {@code Direction.IN} */
-    public Direction getDirection() { return Direction.IN; }
+    /** Always returns {@code Direction.TO_CLIENT} */
+    public Direction getDirection() { return Direction.TO_CLIENT; }
     
     /** 
      * Returns the character with the given ID 

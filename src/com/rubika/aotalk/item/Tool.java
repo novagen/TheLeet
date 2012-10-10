@@ -36,5 +36,4 @@ public class Tool {
 	public void setOnClick(OnClickListener onclick) {
 		this.onclick = onclick;
 	}
-	
 }

@@ -21,7 +21,6 @@ package ao.chat;
 
 import ao.protocol.packets.utils.SimplePacketFactory;
 import ao.protocol.*;
-import ao.protocol.packets.MessagePacket;
 import ao.protocol.packets.Packet;
 import ao.protocol.packets.bi.*;
 import ao.protocol.packets.toclient.*;
@@ -43,7 +42,7 @@ public class ChatClient implements Client {
     //Base variables
     private PacketFactory m_packetFactory;
     private Thread m_thread = null;
-    private State m_state = State.DISCONNECTED;
+    private ClientState m_state = ClientState.DISCONNECTED;
     private int m_dimension = 0;
     private String m_loginSeed = null;
     private CharacterInfo m_character = null;
@@ -60,8 +59,8 @@ public class ChatClient implements Client {
     private final Object m_readLock = new Object();
     private final Object m_writeLock = new Object();
     private final Object m_stateLock = new Object();
-    private final Object m_timeoutLock = new Object();
-    private ArrayList<Object[]> lookupQueue = new ArrayList<Object[]>();
+    private ArrayList<Object[]> lookupQueue = new ArrayList();
+    private PacketQueue packetQueue;
     //Chat related
     private CharacterIDTable chartable = new CharacterIDTable();
     private GroupTable grouptable = new GroupTable();
@@ -75,11 +74,16 @@ public class ChatClient implements Client {
     public enum Queue {
 
         TELL, FADD, FREM, FDEL, INVITE, KICK;
-    }   // end enum State
+    }   // end enum ClientState
 
     /** Creates a new instance of ChatClient */
     public ChatClient() {
         this(60000, new SimplePacketFactory(), false);
+    }   // end ChatClient
+
+    /** Creates a new instance of ChatClient */
+    public ChatClient(SimplePacketFactory packetFactory) {
+        this(60000, packetFactory, false);
     }   // end ChatClient
 
     /** Creates a new instance of ChatClient */
@@ -93,6 +97,16 @@ public class ChatClient implements Client {
     }   // end ChatClient
 
     /** Creates a new instance of ChatClient */
+    public ChatClient(int pingDelay, SimplePacketFactory packetFactory) {
+        this(pingDelay, packetFactory, false);
+    }   // end ChatClient
+
+    /** Creates a new instance of ChatClient */
+    public ChatClient(SimplePacketFactory packetFactory, boolean debug) {
+        this(60000, packetFactory, debug);
+    }   // end ChatClient
+
+    /** Creates a new instance of ChatClient */
     public ChatClient(int pingDelay, boolean debug) {
         this(pingDelay, new SimplePacketFactory(), debug);
     }   // end ChatClient
@@ -102,9 +116,12 @@ public class ChatClient implements Client {
         m_pingDelay = pingDelay;
         m_packetFactory = packetFactory;
         m_debug = debug;
+        packetQueue = new PacketQueue(this);
+        Thread thread = new Thread(packetQueue);
+        thread.start();
     }   // end ChatClient
 
-    public State getState() {
+    public ClientState getState() {
         synchronized (m_stateLock) {
             return m_state;
         }
@@ -116,10 +133,10 @@ public class ChatClient implements Client {
 
     public Packet nextPacket() throws IOException {
         synchronized (m_readLock) {
-            if (m_state == State.DISCONNECTED) {
+            if (m_state == ClientState.DISCONNECTED) {
                 throw new ClientStateException(
                         "This bot is not currently connected to a server. It must be connected before packets can be read.",
-                        m_state, State.CONNECTED);
+                        m_state, ClientState.CONNECTED);
             } else {
                 try {
                     // Read and parse a packet from the input stream
@@ -138,110 +155,86 @@ public class ChatClient implements Client {
                     // Return the packet
                     return packet;
                 } catch (SocketTimeoutException ex) {
-                    if (m_state != State.DISCONNECTED) {
-                        synchronized (m_timeoutLock) {
-                            if (!timingout) {
-                                timingout = true;
-                                // Send a ping
-                                sendPacket(new PingPacket("Java AOChat API ping", Packet.Direction.OUT));
-                                // Read a ping
-                                Packet packet = nextPacket();
-                                return packet;
+                    if (m_state != ClientState.DISCONNECTED) {
+                        if (!timingout) {
+                            timingout = true;
+                            // Send a ping
+                            sendPacket(new PingPacket("Java AOChat API ping", Packet.Direction.TO_SERVER));
+                            // Read a ping
+                            Packet packet = nextPacket();
+                            return packet;
+                        } else {
+                            if (m_socket == null || m_socket.isClosed()) {
+                                println("Connection Lost...");
+                                disconnect();
+                                return null;
                             } else {
-                                synchronized (m_stateLock) {
-                                    if (m_socket == null || m_socket.isClosed()) {
-                                        println("Connection Lost...");
-                                        disconnect();
-                                        return null;
-                                    } else {
-                                        println("Connection Lost...");
-                                        disconnect();
-                                        throw ex;
-                                    }   // end else
-                                }   // end synchronized
-                            }
+                                println("Connection Lost...");
+                                disconnect();
+                                throw ex;
+                            }   // end else
                         }
                     } else {
                         return null;
                     }
                 } catch (SocketException ex) {
-                    synchronized (m_stateLock) {
-                        if (m_socket == null || m_socket.isClosed()) {
-                            println("Connection Lost...");
-                            disconnect();
-                            return null;
-                        } else {
-                            println("Connection Lost...");
-                            disconnect();
-                            throw ex;
-                        }   // end else
-                    }   // end synchronized
+                    if (m_socket == null || m_socket.isClosed()) {
+                        println("Connection Lost...");
+                        disconnect();
+                        return null;
+                    } else {
+                        println("Connection Lost...");
+                        disconnect();
+                        throw ex;
+                    }   // end else
                 } catch (EOFException ex) {
-                    synchronized (m_stateLock) {
-                        if (m_socket == null || m_socket.isClosed()) {
-                            println("Connection Lost...");
-                            disconnect();
-                            return null;
-                        } else {
-                            println("Connection Lost...");
-                            disconnect();
-                            throw ex;
-                        }   // end else
-                    }   // end synchronized
+                    if (m_socket == null || m_socket.isClosed()) {
+                        println("Connection Lost...");
+                        disconnect();
+                        return null;
+                    } else {
+                        println("Connection Lost...");
+                        disconnect();
+                        throw ex;
+                    }   // end else
                 } // end catch
             }   // end synchronized 
         }   // end else
     }   // end nextPacket()
 
-    public void sendPacket(final Packet packet) throws IOException {
+    public void sendPacket(Packet packet) throws IOException {
         synchronized (m_writeLock) {
-            if (m_state == State.DISCONNECTED) {
+            if (m_state == ClientState.DISCONNECTED) {
                 throw new ClientStateException(
                         "This bot is not currently connected to a server. It must be connected before packets can be sent.",
-                        m_state, State.CONNECTED);
+                        m_state, ClientState.CONNECTED);
+            } else if (packet instanceof PrivateMessagePacket && !packetQueue.canSend()) {
+                packetQueue.add(packet);
+            } else if (packet instanceof ChannelMessagePacket && !packetQueue.canSend()) {
+                packetQueue.add(packet);
             } else {
-                final short type = packet.getType();
-                final byte[] data = packet.getData();
-                
-                /**
-                 * Modified to start a new thread for every packet, will crash in Honeycomb otherwise
-                 */
-				new Thread(new Runnable() { 
-		            public void run(){
-		            	try {
-		                    m_out.writeShort(type);
-		                    m_out.writeShort(data.length);
-		                    m_out.write(data, 0, data.length);
-		                    m_out.flush();
-		
-		                    // DEBUG: display that a packet was sent
-		                    if (m_debug) {
-		                        System.out.println("OUT: " + packet);
-		                    }
-		                } catch (SocketException ex) {
-		                    if (m_socket.isClosed()) {
-		                        println("Connection Lost...");
-		                        try {
-									disconnect();
-								} catch (IOException e) {
-									e.printStackTrace();
-								}
-		                        return;
-		                    } else {
-		                        try {
-									throw ex;
-								} catch (SocketException e) {
-									e.printStackTrace();
-								}
-		                    }
-		                } catch (IOException e) {
-							e.printStackTrace();
-						}
-		            }
-				}).start();
-                /**
-                 * Modified code end
-                 */
+                try {
+                    short type = packet.getType();
+                    byte[] data = packet.getData();
+
+                    m_out.writeShort(type);
+                    m_out.writeShort(data.length);
+                    m_out.write(data, 0, data.length);
+                    m_out.flush();
+
+                    // DEBUG: display that a packet was sent
+                    if (m_debug) {
+                        System.out.println("OUT: " + packet);
+                    }
+                } catch (SocketException ex) {
+                    if (m_socket.isClosed()) {
+                        println("Connection Lost...");
+                        disconnect();
+                        return;
+                    } else {
+                        throw ex;
+                    }   // end else
+                }   // end catch
             }   // end else
         }   // end synchronized 
     }   // end sendPacket()
@@ -251,15 +244,19 @@ public class ChatClient implements Client {
     }   // end connect()
 
     public void connect(DimensionAddress server) throws IOException {
-        connect(server.getURL(), server.getPort());
+        connect(server.getURL(), server.getPort(), Game.AO);
     }   // end connect()
 
     public void connect(String server, int port) throws IOException {
+        connect(server, port, Game.AO);
+    }   // end connect()
+
+    public void connect(String server, int port, Game game) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.DISCONNECTED) {
+            if (m_state != ClientState.DISCONNECTED) {
                 throw new ClientStateException(
                         "This bot is already connected to a server. It must be disconnected before you can connect it to a server.",
-                        m_state, State.DISCONNECTED);
+                        m_state, ClientState.DISCONNECTED);
             } else {
                 try {
                     m_dimension = 0;
@@ -274,18 +271,23 @@ public class ChatClient implements Client {
 
                     m_socket.setSoTimeout(m_pingDelay);
 
-                    m_state = State.CONNECTED;
+                    m_state = ClientState.CONNECTED;
 
-                    Packet packet = nextPacket();
-                    if (packet instanceof LoginSeedPacket) {
-                        m_loginSeed = ((LoginSeedPacket) packet).getLoginSeed();
+                    if (game == Game.AO) {
+                        Packet packet = nextPacket();
+                        if (packet instanceof LoginSeedPacket) {
+                            m_loginSeed = ((LoginSeedPacket) packet).getLoginSeed();
+                            println("Connected");
+                            fireConnected();
+                        } else {
+                            println("Failed to connect");
+                            disconnect();
+                        }   // end else
+                        firePacket(packet);
+                    } else {
                         println("Connected");
                         fireConnected();
-                    } else {
-                        println("Failed to connect");
-                        disconnect();
-                    }   // end else
-                    firePacket(packet);
+                    }
                 } catch (IOException ex) {
                     println("Failed to connect");
                     disconnect();
@@ -297,11 +299,11 @@ public class ChatClient implements Client {
 
     public void authenticate(String accountName, String password) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.CONNECTED) {
+            if (m_state != ClientState.CONNECTED) {
                 throw new ClientStateException(
                         "This bot is either already authenticated or disconnected. "
                         + "It must connected and unauthenticated to be authenticated.",
-                        m_state, State.CONNECTED);
+                        m_state, ClientState.CONNECTED);
             } else {
                 try {
                     String key = LoginKeyGenerator.generateLoginKey(m_loginSeed, accountName, password);
@@ -310,7 +312,7 @@ public class ChatClient implements Client {
 
                     packet = nextPacket();
                     if (packet instanceof CharacterListPacket) {
-                        m_state = State.AUTHENTICATED;
+                        m_state = ClientState.AUTHENTICATED;
                         println("Authenticated");
                         fireAuthenticated();
                     } else {
@@ -329,11 +331,14 @@ public class ChatClient implements Client {
 
     public void login(CharacterInfo character) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.AUTHENTICATED) {
+            if (m_state != ClientState.AUTHENTICATED) {
                 throw new ClientStateException(
                         "This bot is either already logged in or unauthenticated. "
                         + "It must connected, authenticated, and logged out in order to be logged in.",
-                        m_state, State.AUTHENTICATED);
+                        m_state, ClientState.AUTHENTICATED);
+            } else if (character == null) {
+                throw new CharNotFoundException(
+                        "Character is null, unable to login", -1);
             } else {
                 try {
                     Packet packet = new LoginSelectPacket(character.getID());
@@ -341,7 +346,7 @@ public class ChatClient implements Client {
 
                     packet = nextPacket();
                     if (packet instanceof LoginOkPacket) {
-                        m_state = State.LOGGED_IN;
+                        m_state = ClientState.LOGGED_IN;
                         m_character = character;
 
                         // Encourage garbage collection
@@ -366,7 +371,7 @@ public class ChatClient implements Client {
 
     public void disconnect() throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.DISCONNECTED) {
+            if (m_state != ClientState.DISCONNECTED) {
                 if (m_socket != null) {
                     if (m_thread != null) {
                         stopThread();//m_thread.stop();
@@ -385,8 +390,10 @@ public class ChatClient implements Client {
 
                 m_loginSeed = null;
                 m_character = null;
+                chartable.reset();
+                grouptable.reset();
 
-                m_state = State.DISCONNECTED;
+                m_state = ClientState.DISCONNECTED;
 
                 // Encourage garbage collection
                 System.runFinalization();
@@ -406,10 +413,10 @@ public class ChatClient implements Client {
 
     public void start() {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can be started.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 if (m_thread == null || !m_thread.isAlive()) {
                     m_thread = new Thread(this);
@@ -430,20 +437,18 @@ public class ChatClient implements Client {
     }
 
     public void run() {
-        if (m_state != State.LOGGED_IN) {
-            throw new ClientStateException("This bot is not currently logged in.", getState(), State.LOGGED_IN);
+        if (m_state != ClientState.LOGGED_IN) {
+            throw new ClientStateException("This bot is not currently logged in.", getState(), ClientState.LOGGED_IN);
         }
-        Packet packet = null;
+
         // Start listening for packets
-        while (getState() == State.LOGGED_IN) {
+        while (getState() == ClientState.LOGGED_IN) {
             try {
-                packet = nextPacket();
+                Packet packet = nextPacket();
                 if (packet instanceof PingPacket) {
                     PingPacket ping = (PingPacket) packet;
-                    synchronized (m_timeoutLock) {
-                        if (ping.getDirection() == Packet.Direction.IN) {
-                            timingout = false;
-                        }
+                    if (ping.getDirection() == Packet.Direction.TO_CLIENT) {
+                        timingout = false;
                     }
                 } else if (packet instanceof CharacterUpdatePacket) {
                     CharacterUpdatePacket namePacket = (CharacterUpdatePacket) packet;
@@ -467,7 +472,10 @@ public class ChatClient implements Client {
                     lastTellIn = msgPacket.getCharID();
                 }
                 firePacket(packet);
-                Thread.yield();
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException ex) {
+                }
             } catch (Exception e) {
                 fireException(e);
             }
@@ -485,7 +493,13 @@ public class ChatClient implements Client {
         lookupQueue.add(temp);
     }
 
-    private synchronized void searchQueue(int id, String name) throws CharNotFoundException {
+    /**
+     * Searches the lookup queue for a match
+     * @param id
+     * @param name
+     * @throws CharNotFoundException 
+     */
+    private synchronized void searchQueue(int id, String name) {
         for (int i = 0; i < lookupQueue.size(); i++) {
             Object[] current = lookupQueue.get(i);
             Queue type = (Queue) current[0];
@@ -521,8 +535,6 @@ public class ChatClient implements Client {
                 }
                 lookupQueue.remove(i);
                 i--;
-            } else {
-                throw new CharNotFoundException("Character lookup failed, character does not exist", id);
             }
         }
     }
@@ -536,10 +548,10 @@ public class ChatClient implements Client {
 
     public void sendChannelMessage(byte[] channel, String msg) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send messages.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else if (msg.compareTo("") != 0) {
                 Packet packet = new ChannelMessagePacket(channel, msg);
                 sendPacket(packet);
@@ -555,10 +567,10 @@ public class ChatClient implements Client {
 
     public void sendPrivateChannelMessage(int channel, String msg) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send messages.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else if (msg.compareTo("") != 0) {
                 Packet packet = new PrivateChannelMessagePacket(channel, msg);
                 sendPacket(packet);
@@ -568,10 +580,10 @@ public class ChatClient implements Client {
 
     public void lookup(String name) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can perform a lookup.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 Packet packet = new CharacterLookupPacket(name);
                 sendPacket(packet);
@@ -594,14 +606,14 @@ public class ChatClient implements Client {
 
     public void sendTell(int id, String msg) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send tells.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else if (id == -1) {
                 throw new CharNotFoundException("Could not send tell to character", id);
             } else if (msg.compareTo("") != 0) {
-                Packet packet = new PrivateMessagePacket(id, msg, MessagePacket.Direction.OUT);
+                Packet packet = new PrivateMessagePacket(id, msg);
                 sendPacket(packet);
                 firePacket(packet);
                 lastTellOut = id;
@@ -611,10 +623,10 @@ public class ChatClient implements Client {
 
     public void joinChannel(String channel) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send messages.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 if (chartable.getID(channel) != null && chartable.getID(channel) != -1) {
                     Packet packet = new PrivateChannelAcceptPacket(chartable.getID(channel));
@@ -626,10 +638,10 @@ public class ChatClient implements Client {
 
     public void joinChannel(int channel) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send messages.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 Packet packet = new PrivateChannelAcceptPacket(channel);
                 sendPacket(packet);
@@ -639,10 +651,10 @@ public class ChatClient implements Client {
 
     public void leaveChannel(String channel) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send messages.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 if (chartable.getID(channel) != null && chartable.getID(channel) != -1) {
                     Packet packet = new PrivateChannelLeavePacket(chartable.getID(channel));
@@ -654,10 +666,10 @@ public class ChatClient implements Client {
 
     public void leaveChannel(int channel) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send messages.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 Packet packet = new PrivateChannelLeavePacket(channel);
                 sendPacket(packet);
@@ -667,10 +679,10 @@ public class ChatClient implements Client {
 
     public void addFriend(String name, boolean lookup) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before you can add a friend.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 int id = -1;
                 if (chartable.getID(name) != null) {
@@ -691,10 +703,10 @@ public class ChatClient implements Client {
 
     public void removeFriend(String name, boolean lookup) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before you can remove a friend.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 int id = -1;
                 if (chartable.getID(name) != null) {
@@ -715,10 +727,10 @@ public class ChatClient implements Client {
 
     public void deleteFriend(String name, boolean lookup) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can delete a friend.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 int id = -1;
                 if (chartable.getID(name) != null) {
@@ -739,10 +751,10 @@ public class ChatClient implements Client {
 
     public void clearFriends() throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before you can clear your temporary friends.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 Packet packet = new ChatCommandPacket("rem buddy ?");
                 sendPacket(packet);
@@ -752,10 +764,10 @@ public class ChatClient implements Client {
 
     public void inviteUser(String name, boolean lookup) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send tells.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 int id = -1;
                 if (chartable.getID(name) != null) {
@@ -777,10 +789,10 @@ public class ChatClient implements Client {
 
     public void inviteUser(int id) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send tells.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 Packet packet = new PrivateChannelInvitePacket(id);
                 sendPacket(packet);
@@ -791,10 +803,10 @@ public class ChatClient implements Client {
 
     public void kickUser(String name, boolean lookup) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send tells.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 int id = -1;
                 if (chartable.getID(name) != null) {
@@ -816,10 +828,10 @@ public class ChatClient implements Client {
 
     public void kickUser(int id) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send tells.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 Packet packet = new PrivateChannelKickPacket(id);
                 sendPacket(packet);
@@ -830,10 +842,10 @@ public class ChatClient implements Client {
 
     public void kickAll() throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send tells.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 Packet packet = new PrivateChannelKickAllPacket();
                 sendPacket(packet);
@@ -850,10 +862,10 @@ public class ChatClient implements Client {
 
     public void acceptInvite(int channel) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send tells.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 if (channel != -1) {
                     Packet packet = new PrivateChannelAcceptPacket(channel);
@@ -871,10 +883,10 @@ public class ChatClient implements Client {
 
     public void denyInvite(int channel) throws IOException {
         synchronized (m_stateLock) {
-            if (m_state != State.LOGGED_IN) {
+            if (m_state != ClientState.LOGGED_IN) {
                 throw new ClientStateException(
                         "This bot is not currently logged in, it must be logged in before it can send tells.",
-                        m_state, State.LOGGED_IN);
+                        m_state, ClientState.LOGGED_IN);
             } else {
                 if (channel != -1) {
                     Packet packet = new PrivateChannelLeavePacket(channel);
@@ -904,7 +916,7 @@ public class ChatClient implements Client {
         return m_dimension;
     }
 
-    public String getOrdName() {
+    public String getOrgName() {
         return orgName;
     }
 
@@ -1025,5 +1037,14 @@ public class ChatClient implements Client {
             l.print(this, msg);
         }   // end for
     }   // end println()
+
+    @Override
+    public String toString() {
+        if (m_character != null) {
+            return m_character.getName();
+        } else {
+            return null;
+        }
+    }
 }   // end class ChatClient
 

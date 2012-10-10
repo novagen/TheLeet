@@ -19,14 +19,13 @@
 
 package ao.protocol.packets;
 
+import ao.db.MMDBDatabase;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-
-import ao.db.MMDBDatabase;
 
 public class ExtendedMessage {
 
@@ -42,7 +41,7 @@ public class ExtendedMessage {
         if (db == null) {
             message = paramString;
         } else {
-            this.message = db.getMessage(categoryId, instanceId);
+            message = db.getMessage(categoryId, instanceId);
 
             try {
                 params = parseParams(new DataInputStream(new ByteArrayInputStream(paramString.getBytes("UTF-8"))), db);
@@ -57,7 +56,7 @@ public class ExtendedMessage {
         this.instanceId = b85g(dataInputStream);
         if (db == null) {
         } else {
-            this.message = db.getMessage(categoryId, instanceId);
+            message = db.getMessage(categoryId, instanceId);
 
             try {
                 params = parseParams(dataInputStream, db);

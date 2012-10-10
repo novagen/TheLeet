@@ -13,14 +13,14 @@
         android:padding="10dip"
         android:layout_height="wrap_content"
         android:layout_width="fill_parent"
-        app:footerColor="#33B5E5"
+        app:footerColor="@color/ics_blue"
         app:footerLineHeight="0dp"
         app:footerIndicatorHeight="4dp"
         app:footerIndicatorStyle="underline"
-        app:textSize="12dp"
-        app:textColor="#CCFFFFFF"
-        app:selectedColor="#FFFFFFFF"
+        app:selectedColor="@color/mainwhite"
         app:selectedBold="true"
+        android:textColor="@color/subwhite"
+        android:textSize="12dp"
         />
     <android.support.v4.view.ViewPager
 		android:id="@+id/fragmentpager"

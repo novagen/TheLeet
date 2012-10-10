@@ -51,9 +51,9 @@ public class LoginOkPacket extends Packet {
         return m_data;
     }
 
-    /** Always returns {@code Direction.IN} */
+    /** Always returns {@code Direction.TO_CLIENT} */
     public Direction getDirection() {
-        return Direction.IN;
+        return Direction.TO_CLIENT;
     }
 
     @Override

@@ -80,11 +80,7 @@ import java.lang.reflect.Array;
  * @author James Gosling
  */
 public class EventListenerList implements Serializable {
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = -3675037428333114657L;
-	/* A null array to be shared by all empty listener lists*/
+    /* A null array to be shared by all empty listener lists*/
     private final static Object[] NULL_ARRAY = new Object[0];
     /* The list of ListenerType - Listener pairs */
     protected transient Object[] listenerList = NULL_ARRAY;
@@ -118,8 +114,7 @@ public class EventListenerList implements Serializable {
      * 
      * @since 1.3
      */
-    @SuppressWarnings("unchecked")
-	public <T extends EventListener> T[] getListeners(Class<T> t) {
+    public <T extends EventListener> T[] getListeners(Class<T> t) {
 	Object[] lList = listenerList; 
 	int n = getListenerCount(lList, t); 
         T[] result = (T[])Array.newInstance(t, n); 
@@ -148,10 +143,10 @@ public class EventListenerList implements Serializable {
         return getListenerCount(lList, t);
     }
 
-    private int getListenerCount(Object[] list, Class<?> t) {
+    private int getListenerCount(Object[] list, Class t) {
         int count = 0;
 	for (int i = 0; i < list.length; i+=2) {
-	    if (t == (Class<?>)list[i])
+	    if (t == (Class)list[i])
 		count++;
 	}
 	return count;
@@ -238,7 +233,7 @@ public class EventListenerList implements Serializable {
 	
 	// Save the non-null event listeners:
 	for (int i = 0; i < lList.length; i+=2) {
-	    Class<?> t = (Class<?>)lList[i];
+	    Class t = (Class)lList[i];
 	    EventListener l = (EventListener)lList[i+1];
 	    if ((l!=null) && (l instanceof Serializable)) {
 		s.writeObject(t.getName());
@@ -249,30 +244,29 @@ public class EventListenerList implements Serializable {
 	s.writeObject(null);
     }
 
-	@SuppressWarnings("unchecked")
-	private void readObject(ObjectInputStream s) 
+    private void readObject(ObjectInputStream s) 
 	throws IOException, ClassNotFoundException {
         listenerList = NULL_ARRAY;
-		s.defaultReadObject();
-		Object listenerTypeOrNull;
+	s.defaultReadObject();
+	Object listenerTypeOrNull;
 	
-		while (null != (listenerTypeOrNull = s.readObject())) {
-			ClassLoader cl = Thread.currentThread().getContextClassLoader();
-			EventListener l = (EventListener)s.readObject();
-
-			add((Class<EventListener>)Class.forName((String)listenerTypeOrNull, true, cl), l);
-		}
+	while (null != (listenerTypeOrNull = s.readObject())) {
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+	    EventListener l = (EventListener)s.readObject();
+	    add((Class<EventListener>)Class.forName((String)listenerTypeOrNull, true, cl), l);
+	}	    
     }
 
     /**
      * Returns a string representation of the EventListenerList.
      */
+    @Override
     public String toString() {
 	Object[] lList = listenerList;
 	String s = "EventListenerList: ";
 	s += lList.length/2 + " listeners: ";
 	for (int i = 0 ; i <= lList.length-2 ; i+=2) {
-	    s += " type " + ((Class<?>)lList[i]).getName();
+	    s += " type " + ((Class)lList[i]).getName();
 	    s += " listener " + lList[i+1];
 	}
 	return s;

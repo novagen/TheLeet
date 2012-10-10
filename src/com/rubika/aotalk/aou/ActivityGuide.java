@@ -51,7 +51,6 @@ import android.widget.Toast;
 
 public class ActivityGuide extends SherlockActivity {
 	protected static final String APP_TAG = "--> AOTalk::ActivityGuide";
-	
 	private TextView text;
 	private TextView title;
 	private TextView faction;
@@ -59,10 +58,12 @@ public class ActivityGuide extends SherlockActivity {
 	private TextView level;
 	private String id;
 	private ProgressDialog mProgressDialog;
+	private ProgressDialog iProgressDialog;
+	private int imageCount = 0;
 	
 	protected static final String HTML_START = 
 		"<html><head></head><style type=\"text/css\">" +
-		"body { background-color:transparent; color:#ffffff; font-size:0.9em; padding:0; margin:0; }" +
+		"body { background-color:#466C7A; color:#ffffff; font-size:0.9em; padding:0; margin:0; }" +
 		"a { color:#9191ff; }" +
 		"</style><body>";
 	protected static final String HTML_END   = "</body></html>";
@@ -75,6 +76,7 @@ public class ActivityGuide extends SherlockActivity {
 
         final ActionBar bar = getSupportActionBar();
         
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
         
@@ -106,7 +108,13 @@ public class ActivityGuide extends SherlockActivity {
         mProgressDialog.setCancelable(true);
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         mProgressDialog.show();
-
+        
+        iProgressDialog = new ProgressDialog(this);
+        iProgressDialog.setMessage("Loading..");
+        iProgressDialog.setCancelable(true);
+        iProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        iProgressDialog.setProgress(0);
+      
         ((Button) findViewById(R.id.close)).setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -139,7 +147,7 @@ public class ActivityGuide extends SherlockActivity {
 			text.setText(guideText);
 			Logging.log(APP_TAG, guideText.toString());
 		} else {
-			Toast.makeText(this, R.string.data_load_failed, Toast.LENGTH_LONG);
+			Toast.makeText(this, R.string.data_load_failed, Toast.LENGTH_LONG).show();
 		}
 		
 
@@ -156,11 +164,32 @@ public class ActivityGuide extends SherlockActivity {
 			mProgressDialog.dismiss();
 			mProgressDialog = null;
 		}
+		
+		if (iProgressDialog != null) {
+			iProgressDialog.dismiss();
+			iProgressDialog = null;
+		}
 	}
 	
     private ImageGetter getImage = new ImageGetter() {
     	@Override
     	public Drawable getDrawable(String source) {                  
+    		if (!iProgressDialog.isShowing()) {
+    	        runOnUiThread(new Runnable() {                 
+    	        	@Override
+    	        	public void run() {
+		                if (mProgressDialog != null) {
+		                	mProgressDialog.dismiss();
+		                	mProgressDialog = null;
+		                }
+		                
+    	        		iProgressDialog.setMax(imageCount);
+		    	        iProgressDialog.setProgress(0);
+		    	        iProgressDialog.show();
+    	        	}
+    	        });
+    		}
+    		
     		Drawable d = null;
     		try {
     			String path = "";
@@ -170,6 +199,8 @@ public class ActivityGuide extends SherlockActivity {
     			} else {
     				path = "http://www.ao-universe.com/" + source;
     			}
+    			
+    			Logging.log(APP_TAG, path);
     			
     			InputStream src = imageFetch(path);
     			d = Drawable.createFromStream(src, "src");
@@ -181,6 +212,10 @@ public class ActivityGuide extends SherlockActivity {
     		} catch (IOException e) {
 				Logging.log(APP_TAG, e.getMessage());
     		}
+        	
+    		if (iProgressDialog != null) {
+				iProgressDialog.setProgress(iProgressDialog.getProgress() + 1);
+    		}
 
     		return d;
     	}
@@ -189,10 +224,11 @@ public class ActivityGuide extends SherlockActivity {
         	URL url = new URL(source);
         	Object o = url.getContent();
         	InputStream content = (InputStream)o;
+        	
         	return content;
         }
     };
-    
+    	
 	private class GuideData extends AsyncTask<URL, Integer, Long> {
 		private Spanned guideText;
 		private String guideTitle;
@@ -216,12 +252,16 @@ public class ActivityGuide extends SherlockActivity {
         	String xml = null;
             Document doc = null;
 
+            Logging.log(APP_TAG, "Starting XML download");
+
             try {
                 DefaultHttpClient httpClient = new DefaultHttpClient();
                 HttpPost httpPost = new HttpPost(String.format(AOU.GUIDES_INFO_URL, id));
                 HttpResponse httpResponse = httpClient.execute(httpPost);
                 HttpEntity httpEntity = httpResponse.getEntity();
                 xml = EntityUtils.toString(httpEntity);
+                Logging.log(APP_TAG, String.format(AOU.GUIDES_INFO_URL, id));
+                Logging.log(APP_TAG, xml);
             } catch (UnsupportedEncodingException e) {
 				Logging.log(APP_TAG, e.getMessage());
             } catch (ClientProtocolException e) {
@@ -231,7 +271,9 @@ public class ActivityGuide extends SherlockActivity {
             }
             
             if (xml != null) {
-	            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+	            xml = xml.replaceAll("\r\n", "").replaceAll("\n", "").replaceAll("\r", "");
+	            
+            	DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 	            try {
 	                DocumentBuilder db = dbf.newDocumentBuilder();
 	     
@@ -257,42 +299,66 @@ public class ActivityGuide extends SherlockActivity {
 	                Logging.log(APP_TAG, "Content " + i);
 	            	Element e = (Element) nl.item(i);
 	                
-	                String guideHtml = getValue(e, "text").replace("<![", "").replace("]]>", "").trim();
+	            	String guideHtml = null;
 	                guideTitle = getValue(e, "name");
+	            	
+	                Pattern pattern = Pattern.compile("<text>(.*?)</text>");
+		            Matcher matcher = pattern.matcher(xml);
+		            
+		            if (matcher.find()) {
+		            	guideHtml = matcher.group(1).replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&amp;", "&");
+		            }
 	                	
 	                Logging.log(APP_TAG, "Replaceing guide links");
-	                Pattern pattern = Pattern.compile("\\[url=index.php\\?id=(.*?)&pid=(.*?)](.*?)\\[/url]");
-	                Matcher matcher = pattern.matcher(guideHtml);
-	                guideHtml = matcher.replaceAll("<a href=\"guideref://$1/$2\">$3</a>");
-
-	                Logging.log(APP_TAG, "Converting BBCode");
-	                guideHtml = BBCodeConverter.convertString(guideHtml);
-	                Logging.log(APP_TAG, "Converting Item references");
-	                guideHtml = XyphosData.insertData(guideHtml);
-
-	                if (guideHtml == null) {
+	                pattern = Pattern.compile("\"index.php\\?id=(.*?)&pid=(.*?)\"");
+	                
+	                if (guideHtml != null) {
+		                if (pattern != null) {
+			                matcher = pattern.matcher(guideHtml);
+			                guideHtml = matcher.replaceAll("\"guideref://$1/$2\"");
+		                }
+		            } else {
 	                	guideHtml = getString(R.string.unable_to_load_guide);
+		            }
+	                
+	                Logging.log(APP_TAG, "Replaceing item links");
+	                pattern = Pattern.compile("\"http://www.xyphos.com/ao/aodb.php\\?id=(.*?)\"");
+	                
+	                if (guideHtml != null) {
+		                if (pattern != null) {
+			                matcher = pattern.matcher(guideHtml);
+			                guideHtml = matcher.replaceAll("\"itemref://$1/0/0\"");
+		                }
 	                }
+	                
+	                pattern = Pattern.compile("<img");
+	                matcher = pattern.matcher(guideHtml);
+
+	                while (matcher.find()) {
+	                	imageCount++;
+	                }
+	                
+	                Logging.log(APP_TAG, guideHtml);
 	                
                 	guideText = Html.fromHtml(guideHtml, getImage, null);
 	                guideFaction = getValue(e, "faction");
 	                guideClasses = getValue(e, "class");
 	                guideLevel = getValue(e, "level");
 	                guideLink = String.format("http://www.ao-universe.com/index.php?id=14&pid=%s", id);
-	                
-	                Logging.log(APP_TAG, "All done");
+
+	    	        Logging.log(APP_TAG, "All done");
 	            }
             }
 
 			return null;
 		}
 		
-        private String getValue(Element item, String str) {
+        private final String getValue(Element item, String str) {
         	NodeList n = item.getElementsByTagName(str);
         	return getElementValue(n.item(0));
         }
 
-        private final String getElementValue( Node elem ) {
+        private final String getElementValue(Node elem) {
         	Node child;
 
         	if (elem != null) {
@@ -324,8 +390,8 @@ public class ActivityGuide extends SherlockActivity {
     
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		getSupportMenuInflater().inflate(R.menu.menu_aou, menu);
-		return true;
+		//getSupportMenuInflater().inflate(R.menu.menu_aou, menu);
+    	return super.onCreateOptionsMenu(menu);
 	}
 	
 	@Override

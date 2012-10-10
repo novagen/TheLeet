@@ -19,14 +19,11 @@
 */
 package com.spoledge.aacdecoder;
 
-import com.rubika.aotalk.util.Logging;
-
 
 /**
  * The decoder which calls native implementation(s).
  */
 public class Decoder {
-	private static final String APP_TAG = "--> AnarchyTalk::Decoder";
 
     /**
      * Info about the stream.
@@ -167,12 +164,9 @@ public class Decoder {
      */
     public static synchronized void loadLibrary() {
         if (!libLoaded) {
-            try {
-	        	System.loadLibrary( "aacdecoder" );
-	            libLoaded = true;
-            } catch(UnsatisfiedLinkError e) {
-				Logging.log(APP_TAG, e.getMessage());
-            }
+            System.loadLibrary( "aacdecoder" );
+
+            libLoaded = true;
         }
     }
 
@@ -182,6 +176,19 @@ public class Decoder {
      */
     public static Decoder create() {
         return create( 0 );
+    }
+
+
+    /**
+     * Creates a new decoder by its name.
+     * @return the decoder or null if no such decoder is found
+     */
+    public static Decoder createByName( String name ) {
+        loadLibrary();
+
+        int aacdw = nativeDecoderGetByName( name );
+
+        return aacdw != 0 ? create( aacdw ) : null;
     }
 
 
@@ -205,11 +212,7 @@ public class Decoder {
 
         info = new Info();
 
-        try {
-        	aacdw = nativeStart( decoder, reader, info );
-        } catch(UnsatisfiedLinkError e) {
-			Logging.log(APP_TAG, e.getMessage());
-        }
+        aacdw = nativeStart( decoder, reader, info );
 
         if (aacdw == 0) throw new RuntimeException("Cannot start native decoder");
 
@@ -255,7 +258,7 @@ public class Decoder {
             stop();
         }
         catch (Throwable t) {
-			Logging.log(APP_TAG, t.getMessage());
+            t.printStackTrace();
         }
     }
 
@@ -287,6 +290,14 @@ public class Decoder {
      * @param aacdw the pointer to the C struct
      */
     protected native void nativeStop( int aacdw );
+
+
+    /**
+     * Returns the decoder pointer struct or NULL.
+     * @param name the name of the decoder
+     */
+    protected static native int nativeDecoderGetByName( String name );
+
 
 }
 

@@ -64,7 +64,7 @@ public class PrivateChannelMessagePacket extends MessagePacket {
      *        ???
      */
     public PrivateChannelMessagePacket(int groupID, String msg, String str) {
-        this(groupID, -1, msg, str, Direction.OUT);
+        this(groupID, -1, msg, str, Direction.TO_SERVER);
     }   // end PrivateChannelMessagePacket()
 
     /**
@@ -105,7 +105,7 @@ public class PrivateChannelMessagePacket extends MessagePacket {
             new PacketSerializer( 4 + 4 + 4 + m_msg.length() + m_str.length() );
         serializer.write(m_groupID);
 
-        if (m_direction == Direction.IN) {
+        if (m_direction == Direction.TO_CLIENT) {
             serializer.write(m_characterID);
         }   // end if
 
@@ -140,7 +140,7 @@ public class PrivateChannelMessagePacket extends MessagePacket {
             // Parse the packet
             m_groupID = parser.parseInt();
 
-            if (m_direction == Direction.IN) {
+            if (m_direction == Direction.TO_CLIENT) {
                 m_characterID = parser.parseInt();
             } else {
                 m_characterID = -1;
