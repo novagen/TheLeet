@@ -18,4 +18,16 @@
 		<item>1</item>
 		<item>2</item>
 	</string-array>
+	<string-array name="search">
+	    <item>Characters</item>
+	    <item>Items</item>
+	    <item>Guides</item>
+	    <item>Recipes</item>
+	</string-array>
+	<string-array name="search_values">
+	    <item>1</item>
+	    <item>2</item>
+	    <item>3</item>
+	    <item>4</item>
+	</string-array>
 </resources>

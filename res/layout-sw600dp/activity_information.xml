@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+
+    <RelativeLayout
+        android:id="@+id/qlbox"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:padding="5sp"
+        android:visibility="gone"
+        android:background="@drawable/titlebg" >
+
+        <TextView
+            android:id="@+id/currentql"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10sp" />
+
+        <SeekBar
+            android:id="@+id/seeker"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_toLeftOf="@id/currentql" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/buttons"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:weightSum="4"
+        android:baselineAligned="false"
+        android:gravity="right"
+        android:background="@drawable/footbg"
+        >
+	
+	    <LinearLayout
+	        android:id="@+id/extras"
+	        android:layout_width="0dp"
+	        android:layout_height="wrap_content"
+	        android:visibility="gone"
+        	android:baselineAligned="false"
+	        android:layout_weight="3"
+	        android:weightSum="3" >
+	
+	        <Button
+	            android:id="@+id/guides"
+	            android:layout_width="0sp"
+	            android:layout_height="wrap_content"
+	            android:layout_weight="1"
+	            android:drawableLeft="@drawable/ic_menu_compass"
+	            android:textSize="14sp"
+	            android:text="@string/find_guides" />
+	
+	        <Button
+	            android:id="@+id/recipes"
+	            android:layout_width="0sp"
+	            android:layout_height="wrap_content"
+	            android:layout_weight="1"
+	            android:drawableLeft="@drawable/ic_menu_star"
+	            android:textSize="14sp"
+	            android:text="@string/find_recipes" />
+	        	
+	    </LinearLayout>
+	        
+	    <Button
+	        android:id="@+id/close"
+	        android:layout_width="0dp"
+	        android:layout_height="wrap_content"
+	        android:text="@string/close"
+	        android:layout_weight="1" />
+	    
+    </LinearLayout>
+	
+    <WebView
+        android:id="@+id/web"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_above="@id/buttons"
+        android:layout_below="@id/qlbox"
+        android:background="@android:color/black" />
+
+</RelativeLayout>

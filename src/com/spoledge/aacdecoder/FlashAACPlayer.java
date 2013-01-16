@@ -2,11 +2,8 @@ package com.spoledge.aacdecoder;
 
 import com.spoledge.aacdecoder.FlashAACInputStream;
 
-import android.util.Log;
-
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.io.IOException;
 
 import java.net.URL;
 import java.net.URLConnection;

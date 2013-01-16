@@ -18,8 +18,8 @@
  */
 package com.rubika.aotalk.item;
 
-import com.rubika.aotalk.service.ServiceTools;
 import com.rubika.aotalk.util.ChatParser;
+import com.rubika.aotalk.util.Statics;
 
 public class ChatMessage {
     private String message;
@@ -29,6 +29,8 @@ public class ChatMessage {
     private long id;
     private int server;
     private boolean doAnimation = true;
+	//private Bitmap iconimage;
+	private String icon;
     
     // Constructor for the ChatMessage class
     public ChatMessage() {
@@ -89,15 +91,15 @@ public class ChatMessage {
     public int getType() {
     	int type = ChatParser.TYPE_GROUP_MESSAGE;
         
-	    if (channel.equals(ServiceTools.CHANNEL_PRIVATE)) {
+	    if (channel.equals(Statics.CHANNEL_PRIVATE)) {
 	    	type = ChatParser.TYPE_PG_MESSAGE;
-	    } else if (channel.equals(ServiceTools.CHANNEL_SYSTEM)) {
+	    } else if (channel.equals(Statics.CHANNEL_SYSTEM)) {
 	    	type = ChatParser.TYPE_SYSTEM_MESSAGE;
-	    } else if (channel.equals(ServiceTools.CHANNEL_PM)) {
+	    } else if (channel.equals(Statics.CHANNEL_PM)) {
 	    	type = ChatParser.TYPE_PRIVATE_MESSAGE;
-	    } else if (channel.equals(ServiceTools.CHANNEL_FRIEND)) {
+	    } else if (channel.equals(Statics.CHANNEL_FRIEND)) {
 	    	type = ChatParser.TYPE_FRIEND_MESSAGE;
-	    } else if (channel.equals(ServiceTools.CHANNEL_APPLICATION)) {
+	    } else if (channel.equals(Statics.CHANNEL_APPLICATION)) {
 	    	type = ChatParser.TYPE_CLIENT_MESSAGE;
 	    }
         
@@ -119,4 +121,22 @@ public class ChatMessage {
 	public void showAnimation(boolean doAnimation) {
 		this.doAnimation = doAnimation;
 	}
+	
+	public String getIcon() {
+		return icon;
+	}
+	
+	public void setIcon(String icon) {
+		this.icon = icon;
+	}
+	
+	/*
+	public void setIconBitmap(Bitmap bitmap) {
+		this.iconimage = bitmap;
+	}
+	
+	public Bitmap getIconBitmap() {
+		return this.iconimage;
+	}
+	*/
 }

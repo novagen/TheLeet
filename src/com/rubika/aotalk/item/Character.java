@@ -6,11 +6,20 @@ public class Character {
     public final String text;
     public final int icon;
     public final int type;
+    public int order;
     
     public Character(String text, Integer icon, Integer type) {
         this.text = text;
         this.icon = icon;
         this.type = type;
+        this.order = 0;
+    }
+    
+    public Character(String text, Integer icon, Integer type, Integer order) {
+        this.text = text;
+        this.icon = icon;
+        this.type = type;
+        this.order = order;
     }
     
     @Override
@@ -20,6 +29,14 @@ public class Character {
     
     public int getType() {
     	return type;
+    }
+    
+    public int getOrder() {
+    	return order;
+    }
+    
+    public void setOrder(int order) {
+    	this.order = order;
     }
     
 	public static class CustomComparator implements Comparator<Character> {

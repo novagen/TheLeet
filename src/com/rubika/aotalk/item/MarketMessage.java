@@ -22,16 +22,15 @@ public class MarketMessage {
     private long timestamp;
     private String message;
     private String character;
-    private String channel;
     private int side;
+    private boolean doAnimation = true;
     
     // Constructor for the MarketMessage class
-    public MarketMessage(long timestamp, String message, String character, String channel, int side) {
+    public MarketMessage(long timestamp, String message, String character, int side) {
             super();
             this.message   = message;
             this.timestamp = timestamp;
             this.character = character;
-            this.channel   = channel;
             this.side 	   = side;
     }
     
@@ -59,14 +58,7 @@ public class MarketMessage {
 	public void setCharacter(String character) {
 	        this.character = character;
 	}
-    
-    public String getChannel() {
-        return channel;
-    }
 
-	public void setChannel(String channel) {
-	        this.channel = channel;
-	}
     public int getSide() {
         return side;
     }
@@ -74,4 +66,12 @@ public class MarketMessage {
     public void setSide(int side) {
         this.side = side;
     }
+	
+	public boolean showAnimation() {
+		return this.doAnimation;
+	}
+	
+	public void showAnimation(boolean doAnimation) {
+		this.doAnimation = doAnimation;
+	}
 }

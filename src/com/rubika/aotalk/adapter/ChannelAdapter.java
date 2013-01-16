@@ -44,4 +44,17 @@ public class ChannelAdapter extends ArrayAdapter<Channel> implements SpinnerAdap
         
         return convertView;
 	}
+	
+	public boolean contains(String name) {
+		boolean result = false;
+		
+		for (int i = 0; i < getCount(); i++) {
+			if (getItem(i).getName().equals(name)) {
+				result = true;
+				break;
+			}
+		}
+		
+		return result;
+	}
 }

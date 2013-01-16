@@ -28,7 +28,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 public class ActivityNews extends SherlockActivity {
-	private static final String APP_TAG = "--> AnarchyTalk::ActivityNews";
+	private static final String APP_TAG = "--> The Leet ::ActivityNews";
 	
 	private TextView text;
 	private Bundle extras;
@@ -41,7 +41,7 @@ public class ActivityNews extends SherlockActivity {
 
         final ActionBar bar = getSupportActionBar();
         
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
         

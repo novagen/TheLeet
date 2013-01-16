@@ -80,7 +80,11 @@ import java.lang.reflect.Array;
  * @author James Gosling
  */
 public class EventListenerList implements Serializable {
-    /* A null array to be shared by all empty listener lists*/
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -3675037428333114657L;
+	/* A null array to be shared by all empty listener lists*/
     private final static Object[] NULL_ARRAY = new Object[0];
     /* The list of ListenerType - Listener pairs */
     protected transient Object[] listenerList = NULL_ARRAY;
@@ -114,7 +118,8 @@ public class EventListenerList implements Serializable {
      * 
      * @since 1.3
      */
-    public <T extends EventListener> T[] getListeners(Class<T> t) {
+    @SuppressWarnings("unchecked")
+	public <T extends EventListener> T[] getListeners(Class<T> t) {
 	Object[] lList = listenerList; 
 	int n = getListenerCount(lList, t); 
         T[] result = (T[])Array.newInstance(t, n); 
@@ -143,7 +148,8 @@ public class EventListenerList implements Serializable {
         return getListenerCount(lList, t);
     }
 
-    private int getListenerCount(Object[] list, Class t) {
+    @SuppressWarnings("rawtypes")
+	private int getListenerCount(Object[] list, Class t) {
         int count = 0;
 	for (int i = 0; i < list.length; i+=2) {
 	    if (t == (Class)list[i])
@@ -227,7 +233,8 @@ public class EventListenerList implements Serializable {
     }
 
     // Serialization support.  
-    private void writeObject(ObjectOutputStream s) throws IOException {
+    @SuppressWarnings("rawtypes")
+	private void writeObject(ObjectOutputStream s) throws IOException {
 	Object[] lList = listenerList;
 	s.defaultWriteObject();
 	
@@ -244,7 +251,8 @@ public class EventListenerList implements Serializable {
 	s.writeObject(null);
     }
 
-    private void readObject(ObjectInputStream s) 
+    @SuppressWarnings("unchecked")
+	private void readObject(ObjectInputStream s) 
 	throws IOException, ClassNotFoundException {
         listenerList = NULL_ARRAY;
 	s.defaultReadObject();
@@ -260,7 +268,8 @@ public class EventListenerList implements Serializable {
     /**
      * Returns a string representation of the EventListenerList.
      */
-    @Override
+    @SuppressWarnings("rawtypes")
+	@Override
     public String toString() {
 	Object[] lList = listenerList;
 	String s = "EventListenerList: ";

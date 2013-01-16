@@ -19,11 +19,11 @@
 */
 package com.spoledge.aacdecoder;
 
+import com.rubika.aotalk.util.Logging;
+
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
-
-import android.util.Log;
 
 
 /**
@@ -46,8 +46,7 @@ import android.util.Log;
  * </pre>
  */
 public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateListener {
-
-    private static final String LOG = "PCMFeed";
+	private static final String APP_TAG = "--> The Leet ::PCMFeed";
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -251,7 +250,7 @@ public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateLis
                 buffered = writtenTotal - track.getPlaybackHeadPosition()*channels;
             }
             catch (IllegalStateException e) {
-                Log.e( LOG, "onPeriodicNotification(): illegal state=" + track.getPlayState());
+                Logging.log(APP_TAG, "onPeriodicNotification(): illegal state=" + track.getPlayState());
                 return;
             }
 
@@ -270,7 +269,7 @@ public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateLis
      * The main execution loop which should be executed in its own thread.
      */
     public void run() {
-        Log.d( LOG, "run(): sampleRate=" + sampleRate + ", channels=" + channels
+        Logging.log(APP_TAG, "run(): sampleRate=" + sampleRate + ", channels=" + channels
             + ", bufferSizeInBytes=" + bufferSizeInBytes
             + " (" + bufferSizeInMs + " ms)");
 
@@ -278,8 +277,8 @@ public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateLis
                                 AudioManager.STREAM_MUSIC,
                                 sampleRate,
                                 channels == 1 ?
-                                    AudioFormat.CHANNEL_CONFIGURATION_MONO :
-                                    AudioFormat.CHANNEL_CONFIGURATION_STEREO,
+                                    AudioFormat.CHANNEL_OUT_MONO :
+                                    AudioFormat.CHANNEL_OUT_STEREO,
                                 AudioFormat.ENCODING_PCM_16BIT,
                                 bufferSizeInBytes,
                                 AudioTrack.MODE_STREAM );
@@ -303,14 +302,14 @@ public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateLis
 
             do {
                 if (writtenNow != 0) {
-                    Log.d( LOG, "too fast for playback, sleeping...");
+                    Logging.log(APP_TAG, "too fast for playback, sleeping...");
                     try { Thread.sleep( 50 ); } catch (InterruptedException e) {}
                 }
 
                 int written = atrack.write( lsamples, writtenNow, ln );
 
                 if (written < 0) {
-                    Log.e( LOG, "error in playback feed: " + written );
+                    Logging.log(APP_TAG, "error in playback feed: " + written);
                     stopped = true;
                     break;
                 }
@@ -322,12 +321,12 @@ public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateLis
 
                 if (!isPlaying) {
                     if (buffered*2 >= bufferSizeInBytes) {
-                        Log.d( LOG, "start of AudioTrack - buffered " + buffered + " samples");
+                        Logging.log(APP_TAG, "start of AudioTrack - buffered " + buffered + " samples");
                         atrack.play();
                         isPlaying = true;
                     }
                     else {
-                        Log.d( LOG, "start buffer not filled enough - AudioTrack not started yet");
+                        Logging.log(APP_TAG, "start buffer not filled enough - AudioTrack not started yet");
                     }
                 }
 
@@ -342,7 +341,7 @@ public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateLis
         atrack.flush();
         atrack.release();
 
-        Log.d( LOG, "run() stopped." );
+        Logging.log(APP_TAG, "run() stopped.");
     }
 
 

@@ -32,11 +32,13 @@ public class TowerAttack {
     private int minlevel;
     private int maxlevel;
     private long timestamp;
+    private int x;
+    private int y;
     
     public TowerAttack() {
     }
     
-    public TowerAttack(int id, long timestamp, String zone, String attacker, String attackerFaction, String defenderFaction, String attackerOrg, String defenderOrg, String sitename, int minlevel, int maxlevel) {
+    public TowerAttack(int id, long timestamp, String zone, String attacker, String attackerFaction, String defenderFaction, String attackerOrg, String defenderOrg, String sitename, int minlevel, int maxlevel, int x, int y) {
 	    super();
 	    this.zone = zone;
 	    this.id = id;
@@ -49,10 +51,20 @@ public class TowerAttack {
 	    this.sitename = sitename;
 	    this.minlevel = minlevel;
     	this.maxlevel = maxlevel;
+    	this.x = x;
+    	this.y = y;
     }
     
     public int getId() {
     	return this.id;
+    }
+    
+    public int getX() {
+    	return this.x;
+    }
+    
+    public int getY() {
+    	return this.y;
     }
     
     public long getTimestamp() {

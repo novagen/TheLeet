@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.rubika.aotalk.R;
@@ -29,12 +30,15 @@ public class GridAdapter extends ArrayAdapter<Tool> {
         }
 
         Tool item = getItem(position);
+        
         TextView tv = (TextView) convertView.findViewById(R.id.grid_item_text);
-       
 		tv.setText(item.getName());
-		tv.setCompoundDrawablesWithIntrinsicBounds(null, context.getResources().getDrawable(item.getIcon()), null, null);
-		tv.setOnClickListener(item.getOnClick());
 		
+		ImageView iv = (ImageView) convertView.findViewById(R.id.grid_item_icon);
+		iv.setImageDrawable(context.getResources().getDrawable(item.getIcon()));
+		
+		convertView.setOnClickListener(item.getOnClick());
+
 		return convertView;
 	}
 }

@@ -19,11 +19,6 @@
 */
 package com.spoledge.aacdecoder;
 
-import android.util.Log;
-
-import java.io.IOException;
-
-
 /**
  * Callback from player to GUI.
  */

@@ -22,7 +22,11 @@ package ao.protocol;
 
 public class CharNotFoundException  extends RuntimeException {
 
-    private final int charID;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 6164118462485290005L;
+	private final int charID;
 
     public CharNotFoundException(String message, int id) {
         super(message);

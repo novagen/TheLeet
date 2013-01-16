@@ -1,44 +1,80 @@
 package com.rubika.aotalk.towerwars;
 
+import java.util.List;
+import java.util.Vector;
+
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v4.app.FragmentTransaction;
+import android.preference.PreferenceManager;
+import android.support.v4.view.ViewPager;
+import android.view.View;
 
 import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.app.SherlockFragment;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.app.SherlockListFragment;
-import com.actionbarsherlock.app.ActionBar.Tab;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
+import com.rubika.aotalk.AOUFragmentAdapter;
+import com.rubika.aotalk.Preferences;
 import com.rubika.aotalk.R;
+import com.viewpagerindicator.TitlePageIndicator;
 
-public class Towerwars extends SherlockFragmentActivity {
+public class Towerwars extends SherlockFragmentActivity implements ViewPager.OnPageChangeListener {
+	public static ViewPager fragmentPager;
+	private static TitlePageIndicator titleIndicator;
+	private static List<SherlockListFragment> fragments;
+	private static SharedPreferences settings;
+
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
                 
+        setContentView(R.layout.main);
+        
+        settings = PreferenceManager.getDefaultSharedPreferences(this);
+
         final ActionBar bar = getSupportActionBar();
         
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
-        bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
+        bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
         
-		bar.addTab(bar.newTab()
-		        .setText("Recent")
-		        .setTabListener(new TabListener<FragmentActivityAttacks.DataListFragment>(
-		                this, "recent", FragmentActivityAttacks.DataListFragment.class)));
-                
-        bar.addTab(bar.newTab()
-                .setText("Sites")
-                .setTabListener(new TabListener<FragmentActivitySites.DataListFragment>(
-                        this, "sites", FragmentActivitySites.DataListFragment.class)));
+		fragments = new Vector<SherlockListFragment>();
+        fragments.add(FragmentAttacks.newInstance());
+        fragments.add(FragmentSites.newInstance());
         
-        /*
-		bar.addTab(bar.newTab()
-		        .setText("Graphs")
-		        .setTabListener(new TabListener<FragmentActivityGraphs.DataListFragment>(
-		                this, "graphs", FragmentActivityGraphs.DataListFragment.class)));
-		*/
+        AOUFragmentAdapter fragmentAdapter = new AOUFragmentAdapter(super.getSupportFragmentManager(), fragments);
+
+        fragmentPager = (ViewPager) findViewById(R.id.fragmentpager);
+        fragmentPager.setAdapter(fragmentAdapter);
+        fragmentPager.setOnPageChangeListener(this);
+        fragmentPager.setPageMargin(0);
+
+        titleIndicator = (TitlePageIndicator)findViewById(R.id.titles);
+        titleIndicator.setViewPager(fragmentPager);
+        
+        setTitleIndicator();
+	}
+    
+    private static void setTitleIndicator() {
+        if (settings.getBoolean("hideTitles", false)) {
+        	titleIndicator.setVisibility(View.GONE);
+        } else {
+        	titleIndicator.setVisibility(View.VISIBLE);
+        }
+    }
+	
+	@Override
+	public void onPageScrollStateChanged(int arg0) {
+	}
+
+	@Override
+	public void onPageScrolled(int arg0, float arg1, int arg2) {
+	}
+
+	@Override
+	public void onPageSelected(int arg0) {
 	}
 	
 	@Override
@@ -46,11 +82,18 @@ public class Towerwars extends SherlockFragmentActivity {
 		System.gc();
 		super.onPause();
 	}
-	
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-    	return super.onCreateOptionsMenu(menu);
-	}
+    
+    @Override
+    protected void onResume() {
+    	super.onResume();
+        setTitleIndicator();
+    }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getSupportMenuInflater().inflate(R.menu.menu_tower, menu);
+        return true;
+    }
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
@@ -58,52 +101,12 @@ public class Towerwars extends SherlockFragmentActivity {
 	        case android.R.id.home:
 	            finish();
 	            return true;
+			case R.id.preferences:
+				Intent intent = new Intent(this, Preferences.class);
+				startActivity(intent);
+				return true;
 	        default:
 	            return super.onOptionsItemSelected(item);
 	    }
 	}
-
-    public static class TabListener<T extends SherlockListFragment> implements ActionBar.TabListener {
-        private final SherlockFragmentActivity mActivity;
-        private final String mTag;
-        private final Class<T> mClass;
-        private final Bundle mArgs;
-        private SherlockListFragment mFragment;
-
-        public TabListener(SherlockFragmentActivity activity, String tag, Class<T> clz) {
-            this(activity, tag, clz, null);
-        }
-
-        public TabListener(SherlockFragmentActivity activity, String tag, Class<T> clz, Bundle args) {
-            mActivity = activity;
-            mTag = tag;
-            mClass = clz;
-            mArgs = args;
-
-            mFragment = (SherlockListFragment) mActivity.getSupportFragmentManager().findFragmentByTag(mTag);
-            if (mFragment != null && !mFragment.isDetached()) {
-                FragmentTransaction ft = mActivity.getSupportFragmentManager().beginTransaction();
-                ft.detach(mFragment);
-                ft.commit();
-            }
-        }
-
-        public void onTabSelected(Tab tab, FragmentTransaction ft) {
-            if (mFragment == null) {
-                mFragment = (SherlockListFragment) SherlockFragment.instantiate(mActivity, mClass.getName(), mArgs);
-                ft.add(android.R.id.content, mFragment, mTag);
-            } else {
-                ft.attach(mFragment);
-            }
-        }
-
-        public void onTabUnselected(Tab tab, FragmentTransaction ft) {
-            if (mFragment != null) {
-                ft.detach(mFragment);
-            }
-        }
-
-        public void onTabReselected(Tab tab, FragmentTransaction ft) {
-        }
-    }
 }

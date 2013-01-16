@@ -21,6 +21,8 @@ package com.rubika.aotalk.util;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,8 +48,10 @@ public class ItemRef {
 	protected static final String APP_TAG = "--> AOTalk::ItemRef";
 	private String retval = "";
 	
-	public String getData(String id, String ql) {
-    	String xml = null;
+	public List<Object> getData(String lowId, String highId, String ql) {
+        List<Object> result = new ArrayList<Object>();
+
+        String xml = null;
         Document doc = null;
         
         String icon = "";
@@ -62,10 +66,16 @@ public class ItemRef {
         String attacks = "";
         String defenses = "";
         String level = "";
+        
+        int lowQL = 0;
+        int highQL = 0;
 
+        String xyphosUrl = String.format("http://itemxml.xyphos.com/?id=%s&ql=%s", lowId, ql);
+        Logging.log(APP_TAG, xyphosUrl);
+        
         try {
             DefaultHttpClient httpClient = new DefaultHttpClient();
-            HttpPost httpPost = new HttpPost(String.format("http://itemxml.xyphos.com/?id=%s&ql=%s", id, ql));
+            HttpPost httpPost = new HttpPost(xyphosUrl);
             HttpResponse httpResponse = httpClient.execute(httpPost);
             HttpEntity httpEntity = httpResponse.getEntity();
             xml = EntityUtils.toString(httpEntity);
@@ -78,6 +88,10 @@ public class ItemRef {
         }
         
         if (xml != null) {
+        	if (xml.contains("<item>")) {
+        		xml = xml.substring(xml.indexOf("<item>"));
+        	}
+        	
         	Pattern pattern = Pattern.compile("<description>(.*?)</description>", Pattern.DOTALL);
             Matcher matcher = pattern.matcher(xml);
 
@@ -122,6 +136,18 @@ public class ItemRef {
 	                name = getValue(e, "name");
 	                description = getValue(e, "description").replaceAll("\n", "<br />");
 	            }
+	            
+	        	nl = doc.getElementsByTagName("low");
+	            for (int x = 0; x < nl.getLength(); x++) {
+	                Element item = (Element) nl.item(x);
+	                lowQL = Integer.parseInt(item.getAttribute("ql"));
+	            }	            
+	            
+	        	nl = doc.getElementsByTagName("high");
+	            for (int x = 0; x < nl.getLength(); x++) {
+	                Element item = (Element) nl.item(x);
+	                highQL = Integer.parseInt(item.getAttribute("ql"));
+	            }	            
 	            
 	        	nl = doc.getElementsByTagName("attribute");
 	            
@@ -312,31 +338,35 @@ public class ItemRef {
 	
 	    	                        if (nparams.getLength() > 1) {
 	    		                        if (i == 0) {
-	    		                        	if (funcName.equals("Modify") || funcName.equals("LockSkill") || funcName.equals("Skill")) {
+	    		                        	if (funcName.equals("Modify") || funcName.equals("LockSkill") || funcName.equals("Skill") || funcName.equals("Hit") || funcName.equals("ChangeVariable") || funcName.equals("TimedEffect")) {
 	    		                        		events += ItemValues.getSkill(Integer.parseInt(param.getFirstChild().getNodeValue()));
 	    		                        	} else if (funcName.equals("CastStunNano") || funcName.equals("AreaCastNano")) {
 	    		                        		events += ItemValues.lookupItemName(Integer.parseInt(param.getFirstChild().getNodeValue()));
 	        		                        } else if (funcName.equals("ResistNanoStrain")) {
 	    		                        		events += ItemValues.getNanoStrain(Integer.parseInt(param.getFirstChild().getNodeValue()));
+		    	                        	} else if (funcName.equals("SetFlag")) {
+	    		                        		events += ItemValues.getFlag(Integer.parseInt(param.getFirstChild().getNodeValue()));
 	    		                        	} else {
 	        		                        	events += param.getFirstChild().getNodeValue();
 	    		                        	}
 	    		                        } else if (i == 3) {
 	    		                        	if (funcName.equals("Teleport")) {
 	    		                        		events += ItemValues.getCurrentPlayfield(Integer.parseInt(param.getFirstChild().getNodeValue()));
+	    		                        	} else if (funcName.equals("HasNotFormula")) {
+				                        		events += ItemValues.getNano(Integer.parseInt(param.getFirstChild().getNodeValue()));
 	    		                        	} else {
 	    		                        		events += param.getFirstChild().getNodeValue();
 	    		                        	}
 	    		                        } else {
-	    		                        	if (funcName.equals("AddSkill")) {
+	    		                        	if (funcName.equals("AddSkill") || funcName.equals("ChangeVariable") || funcName.equals("Set")) {
 	        		                        	int num = Integer.parseInt(param.getFirstChild().getNodeValue());
-	    		                        		events += ItemValues.getSkill(num);        		                        		
+	    		                        		events += ItemValues.getSkill(num);
 	    		                        	} else {
 	    		                        		events += param.getFirstChild().getNodeValue();
 	    		                        	}
 	    		                        }
 	    	                        } else {
-	    	                        	if (funcName.equals("UploadNano") || funcName.equals("CastNano")) {
+	    	                        	if (funcName.equals("UploadNano") || funcName.equals("CastNano") || funcName.equals("TeamCastNano")) {
 			                        		events += ItemValues.lookupItemName(Integer.parseInt(param.getFirstChild().getNodeValue()));
 	    	                        	} else if (funcName.equals("RemoveNanoStrain")) {
     		                        		events += ItemValues.getNanoStrain(Integer.parseInt(param.getFirstChild().getNodeValue()));
@@ -371,7 +401,7 @@ public class ItemRef {
 	    	}
 	        
 	    	retval += 
-	    		"<img src=\"http://109.74.0.178/icon/" +  icon + ".gif\" class=\"item\">"
+	    		"<img src=\"" +  Statics.ICON_PATH  + icon + "\" class=\"item\">"
 	    		+ "<b>" + name + "</b>"
 	    		+ flags
 	    		+ "<br /><br />"
@@ -418,21 +448,33 @@ public class ItemRef {
 		    	retval += events;
 	    	}
 	    	
+	    	/*
+	    	retval += "<br /><br />";
+	    	retval += "<font color=#999999>Guides from AO-Universe</font>";
+	    	retval += "<br />";
+	    	retval += "<a href=\"gitem://" + name + "\">Check for guides</a>";
 	    	retval += "<br /><br />";
 	    	retval += "<font color=#999999>Recipes from AO RecipeBook</font>";
 	    	retval += "<br />";
-	    	retval += "<a href=\"aorbid://" + id + "\">Check for recipes</a>";
+	    	retval += "<a href=\"aorbid://" + lowId + "\">Check for recipes</a>";
+	        */
 	    	retval += "<br /><br />";
 	    	retval += "<font color=#999999>Data from Xyphos.org</font>";
 	    	retval += "<br />";
-	    	retval += "<a href=\"chatcmd:///start http://www.xyphos.com/ao/aodb.php?id=" + id + "&ql=" + ql + "\">Show on web page</a>";
-	        
+	    	retval += "<a href=\"chatcmd:///start http://www.xyphos.com/ao/aodb.php?id=" + lowId + "&ql=" + ql + "\">Show on web page</a>";
+	    	
 	        if(retval.startsWith("<br />")) {
 	        	retval = retval.replaceFirst("<br />", "");
 	        }
         }
         
-		return retval;
+        result.add(retval);
+        result.add(lowQL);
+        result.add(highQL);
+        result.add(Integer.parseInt(level));
+        result.add(name);
+        
+		return result;
 	}
 	
     private String getValue(Element item, String str) {

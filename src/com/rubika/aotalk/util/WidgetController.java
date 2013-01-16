@@ -19,7 +19,6 @@
 package com.rubika.aotalk.util;
 
 import com.rubika.aotalk.R;
-import com.rubika.aotalk.service.ServiceTools;
 
 import android.content.Context;
 import android.content.Intent;
@@ -30,7 +29,7 @@ import android.preference.PreferenceManager;
 import android.text.Html;
 
 public class WidgetController {
-	protected static final String APP_TAG = "--> AnarchyTalk::WidgetController";
+	protected static final String APP_TAG = "--> The Leet ::WidgetController";
 	
 	public static final String BROADCAST  = "com.rubika.aotalk.UPDATE_WIDGET";
 	public static final String BROADCAST_SMALL  = "com.rubika.aotalk.UPDATE_WIDGET_SMALL";
@@ -122,9 +121,9 @@ public class WidgetController {
 	    	
 	    	text   = context.getString(R.string.widget_clear).replace("\n", "<br />");
 	    } else {
-		    if(channel != null && !channel.equals(ServiceTools.CHANNEL_PM)) {
+		    if(channel != null && !channel.equals(Statics.CHANNEL_PM)) {
 		    	target  = channel;
-		    	if (channel.equals(ServiceTools.CHANNEL_SYSTEM)) {
+		    	if (channel.equals(Statics.CHANNEL_SYSTEM)) {
 		    		target = "System";
 		    	}
 		    	text = message.replaceAll("\\[[^]]*]","").replaceAll("\\<font[^>]*>","").trim();

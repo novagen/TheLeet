@@ -25,14 +25,17 @@ public class Friend {
 	private String name;
 	private int id;
 	private boolean aospeakstatus;
+	//private Bitmap iconimage;
+	private String icon;
 	
 	public Friend() {
 	}
 	
-	public Friend(String name, int id, boolean online) {
+	public Friend(String name, int id, boolean online, String icon) {
 		this.name = name;
 		this.id = id;
 		this.online = online;
+		this.icon = icon;
 	}
 	
 	public void setName(String name) {
@@ -65,6 +68,29 @@ public class Friend {
 	
 	public boolean getAOSpeakStatus() {
 		return this.aospeakstatus;
+	}
+	
+	public String getIcon() {
+		return icon;
+	}
+	
+	public void setIcon(String icon) {
+		this.icon = icon;
+	}
+	
+	/*
+	public void setIconBitmap(Bitmap bitmap) {
+		this.iconimage = bitmap;
+	}
+	
+	public Bitmap getIconBitmap() {
+		return this.iconimage;
+	}
+	*/
+	
+	@Override
+	public String toString() {
+		return this.name.toLowerCase();
 	}
 	
 	public static class CustomComparator implements Comparator<Friend> {

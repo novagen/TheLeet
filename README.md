@@ -1,3 +1,3 @@
-<h1>AnarchyTalk</h1>
-
-Anarchy Online chat client for Android
+<h1>The Leet</h1>
+<p>Formerly known as AnarchyTalk<p>
+<p>Anarchy Online chat client for Android</p>

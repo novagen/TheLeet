@@ -24,9 +24,10 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.Statics;
 
 public class XyphosData {
-	private static final String APP_TAG = "--> AnarchyTalk::XyphosData";
+	private static final String APP_TAG = "--> The Leet ::XyphosData";
 
 	public static String insertData(String string) {
     	String xml = null;
@@ -99,7 +100,7 @@ public class XyphosData {
         	
             string = string.replace(
 	        	"<a href=\"itemref://" + matcher.group(1) + "/0/0\">" + matcher.group(2) + "</a>", 
-	        	"<a href=\"itemref://" + matcher.group(1) + "/0/0\"><img src=\"http://109.74.0.178/icon/" + icon + ".gif\" height=\"42\" width=\"42\" /> " + name + "</a>" 
+	        	"<a href=\"itemref://" + matcher.group(1) + "/0/0\"><img src=\"" + Statics.ICON_PATH + icon + "\" height=\"42\" width=\"42\" /> " + name + "</a>" 
         	);
         }
         
@@ -163,7 +164,7 @@ public class XyphosData {
         	
             string = string.replace(
 	        	"<a href=\"itemref://" + matcher.group(1) + "/0/0\" class=\"icononly\">" + matcher.group(2) + "</a>", 
-	        	"<a href=\"itemref://" + matcher.group(1) + "/0/0\"><img src=\"http://109.74.0.178/icon/" + icon + ".gif\" height=\"42\" width=\"42\" /></a>" 
+	        	"<a href=\"itemref://" + matcher.group(1) + "/0/0\"><img src=\"" + Statics.ICON_PATH + icon + "\" height=\"42\" width=\"42\" /></a>" 
         	);
         }
         

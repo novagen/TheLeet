@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <declare-styleable name="asia.ivity.android.tiledscrollview.TiledScrollView">
+    <declare-styleable name="com.rubika.aotalk.tiledscrollview.TiledScrollView">
         <attr name="file_pattern" format="string" />
         <attr name="tile_width" format="integer" />
         <attr name="tile_height" format="integer" />

@@ -18,18 +18,20 @@
  */
 package com.rubika.aotalk;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.view.MenuItem;
+import com.rubika.aotalk.aou.GuideSearch;
 import com.rubika.aotalk.item.ChatMessage;
 import com.rubika.aotalk.recipebook.RecipeBook;
 import com.rubika.aotalk.service.ClientService;
-import com.rubika.aotalk.service.ServiceTools;
 import com.rubika.aotalk.util.ItemRef;
 import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.Statics;
 
 import android.app.ProgressDialog;
 import android.content.ComponentName;
@@ -48,9 +50,14 @@ import android.view.View.OnClickListener;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
+import android.widget.TextView;
 
 public class Information extends SherlockActivity {
-	protected static final String APP_TAG    = "--> AnarchyTalk::ShowInfo";
+	protected static final String APP_TAG    = "--> The Leet ::ShowInfo";
 	protected static final String CMD_START = "/start";
 	protected static final String CMD_TELL  = "/tell";
 	protected static final String CMD_CC    = "/cc";
@@ -73,6 +80,15 @@ public class Information extends SherlockActivity {
 	
 	private ProgressDialog loader;
 	private WebView info;
+    
+	private String lowid;
+	private String highid;
+	private String itemql;
+	private String itemname;
+	private boolean isItem = false;
+	
+	private Button guides;
+	private Button recipes;
 	
 	final Handler resultHandler = new Handler();
 	
@@ -83,14 +99,89 @@ public class Information extends SherlockActivity {
     };
     
     private void updateResultsInUi() {
-        text = "";
+    	text = "";
         
     	if(resultData != null && resultData.length() > 0) {
-        	text = ServiceTools.HTML_START + resultData + ServiceTools.HTML_END;
+        	Logging.log(APP_TAG, "Updating data");
+    		text = Statics.HTML_START + resultData + Statics.HTML_END;
         } else {
-        	text = ServiceTools.HTML_START + getString(R.string.no_data).replace("\n", "<br />") + ServiceTools.HTML_END;
+        	Logging.log(APP_TAG, "Got no data");
+        	text = Statics.HTML_START + getString(R.string.no_data).replace("\n", "<br />") + Statics.HTML_END;
         }
-            	
+    	
+    	guides.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				Intent intent = new Intent(context, GuideSearch.class);
+				intent.putExtra("text", itemname);
+				startActivity(intent);
+			}
+		});
+    	
+    	recipes.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				Intent intent = new Intent(context, RecipeBook.class);
+				intent.putExtra("text", itemname);
+				startActivity(intent);
+			}
+		});
+   	    	
+    	if (isItem) {
+	    	if (lowQL == highQL) {
+	    		seeker.setEnabled(false);
+	    	} else {
+	    		seeker.setEnabled(true);
+	    	}
+	    	
+    		qlbox.setVisibility(View.VISIBLE);
+	    	extras.setVisibility(View.VISIBLE);
+	    	
+	    	seeker.setMax(highQL - lowQL);
+	    	seeker.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+				@Override
+				public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+					currentql.setText(String.valueOf(progress + lowQL));
+				}
+	
+				@Override
+				public void onStartTrackingTouch(SeekBar seekBar) {
+				}
+	
+				@Override
+				public void onStopTrackingTouch(final SeekBar seekBar) {
+		        	if ((seekBar.getProgress() + lowQL) != currentQL) {
+						loader = new ProgressDialog(context);
+				    	loader.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+						loader.setMessage(getString(R.string.loading_data) + getString(R.string.dots));
+						loader.show();
+						
+						new Thread() {
+				            public void run() {
+				            	List<Object> result = new ItemRef().getData(lowid, highid, String.valueOf(seekBar.getProgress() + lowQL));
+				            	
+				            	resultData = (String) result.get(0);
+				                lowQL = (Integer) result.get(1);
+				                highQL = (Integer) result.get(2);
+				                currentQL = (Integer) result.get(3);
+				                itemname = (String) result.get(4);
+		
+				                resultHandler.post(outputResult);
+						        
+						        loader.dismiss();
+				        	}
+						}.start();
+					}
+				}
+			});
+	    	
+	    	seeker.setProgress(currentQL - lowQL);
+	    	currentql.setText(String.valueOf(currentQL));
+    	}
+    	
+    	Logging.log(APP_TAG, "Text size: " + text.length());
+    	
+        info.loadUrl("about:blank");
     	info.loadData(Uri.encode(text), "text/html", "UTF-8");
     	info.setVisibility(View.VISIBLE);
     }
@@ -105,18 +196,37 @@ public class Information extends SherlockActivity {
 	            return super.onOptionsItemSelected(item);
 	    }
 	}
-    	
+	
+	private LinearLayout extras;
+    private RelativeLayout qlbox;
+    private SeekBar seeker;
+    private TextView currentql;
+    private int highQL = 0;
+    private int lowQL = 0;
+    private int currentQL = 0;
+    private Context context;
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_information);
                 
+        context = this;
+        
         final ActionBar bar = getSupportActionBar();
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
         
         bindService();
+        
+    	extras = (LinearLayout) findViewById(R.id.extras);
+        guides = (Button) findViewById(R.id.guides);
+    	recipes = (Button) findViewById(R.id.recipes);
+        
+        qlbox = (RelativeLayout) findViewById(R.id.qlbox);
+        seeker = (SeekBar) findViewById(R.id.seeker);
+        currentql = (TextView) findViewById(R.id.currentql);
         
         info = (WebView) findViewById(R.id.web);
         info.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
@@ -159,7 +269,7 @@ public class Information extends SherlockActivity {
 	    	        	if(target != null && message != null) {
 	    	        		ChatMessage chatMessage = new ChatMessage(System.currentTimeMillis(), message, target, "", 0, 0);
 	    	        		
-	    	        		Message message = Message.obtain(null, ServiceTools.MESSAGE_SEND);
+	    	        		Message message = Message.obtain(null, Statics.MESSAGE_SEND);
 	    		            message.arg1 = 1;
 	    		            message.obj = chatMessage;
 	    		            message.replyTo = messenger;
@@ -185,11 +295,11 @@ public class Information extends SherlockActivity {
 							Message msg = Message.obtain();
 							
 							if(method.equals(CC_ADD)) {
-						    	msg.what = ServiceTools.MESSAGE_FRIEND_ADD;
+						    	msg.what = Statics.MESSAGE_FRIEND_ADD;
 							}
 							
 							if(method.equals(CC_REM)) {
-						    	msg.what = ServiceTools.MESSAGE_FRIEND_REMOVE;
+						    	msg.what = Statics.MESSAGE_FRIEND_REMOVE;
 							}
 							
 					        msg.replyTo = messenger;
@@ -204,9 +314,14 @@ public class Information extends SherlockActivity {
 							finish();
 						}
 	    	        } else {
-	    		        info.loadData(ServiceTools.HTML_START + getString(R.string.chatcmd_not_implemented) + "<br />'" + chatcmd + "'" + ServiceTools.HTML_END, "text/html", "UTF-8");
+	    		        info.loadData(Statics.HTML_START + getString(R.string.chatcmd_not_implemented) + "<br />'" + chatcmd + "'" + Statics.HTML_END, "text/html", "UTF-8");
 	    		    	info.setVisibility(View.VISIBLE);
 	    	        }
+	    		} else if (url.startsWith("gitem://")) {
+					intent = new Intent(Information.this, GuideSearch.class);
+					intent.putExtra("text", url.replace("gitem://", ""));
+					intent.setData(Uri.parse(url));
+					startActivity(intent);
 	    		} else if (url.startsWith("aorbid://")) {
 					intent = new Intent(Information.this, RecipeBook.class);
 					intent.putExtra("id", url.replace("aorbid://", ""));
@@ -243,12 +358,12 @@ public class Information extends SherlockActivity {
 	        while(matcher.find()) {
 	        	text = text.replace(
 		        	"<img src=rdb://" + matcher.group(1) + ">", 
-		        	"<img src=\"http://109.74.0.178/icon/" + matcher.group(1) + ".gif\" class=\"icon\">"
+		        	"<img src=\"" + Statics.ICON_PATH + matcher.group(1) + "\" class=\"icon\">"
 	        	);
 	        	
 	        	text = text.replace(
 			        "<img src='rdb://" + matcher.group(1) + "'>", 
-			        "<img src=\"http://109.74.0.178/icon/" + matcher.group(1) + ".gif\" class=\"icon\">"
+			        "<img src=\"" + Statics.ICON_PATH + matcher.group(1) + "\" class=\"icon\">"
 		        );	
 	        }
 	        
@@ -262,12 +377,11 @@ public class Information extends SherlockActivity {
 	        	);
 	        }
 	        
-	        //text = text.replace("--------------------------------------------------------------", "------------------------------------------------------------");
 	        text = text.replace("--------------------------------------------------------------", "<hr />");
 	        
 	        Logging.log(APP_TAG, text);
 	        
-	        info.loadData(ServiceTools.HTML_START + text + ServiceTools.HTML_END, "text/html", "UTF-8");
+	        info.loadDataWithBaseURL(null, Statics.HTML_START + text + Statics.HTML_END, "text/html", "UTF-8", null);
 	    	info.setVisibility(View.VISIBLE);
         }
         
@@ -276,10 +390,12 @@ public class Information extends SherlockActivity {
         if(getIntent().getData().toString().startsWith("itemref://")) {
         	String values[] = Uri.decode(getIntent().getData().toString()).replace("itemref://", "").trim().split("/");
         	
-        	final String lowid  = values[0];
-        	final String itemql = values[2];
-        	final ItemRef iref = new ItemRef();
+        	isItem = true;
         	
+        	lowid  = values[0];
+        	highid = values[1];
+        	itemql = values[2];
+       	
         	loader = new ProgressDialog(this);
 	    	loader.setProgressStyle(ProgressDialog.STYLE_SPINNER);
 			loader.setMessage(getString(R.string.loading_data) + getString(R.string.dots));
@@ -287,7 +403,16 @@ public class Information extends SherlockActivity {
 			
 			new Thread() {
 	            public void run() {
-	            	resultData = iref.getData(lowid, itemql);
+	            	List<Object> result = new ItemRef().getData(lowid, highid, itemql);
+	            	
+	            	if (result != null) {
+		            	resultData = (String) result.get(0);
+		                lowQL = (Integer) result.get(1);
+		                highQL = (Integer) result.get(2);
+		                currentQL = (Integer) result.get(3);
+		                itemname = (String) result.get(4);
+	            	}
+	            	
 	                resultHandler.post(outputResult);
 			        
 			        loader.dismiss();
@@ -296,7 +421,7 @@ public class Information extends SherlockActivity {
         }
         
 		if(getIntent().getData().toString().startsWith("user://")) {
-	        info.loadData(ServiceTools.HTML_START + getString(R.string.chatcmd_not_implemented) + "<br />'user://'" + ServiceTools.HTML_END, "text/html", "UTF-8");	    			
+	        info.loadData(Statics.HTML_START + getString(R.string.chatcmd_not_implemented) + "<br />'user://'" + Statics.HTML_END, "text/html", "UTF-8");	    			
 	    	info.setVisibility(View.VISIBLE);
 		}
 
@@ -307,7 +432,7 @@ public class Information extends SherlockActivity {
 			}
 		});
     }
-    
+   
     @Override
     protected void onResume() {
     	super.onResume();
@@ -334,7 +459,7 @@ public class Information extends SherlockActivity {
 		@Override
 	    public void handleMessage(Message message) {
 	    	switch (message.what) {
-	            case ServiceTools.MESSAGE_REGISTERED:
+	            case Statics.MESSAGE_REGISTERED:
 	                break;
 	            default:
 	                super.handleMessage(message);
@@ -347,7 +472,7 @@ public class Information extends SherlockActivity {
 	        service = new Messenger(ibinder);
 
 	        try {
-	            Message message = Message.obtain(null, ServiceTools.MESSAGE_CLIENT_REGISTER);
+	            Message message = Message.obtain(null, Statics.MESSAGE_CLIENT_REGISTER);
 	            message.replyTo = messenger;
 	            service.send(message);
 	        } catch (RemoteException e) {
@@ -374,7 +499,7 @@ public class Information extends SherlockActivity {
 		if (serviceIsBound) {
 	        if (service != null) {
 	            try {
-	                Message msg = Message.obtain(null, ServiceTools.MESSAGE_CLIENT_UNREGISTER);
+	                Message msg = Message.obtain(null, Statics.MESSAGE_CLIENT_UNREGISTER);
 	                msg.replyTo = messenger;
 	                service.send(msg);
 	            } catch (RemoteException e) {

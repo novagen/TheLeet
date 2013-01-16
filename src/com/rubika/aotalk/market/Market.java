@@ -68,7 +68,7 @@ public class Market extends SherlockActivity {
 	private TextView status;
 	
 	private static String SERVER = "1";
-	private static String INTERVAL = "5";
+	public static String MARKET_INTERVAL = "10";
 	private static boolean UPDATE = true;
 	private String resultData;
 	
@@ -104,7 +104,7 @@ public class Market extends SherlockActivity {
 
         final ActionBar bar = getSupportActionBar();
         
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
 
@@ -114,8 +114,9 @@ public class Market extends SherlockActivity {
         
         marketlist = (ListView)findViewById(R.id.market);
         marketlist.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);
+        marketlist.setDividerHeight(0);
 
-        msgadapter = new MarketMessageAdapter(this, marketposts);
+        msgadapter = new MarketMessageAdapter(this, marketposts, settings.getBoolean("enableAnimations", true));
 
         marketlist.setAdapter(msgadapter);
         marketlist.setFocusable(true);
@@ -142,17 +143,17 @@ public class Market extends SherlockActivity {
 	     protected void onPostExecute(String result) {
 	    	 resultData = result;
 	    	 handler.post(outputResult);
+    	 
+    		if(settings.getBoolean("marketautoupdate", UPDATE)) {
+    			handler.removeCallbacks(update);
+    			handler.postDelayed(update, (Integer.parseInt(settings.getString("marketinterval", MARKET_INTERVAL).trim()) * 1000));
+    		}
 	     }
 	}
 	
     private Runnable update = new Runnable() {
     	public void run() {
     		new Update().execute();
-    		
-    		if(settings.getBoolean("marketautoupdate", UPDATE)) {
-    			handler.removeCallbacks(this);
-    			handler.postDelayed(this, (Integer.parseInt(settings.getString("marketinterval", INTERVAL).trim()) * 1000));
-    		}
     	}
 
     };
@@ -251,11 +252,22 @@ public class Market extends SherlockActivity {
     	try{
     		if(resultData != null) {
 	    		if((!resultData.startsWith("null"))) {
+	                boolean showAnimation = true;
+	                
+	    			if(lastfetch == 0) {
+	    				showAnimation = false;
+	                }
+
+	    			
 	    			json_array = new JSONArray(resultData);
 	    				    			
 	    	        for(int i = json_array.length() - 1; i >= 0; i--){
 	    	        	json_data = json_array.getJSONObject(i);
 		                
+	    	        	if (i == 0) {
+		                	lastfetch = json_data.getLong("time");
+	    	        	}
+	    	        	
 	    	        	int side = 0;
 	    	        	
 		                if(json_data.getInt("omni") == 1) {
@@ -270,21 +282,17 @@ public class Market extends SherlockActivity {
 		                	side = 3;
 		                }
 		                
-		                marketposts.add(new MarketMessage(
-	                		json_data.getLong("time"),
-	                		ChatParser.parse(json_data.getString("message"),
-	                		ChatParser.TYPE_PLAIN_MESSAGE), 
-	                		json_data.getString("player"), 
-	                		null,
-	                		side
-		                ));
+		                MarketMessage message = new MarketMessage(
+		                		json_data.getLong("time"),
+		                		ChatParser.parse(json_data.getString("message"),
+		                		ChatParser.TYPE_PLAIN_MESSAGE), 
+		                		json_data.getString("player"), 
+		                		side
+			                );
 		                
-		                if(json_data.getLong("time") > lastfetch) {
-		                	lastfetch = json_data.getLong("time");
-		                }
+		                message.showAnimation(showAnimation);
+		                marketposts.add(0, message);
 	    	        }
-	    	        
-	    	    	msgadapter.notifyDataSetChanged();
 	    		}
     		} else {
     			handler.post(setError);
@@ -293,6 +301,7 @@ public class Market extends SherlockActivity {
     		Logging.log(APP_TAG, "Error parsing data " + e.toString());
     	}
     	
+    	msgadapter.notifyDataSetChanged();
     	handler.post(setDone);
     }
    
@@ -343,7 +352,8 @@ public class Market extends SherlockActivity {
 	        finish();
 	        return true;
     	} else if (item.getItemId() == R.id.update) {
-			handler.post(update);
+			handler.removeCallbacks(update);
+    		handler.post(update);
 			return true;
 		} else if (item.getItemId() == R.id.preferences) {
 			Intent intent = new Intent(this, Preferences.class);

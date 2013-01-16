@@ -1,66 +1,92 @@
 package com.rubika.aotalk.aou;
 
+import java.util.List;
+import java.util.Vector;
+
 import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.app.ActionBar.Tab;
-import com.actionbarsherlock.app.SherlockFragment;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.app.SherlockListFragment;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
+import com.rubika.aotalk.AOUFragmentAdapter;
 import com.rubika.aotalk.Preferences;
 import com.rubika.aotalk.R;
+import com.viewpagerindicator.TitlePageIndicator;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v4.app.FragmentTransaction;
+import android.preference.PreferenceManager;
+import android.support.v4.view.ViewPager;
+import android.view.View;
 
-public class AOU extends SherlockFragmentActivity {
+public class AOU extends SherlockFragmentActivity implements ViewPager.OnPageChangeListener {
 	protected static final String APPTAG = "--> AOTalk::AOU";
-	public static final String NEWS_URL    	      = "http://www.ao-universe.com/files/_xml/news_1_3.xml";
-	public static final String CALENDAR_URL 	  = "http://www.ao-universe.com/files/_xml/calendar_1_38_bot.xml";
-	public static final String GUIDES_FOLDERS_URL = "http://www.ao-universe.com/mobile/parser.php?mode=list&bot=aotalk&output=html";
-	public static final String GUIDES_FOLDER_URL  = "http://www.ao-universe.com/mobile/parser.php?mode=list&id=%s&bot=aotalk&output=html";
-	public static final String GUIDES_INFO_URL    = "http://www.ao-universe.com/mobile/parser.php?mode=view&id=%s&bot=aotalk&output=html";
-	public static final String GUIDES_SEARCH_URL  = "http://www.ao-universe.com/mobile/parser.php?mode=search&search=%s&bot=aotalk&output=html";
 	private static Context context;
+	public static ViewPager fragmentPager;
+	private static TitlePageIndicator titleIndicator;
+	private static List<SherlockListFragment> fragments;
+	private static SharedPreferences settings;
 	
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        setContentView(R.layout.main);
+        
+        settings = PreferenceManager.getDefaultSharedPreferences(this);
         context = this;
         
         final ActionBar bar = getSupportActionBar();
         
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
-        bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
+        bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
         
-        bar.addTab(bar.newTab()
-                .setText("News")
-                .setTabListener(new TabListener<FragmentActivityNews.DataListFragment>(
-                        this, "news", FragmentActivityNews.DataListFragment.class)));
+		fragments = new Vector<SherlockListFragment>();
+        fragments.add(FragmentNews.newInstance());
+        fragments.add(FragmentGuides.newInstance());
+        fragments.add(FragmentCalendar.newInstance());
         
-        bar.addTab(bar.newTab()
-                .setText("Guides")
-                .setTabListener(new TabListener<FragmentActivityGuides.DataListFragment>(
-                        this, "guides", FragmentActivityGuides.DataListFragment.class)));
-        
-        bar.addTab(bar.newTab()
-                .setText("Calendar")
-                .setTabListener(new TabListener<FragmentActivityCalendar.DataListFragment>(
-                        this, "calendar", FragmentActivityCalendar.DataListFragment.class)));
+        AOUFragmentAdapter fragmentAdapter = new AOUFragmentAdapter(super.getSupportFragmentManager(), fragments);
 
-        if (savedInstanceState != null) {
-            bar.setSelectedNavigationItem(savedInstanceState.getInt("tab", 0));
-        }
+        fragmentPager = (ViewPager) findViewById(R.id.fragmentpager);
+        fragmentPager.setAdapter(fragmentAdapter);
+        fragmentPager.setOnPageChangeListener(this);
+        fragmentPager.setPageMargin(0);
+
+        titleIndicator = (TitlePageIndicator)findViewById(R.id.titles);
+        titleIndicator.setViewPager(fragmentPager);
+        
+        setTitleIndicator();
     }
     
+    private static void setTitleIndicator() {
+        if (settings.getBoolean("hideTitles", false)) {
+        	titleIndicator.setVisibility(View.GONE);
+        } else {
+        	titleIndicator.setVisibility(View.VISIBLE);
+        }
+    }
+	
+	@Override
+	public void onPageScrollStateChanged(int arg0) {
+	}
+
+	@Override
+	public void onPageScrolled(int arg0, float arg1, int arg2) {
+	}
+
+	@Override
+	public void onPageSelected(int arg0) {
+	}
+   
     @Override
     protected void onResume() {
     	super.onResume();
-    }
+        setTitleIndicator();
+   }
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -91,49 +117,5 @@ public class AOU extends SherlockFragmentActivity {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt("tab", getSupportActionBar().getSelectedNavigationIndex());
-    }
-
-    public static class TabListener<T extends SherlockListFragment> implements ActionBar.TabListener {
-        private final SherlockFragmentActivity mActivity;
-        private final String mTag;
-        private final Class<T> mClass;
-        private final Bundle mArgs;
-        private SherlockListFragment mFragment;
-
-        public TabListener(SherlockFragmentActivity activity, String tag, Class<T> clz) {
-            this(activity, tag, clz, null);
-        }
-
-        public TabListener(SherlockFragmentActivity activity, String tag, Class<T> clz, Bundle args) {
-            mActivity = activity;
-            mTag = tag;
-            mClass = clz;
-            mArgs = args;
-
-            mFragment = (SherlockListFragment) mActivity.getSupportFragmentManager().findFragmentByTag(mTag);
-            if (mFragment != null && !mFragment.isDetached()) {
-                FragmentTransaction ft = mActivity.getSupportFragmentManager().beginTransaction();
-                ft.detach(mFragment);
-                ft.commit();
-            }
-        }
-
-        public void onTabSelected(Tab tab, FragmentTransaction ft) {
-            if (mFragment == null) {
-                mFragment = (SherlockListFragment) SherlockFragment.instantiate(mActivity, mClass.getName(), mArgs);
-                ft.add(android.R.id.content, mFragment, mTag);
-            } else {
-                ft.attach(mFragment);
-            }
-        }
-
-        public void onTabUnselected(Tab tab, FragmentTransaction ft) {
-            if (mFragment != null) {
-                ft.detach(mFragment);
-            }
-        }
-
-        public void onTabReselected(Tab tab, FragmentTransaction ft) {
-        }
     }
 }

@@ -24,7 +24,11 @@ import ao.chat.ServerConnection.ServerState;
 
 public class ServerStateException extends RuntimeException {
     
-    private final ServerState m_currentState, m_requiredState;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 3004077877038895530L;
+	private final ServerState m_currentState, m_requiredState;
     
     /** 
      * Creates a new instance of AOBotStateException. 

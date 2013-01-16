@@ -11,6 +11,7 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,7 +25,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.jakewharton.notificationcompat2.NotificationCompat2;
 import com.rubika.aotalk.AOTalk;
 import com.rubika.aotalk.database.DatabaseHandler;
 import com.rubika.aotalk.item.Account;
@@ -32,6 +32,7 @@ import com.rubika.aotalk.item.Channel;
 import com.rubika.aotalk.item.ChatMessage;
 import com.rubika.aotalk.item.Friend;
 import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.Statics;
 import com.rubika.aotalk.R;
 import com.spoledge.aacdecoder.AACPlayer;
 import com.spoledge.aacdecoder.PlayerCallback;
@@ -54,6 +55,8 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat.Builder;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.text.Html;
@@ -62,6 +65,7 @@ import ao.misc.Convert;
 import ao.misc.NameFormat;
 import ao.protocol.CharacterInfo;
 import ao.protocol.Client;
+import ao.protocol.Client.ClientState;
 import ao.protocol.ClientListener;
 import ao.protocol.ClientStateException;
 import ao.protocol.packets.Packet;
@@ -81,16 +85,16 @@ import ao.protocol.packets.toclient.SystemMessagePacket;
 import ao.protocol.packets.toclient.VicinityMessagePacket;
 
 public class ClientService extends Service {
-	protected static final String APP_TAG  = "--> AnarchyTalk::ClientService";
+	protected static final String APP_TAG  = "--> The Leet ::ClientService";
 
-	private int NOTIFICATION = 0;
-	private NotificationManager notificationManager;
-	private NotificationCompat2.Builder notificationBuilder;
+	private static int NOTIFICATION = 1;
+	private static NotificationManager notificationManager;
+	private static NotificationCompat.Builder notificationBuilder;
 	
 	private CharacterInfo currentCharacter;
 	public String currentTargetChannel = "";
 	public String currentTargetCharacter = "";
-	public String currentShowChannel = ServiceTools.CHANNEL_MAIN;
+	public String currentShowChannel = Statics.CHANNEL_MAIN;
 	private int notificationCounter;
 	public ChatClient chatClient;
 	private Account currentAccount;
@@ -115,10 +119,10 @@ public class ClientService extends Service {
 	
 	public List<String> channelsMuted = new ArrayList<String>();
 	
-	private Messenger messenger = new Messenger(new IncomingHandler(this));
+	private Messenger messenger = new Messenger(new MessageHandler(this));
 
 	public ArrayList<Messenger> clients = new ArrayList<Messenger>();
-	private DatabaseHandler databaseHandler;
+	public static DatabaseHandler databaseHandler;
 	
 	private Handler AOVoiceHandler = new Handler();
 	private long AOVoiceUpdateTime = 60000;
@@ -129,9 +133,16 @@ public class ClientService extends Service {
 	public List<Channel> invitationList = new ArrayList<Channel>();
 	private List<Friend> friendList = new ArrayList<Friend>();
 	
-	private Context context;
+	private static Context context;
 	
-	private Handler faceHandler = new Handler() {
+	private static Handler faceHandler = new FacceHandler();
+		
+	@Override
+	public IBinder onBind(Intent arg0) {
+		return messenger.getBinder();
+	}
+	
+	static class FacceHandler extends Handler {
 		@Override
 		public void handleMessage(Message msg) {
 			Bitmap face = (Bitmap) msg.obj;
@@ -139,15 +150,10 @@ public class ClientService extends Service {
 		}
 	};
 	
-	@Override
-	public IBinder onBind(Intent arg0) {
-		return messenger.getBinder();
-	}
-
-	private static class IncomingHandler extends Handler {
+	static class MessageHandler extends Handler {
 		private final WeakReference<ClientService> clientService;
 		
-		public IncomingHandler(ClientService s) {
+		public MessageHandler(ClientService s) {
 			clientService = new WeakReference<ClientService>(s);
 		}
 		
@@ -156,13 +162,13 @@ public class ClientService extends Service {
         public void handleMessage(Message message) {
         	if (message != null) {
 	        	switch (message.what) {
-		            case ServiceTools.MESSAGE_PLAYER_PLAY:
+		            case Statics.MESSAGE_PLAYER_PLAY:
 		            	clientService.get().play();
 		            	break;
-		            case ServiceTools.MESSAGE_PLAYER_STOP:
+		            case Statics.MESSAGE_PLAYER_STOP:
 		            	clientService.get().stop();
 		            	break;
-		            case ServiceTools.MESSAGE_PRIVATE_CHANNEL_JOIN:
+		            case Statics.MESSAGE_PRIVATE_CHANNEL_JOIN:
 		            	Channel invitationJoin = (Channel) message.obj;
 		            	clientService.get().privateList.add(invitationJoin);
 		            	
@@ -185,13 +191,13 @@ public class ClientService extends Service {
 							Logging.log(APP_TAG, e.getMessage());
 						}
 
-						Message joined = Message.obtain(null, ServiceTools.MESSAGE_PRIVATE_CHANNEL);
+						Message joined = Message.obtain(null, Statics.MESSAGE_PRIVATE_CHANNEL);
 						joined.obj = clientService.get().privateList;
 		            	
 						clientService.get().message(joined);
 
 						break;
-		            case ServiceTools.MESSAGE_PRIVATE_CHANNEL_DENY:
+		            case Statics.MESSAGE_PRIVATE_CHANNEL_DENY:
 		            	Channel invitationLeave = (Channel) message.obj;
 		            	clientService.get().privateList.remove(invitationLeave);
 
@@ -215,7 +221,7 @@ public class ClientService extends Service {
 						}
 						
 						break;
-		            case ServiceTools.MESSAGE_CLIENT_REGISTER:
+		            case Statics.MESSAGE_CLIENT_REGISTER:
 		            	clientService.get().clientRegistered(message);
 		            	
 		            	Logging.log(APP_TAG, "Clients registered: " + clientService.get().clients.size());
@@ -228,7 +234,7 @@ public class ClientService extends Service {
 		            	}
 		            	
 		                break;
-		            case ServiceTools.MESSAGE_CLIENT_UNREGISTER:
+		            case Statics.MESSAGE_CLIENT_UNREGISTER:
 		            	clientService.get().clients.remove(message.replyTo);
 		            	
 		            	if (clientService.get().clients.size() == 0) {
@@ -236,7 +242,7 @@ public class ClientService extends Service {
 		            	}
 		            	
 		            	break;
-	                case ServiceTools.MESSAGE_CONNECT:
+	                case Statics.MESSAGE_CONNECT:
 	                	clientService.get().editor.putInt("lastAccount", ((Account) message.obj).getID());
 	                	clientService.get().editor.commit();
 
@@ -246,18 +252,18 @@ public class ClientService extends Service {
 	                	clientService.get().connect((Account) message.obj);
 	                	
 	                	break;
-	                case ServiceTools.MESSAGE_SET_CHANNEL:
+	                case Statics.MESSAGE_SET_CHANNEL:
 	                	clientService.get().currentTargetChannel = (String)message.obj;
 	                	
 	                	clientService.get().editor.putString("currentChannel", clientService.get().currentTargetChannel);
 	                	clientService.get().editor.commit();
 	                	
 	                	break;
-	                case ServiceTools.MESSAGE_SET_SHOW:
+	                case Statics.MESSAGE_SET_SHOW:
 	                	clientService.get().currentShowChannel = (String)message.obj;
 	                	
 	                	break;
-	                case ServiceTools.MESSAGE_SET_CHARACTER:
+	                case Statics.MESSAGE_SET_CHARACTER:
 	                	if (clientService.get().chatClient != null && message.obj != null) {
 	                		clientService.get().currentTargetCharacter = (String) message.obj;
 		                	
@@ -266,18 +272,18 @@ public class ClientService extends Service {
 	                	}
 	                	
 	                	break;
-	                case ServiceTools.MESSAGE_SEND:
+	                case Statics.MESSAGE_SEND:
 	                	clientService.get().sendMessage((ChatMessage) message.obj, message.arg1);
 	                	break;
-	                case ServiceTools.MESSAGE_STATUS:
+	                case Statics.MESSAGE_STATUS:
 	                	if (clientService.get().chatClient.getState() == Client.ClientState.LOGGED_IN) {
-	                		clientService.get().message(Message.obtain(null, ServiceTools.MESSAGE_IS_CONNECTED, 0, 0));
+	                		clientService.get().message(Message.obtain(null, Statics.MESSAGE_IS_CONNECTED, 0, 0));
 	                	} else {
-	                		clientService.get().message(Message.obtain(null, ServiceTools.MESSAGE_IS_DISCONNECTED, 0, 0));
+	                		clientService.get().message(Message.obtain(null, Statics.MESSAGE_IS_DISCONNECTED, 0, 0));
 	                	}
 	                	
 	                	break;
-	                case ServiceTools.MESSAGE_DISCONNECT:
+	                case Statics.MESSAGE_DISCONNECT:
 	                	clientService.get().editor.putBoolean("reconnect", false);
 	                	clientService.get().editor.putInt("lastAccount", 0);
 	                	clientService.get().editor.commit();
@@ -293,7 +299,7 @@ public class ClientService extends Service {
 	                	}
 	                	
 	                    break;
-	                case ServiceTools.MESSAGE_CHARACTER:
+	                case Statics.MESSAGE_CHARACTER:
 	                	if (clientService.get().settings.getBoolean("autoReconnect", true)) {
 	                		clientService.get().editor.putBoolean("reconnect", true);
 	                	} else {
@@ -307,7 +313,7 @@ public class ClientService extends Service {
 	                	}
 	                	
 	                    break;
-	                case ServiceTools.MESSAGE_FRIEND_ADD:
+	                case Statics.MESSAGE_FRIEND_ADD:
 	                	String nameAdd = (String) message.obj;
 	                	
 	                	if (!nameAdd.equals("")) {
@@ -315,7 +321,7 @@ public class ClientService extends Service {
 	                	}
 	                	
 	                	break;
-	                case ServiceTools.MESSAGE_FRIEND_REMOVE:
+	                case Statics.MESSAGE_FRIEND_REMOVE:
 	                	String nameRemove = (String) message.obj;
 	                	
 	                	if (!nameRemove.equals("")) {
@@ -323,7 +329,7 @@ public class ClientService extends Service {
 	                	}
 	                	
 	                	break;
-	                case ServiceTools.MESSAGE_MUTED_CHANNELS:
+	                case Statics.MESSAGE_MUTED_CHANNELS:
 	                	clientService.get().channelList = (List<Channel>) message.obj;
 	                	clientService.get().channelsMuted.clear();
 	                	
@@ -343,7 +349,7 @@ public class ClientService extends Service {
 	                	clientService.get().editor.putString("mutedChannels", muted);
 	                	clientService.get().editor.commit();
 	                	
-						Message msg = Message.obtain(null, ServiceTools.MESSAGE_CHANNEL);
+						Message msg = Message.obtain(null, Statics.MESSAGE_CHANNEL);
 						msg.obj = clientService.get().channelList;
 
 						clientService.get().message(msg);
@@ -356,6 +362,10 @@ public class ClientService extends Service {
         }
     }
 
+	public static Context getContext() {
+		return context;
+	}
+	
 	@Override
 	public void onCreate() {
 		Logging.log(APP_TAG, "onCreate");
@@ -371,20 +381,21 @@ public class ClientService extends Service {
 	    notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
 	    notificationManager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-        notificationBuilder = new NotificationCompat2.Builder(this);
+        notificationBuilder = new Builder(this);
         
         notificationBuilder.setContentIntent(PendingIntent.getActivity(this, 0, notificationIntent, 0));
         notificationBuilder.setContentTitle(getString(R.string.app_name));
-        notificationBuilder.setContentText("Service running");
-        notificationBuilder.setTicker("Service started");
+        notificationBuilder.setContentText(getString(R.string.app_name) + " is running");
+        notificationBuilder.setTicker(getString(R.string.app_name) + " started");
         notificationBuilder.setOngoing(true);
         notificationBuilder.setSmallIcon(R.drawable.ic_notification);
         notificationBuilder.setNumber(0);
         notificationBuilder.setLargeIcon(((BitmapDrawable)getResources().getDrawable(R.drawable.ic_notification)).getBitmap());
+	    //notificationBuilder.setPriority(Notification.PRIORITY_LOW);
         
         notificationManager.cancel(NOTIFICATION);
         
-        databaseHandler = new DatabaseHandler(this);
+        databaseHandler = DatabaseHandler.getInstance(this);
         
     	String muted  = settings.getString("mutedChannels", "");
     	if (muted.length() > 0) {
@@ -412,6 +423,8 @@ public class ClientService extends Service {
 			@Override
 			public void loggedIn(Client bot) {
 				Logging.log(APP_TAG, "Logged in");
+		        
+		        startForeground(NOTIFICATION, notificationBuilder.build());
 				
             	manualLogin = false;
 				chatClient.start();
@@ -433,7 +446,7 @@ public class ClientService extends Service {
 		            public void run(){
 		        	    Message msg = Message.obtain();
 						msg.what = 0;
-						msg.obj = ServiceTools.getUserImage(String.format(ServiceTools.BASE_CHAR_URL, currentAccount.getServer().getID(), currentCharacter.getName()), context);
+						msg.obj = ServiceTools.getUserImage(currentAccount.getServer().getID(), currentCharacter.getName(), context);
 						
 						faceHandler.sendMessage(msg);
 					}
@@ -447,7 +460,7 @@ public class ClientService extends Service {
 				returnData.add(currentShowChannel);
 				
 				Message msg = Message.obtain();
-				msg.what = ServiceTools.MESSAGE_STARTED;
+				msg.what = Statics.MESSAGE_STARTED;
 				msg.arg1 = currentCharacter.getID();
                 
                 if (currentAccount != null) {
@@ -466,7 +479,7 @@ public class ClientService extends Service {
 			@Override
 			public void disconnected(Client bot) {
 				Logging.log(APP_TAG, "Disconnected");
-								
+				
 				if (currentCharacter != null) {
 					setNotification(
 							getString(R.string.disconnected),
@@ -477,14 +490,16 @@ public class ClientService extends Service {
 				
 					databaseHandler.addPost(
 							"Disconnected",
-							ServiceTools.CHANNEL_APPLICATION,
-							ServiceTools.CHANNEL_APPLICATION,
+							Statics.CHANNEL_APPLICATION,
+							Statics.CHANNEL_APPLICATION,
 							currentCharacter.getID(),
 							currentAccount.getServer().getID()
 						);
 				}
 				
-				message(Message.obtain(null, ServiceTools.MESSAGE_DISCONNECTED, (settings.getBoolean("reconnect", true)? 1 : 0), 0));
+				stopForeground(false);
+				
+				message(Message.obtain(null, Statics.MESSAGE_DISCONNECTED, (settings.getBoolean("reconnect", true)? 1 : 0), 0));
 				
 				friendList.clear();
 				channelList.clear();
@@ -509,7 +524,7 @@ public class ClientService extends Service {
 			@Override
 			public void exception(Client bot, Exception e) {
 				Logging.log(APP_TAG, e.getMessage());
-				message(Message.obtain(null, ServiceTools.MESSAGE_CLIENT_ERROR, 0, 0));
+				message(Message.obtain(null, Statics.MESSAGE_CLIENT_ERROR, 0, 0));
 			}
 
 			@Override
@@ -522,7 +537,9 @@ public class ClientService extends Service {
 
 				//Character list packet
 				if(packet.getType() == CharacterListPacket.TYPE) {
-	                CharacterInfo[] cl = ((CharacterListPacket) packet).getCharacters();
+					Logging.log(APP_TAG, "Got CharacterListPacket");
+	                
+					CharacterInfo[] cl = ((CharacterListPacket) packet).getCharacters();
 					
 	                if (settings.getBoolean("reconnect", true) && !manualLogin) {
 	                	if (currentCharacter != null) {
@@ -534,7 +551,7 @@ public class ClientService extends Service {
 	                			for (CharacterInfo c : cl) {
 		    	                	Logging.log(APP_TAG, "user: " + c.getName() + ", status: " + c.getOnline());
 
-		    	                	if (c.getID() == settings.getInt("lastCharacter", 0) /*&& !ServiceTools.intToBoolean(c.getOnline())*/) {
+		    	                	if (c.getID() == settings.getInt("lastCharacter", 0) /*&& !Statics.intToBoolean(c.getOnline())*/) {
 		                				cu = c;
 		                			}
 		                		}
@@ -548,26 +565,30 @@ public class ClientService extends Service {
 	                	
 	                	manualLogin = false;
 	                } else {
-						msg = Message.obtain(null, ServiceTools.MESSAGE_CHARACTERS);
+						msg = Message.obtain(null, Statics.MESSAGE_CHARACTERS);
 		                msg.obj = (CharacterListPacket) packet;
 	                }
 				}
 				
 				//Log in failed
 				if(packet.getType() == LoginErrorPacket.TYPE) {					
-	                msg = Message.obtain(null, ServiceTools.MESSAGE_LOGIN_ERROR);
+					Logging.log(APP_TAG, "Got LoginErrorPacket");
+	                
+					msg = Message.obtain(null, Statics.MESSAGE_LOGIN_ERROR);
 	                accountFailed = true;
 				}
 
 				//Private message
 				if(packet.getType() == PrivateMessagePacket.TYPE && packet.getDirection() == Packet.Direction.TO_CLIENT) {
-					if(chatClient.getCharTable().getName(((PrivateMessagePacket)packet).getCharID()).equals(NameFormat.format(ServiceTools.BOTNAME)) 
+					Logging.log(APP_TAG, "Got PrivateMessagePacket");
+					
+					if(chatClient.getCharTable().getName(((PrivateMessagePacket)packet).getCharID()).equals(NameFormat.format(Statics.BOTNAME)) 
 							&& ((PrivateMessagePacket)packet).getMessage().contains("::AOTalk::")) {
 						String whoisName = "";	
 						String whoisText = ((PrivateMessagePacket)packet).getMessage()
 								.replace("::AOTalk::", "")
-								.replace(ServiceTools.WHOIS_START, "")
-								.replace(ServiceTools.WHOIS_END, "")
+								.replace(Statics.WHOIS_START, "")
+								.replace(Statics.WHOIS_END, "")
 								.replace("\n", "<br />")
 								.trim();
 							
@@ -592,7 +613,7 @@ public class ClientService extends Service {
 						whoisData.add(whoisText);
 
 						Message whois = Message.obtain();
-						whois.what = ServiceTools.MESSAGE_WHOIS;
+						whois.what = Statics.MESSAGE_WHOIS;
 						whois.obj = whoisData;
 						
 				        message(whois);
@@ -600,7 +621,7 @@ public class ClientService extends Service {
 						databaseHandler.addPost(
 								((PrivateMessagePacket)packet).display(chatClient.getCharTable(), chatClient.getGroupTable()),
 								chatClient.getCharTable().getName(((PrivateMessagePacket)packet).getCharID()),
-								ServiceTools.CHANNEL_PM,
+								Statics.CHANNEL_PM,
 								currentCharacter.getID(),
 								currentAccount.getServer().getID()
 							);
@@ -617,12 +638,14 @@ public class ClientService extends Service {
 								);
 						}
 
-						message(Message.obtain(null, ServiceTools.MESSAGE_UPDATE, 0, 0));
+						message(Message.obtain(null, Statics.MESSAGE_UPDATE, 0, 0));
 					}
 				}
 				
 				//Chat group message
 				if(packet.getType() == ChannelMessagePacket.TYPE && packet.getDirection() == Packet.Direction.TO_CLIENT) {
+					Logging.log(APP_TAG, "Got ChannelMessagePacket");
+
 					if (!channelsMuted.contains(chatClient.getGroupTable().getName(((ChannelMessagePacket)packet).getGroupID()))) {
 						databaseHandler.addPost(
 								((ChannelMessagePacket)packet).display(chatClient.getCharTable(), chatClient.getGroupTable()),
@@ -632,18 +655,20 @@ public class ClientService extends Service {
 								currentAccount.getServer().getID()
 							);
 						
-						message(Message.obtain(null, ServiceTools.MESSAGE_UPDATE, 0, 0));
+						message(Message.obtain(null, Statics.MESSAGE_UPDATE, 0, 0));
 					}
 				}
 				
 				//System message
 				if(packet.getType() == SystemMessagePacket.TYPE && packet.getDirection() == Packet.Direction.TO_CLIENT) {
+					Logging.log(APP_TAG, "Got SystemMessagePacket");
+
 					// Got offline message
 					if(((SystemMessagePacket)packet).getMsgType().equals("a460d92")) {
 						databaseHandler.addPost(
 								String.format(getString(R.string.offline_message_from), NameFormat.format(chatClient.getCharTable().getName(((SystemMessagePacket)packet).getCharID()))),
-								ServiceTools.CHANNEL_SYSTEM,
-								ServiceTools.CHANNEL_SYSTEM,
+								Statics.CHANNEL_SYSTEM,
+								Statics.CHANNEL_SYSTEM,
 								currentCharacter.getID(),
 								currentAccount.getServer().getID()
 							);
@@ -652,9 +677,9 @@ public class ClientService extends Service {
 					//Offline message, message buffered
 					if(((SystemMessagePacket)packet).getMsgType().equals("9740ff4")) {
 						databaseHandler.addPost(
-								String.format(getString(R.string.user_offline_message_buffered),NameFormat.format(chatClient.getCharTable().getName(((SystemMessagePacket)packet).getCharID()))),
-								ServiceTools.CHANNEL_SYSTEM,
-								ServiceTools.CHANNEL_SYSTEM,
+								String.format(getString(R.string.user_offline_message_buffered), NameFormat.format(chatClient.getCharTable().getName(((SystemMessagePacket)packet).getCharID()))),
+								Statics.CHANNEL_SYSTEM,
+								Statics.CHANNEL_SYSTEM,
 								currentCharacter.getID(),
 								currentAccount.getServer().getID()
 							);
@@ -664,45 +689,51 @@ public class ClientService extends Service {
 					if(((SystemMessagePacket)packet).getMsgType().equals("340e245")) {
 						databaseHandler.addPost(
 								getString(R.string.message_could_not_be_sent),
-								ServiceTools.CHANNEL_SYSTEM,
-								ServiceTools.CHANNEL_SYSTEM,
+								Statics.CHANNEL_SYSTEM,
+								Statics.CHANNEL_SYSTEM,
 								currentCharacter.getID(),
 								currentAccount.getServer().getID()
 							);
 					}
 					
-					message(Message.obtain(null, ServiceTools.MESSAGE_UPDATE, 0, 0));
+					message(Message.obtain(null, Statics.MESSAGE_UPDATE, 0, 0));
 				}
 				
 				//Broadcast message
 				if(packet.getType() == BroadcastMessagePacket.TYPE && packet.getDirection() == Packet.Direction.TO_CLIENT) {
+					Logging.log(APP_TAG, "Got BroadcastMessagePacket");
+
 					databaseHandler.addPost(
 							((BroadcastMessagePacket)packet).display(chatClient.getCharTable(), chatClient.getGroupTable()),
-							ServiceTools.CHANNEL_SYSTEM,
-							ServiceTools.CHANNEL_SYSTEM,
+							Statics.CHANNEL_SYSTEM,
+							Statics.CHANNEL_SYSTEM,
 							currentCharacter.getID(),
 							currentAccount.getServer().getID()
 						);
 					
-					message(Message.obtain(null, ServiceTools.MESSAGE_UPDATE, 0, 0));
+					message(Message.obtain(null, Statics.MESSAGE_UPDATE, 0, 0));
 				}
 				
 				//Vicinity notice
 				if(packet.getType() == VicinityMessagePacket.TYPE) {
+					Logging.log(APP_TAG, "Got VicinityMessagePacket");
+
 					databaseHandler.addPost(
 							((VicinityMessagePacket)packet).display(chatClient.getCharTable(), chatClient.getGroupTable()),
-							ServiceTools.CHANNEL_SYSTEM,
-							ServiceTools.CHANNEL_SYSTEM,
+							Statics.CHANNEL_SYSTEM,
+							Statics.CHANNEL_SYSTEM,
 							currentCharacter.getID(),
 							currentAccount.getServer().getID()
 						);
 					
-					message(Message.obtain(null, ServiceTools.MESSAGE_UPDATE, 0, 0));
+					message(Message.obtain(null, Statics.MESSAGE_UPDATE, 0, 0));
 				}
 				
 				//Friend update
 				if(packet.getType() == FriendUpdatePacket.TYPE) {
-	                if (!((FriendUpdatePacket) packet).isFriend()) {
+					Logging.log(APP_TAG, "Got FriendUpdatePacket");
+
+					if (!((FriendUpdatePacket) packet).isFriend()) {
 						boolean removeFriend = false;
 						int removeFriendID = 0;
 						int friendCounter = 0;
@@ -730,7 +761,7 @@ public class ClientService extends Service {
 									databaseHandler.addPost(
 											((FriendUpdatePacket) packet).display(chatClient.getCharTable(), chatClient.getGroupTable()),
 											chatClient.getCharTable().getName(((FriendUpdatePacket) packet).getCharID()),
-											ServiceTools.CHANNEL_FRIEND,
+											Statics.CHANNEL_FRIEND,
 											currentCharacter.getID(),
 											currentAccount.getServer().getID()
 										);							
@@ -745,7 +776,8 @@ public class ClientService extends Service {
 							friendList.add(new Friend(
 									chatClient.getCharTable().getName(((FriendUpdatePacket) packet).getCharID()),
 									((FriendUpdatePacket) packet).getCharID(),
-									((FriendUpdatePacket) packet).isOnline()
+									((FriendUpdatePacket) packet).isOnline(),
+									ClientService.databaseHandler.getCharacterImage(chatClient.getCharTable().getName(((FriendUpdatePacket) packet).getCharID()), chatClient.getDimensionID())
 								));
 						}
 						
@@ -753,22 +785,24 @@ public class ClientService extends Service {
 							databaseHandler.addPost(
 									((FriendUpdatePacket) packet).display(chatClient.getCharTable(), chatClient.getGroupTable()) ,
 									chatClient.getCharTable().getName(((FriendUpdatePacket) packet).getCharID()),
-									ServiceTools.CHANNEL_FRIEND,
+									Statics.CHANNEL_FRIEND,
 									currentCharacter.getID(),
 									currentAccount.getServer().getID()
 								);
 						}
 						
-						msg = Message.obtain(null, ServiceTools.MESSAGE_FRIEND);
+						msg = Message.obtain(null, Statics.MESSAGE_FRIEND);
 						msg.obj = friendList;
 	                }
 					
             		AOVoiceHandler.removeCallbacks(AOVoiceUpdateTask);
-            		AOVoiceHandler.post(AOVoiceUpdateTask);
+            		AOVoiceHandler.postDelayed(AOVoiceUpdateTask, 100);
 				}
 				
 				//Group announcement
 				if(packet.getType() == ChannelUpdatePacket.TYPE) {
+					Logging.log(APP_TAG, "Got ChannelUpdatePacket");
+
 					boolean addChannel = true;
 					
 					for (Channel channel : channelList) {
@@ -785,20 +819,22 @@ public class ClientService extends Service {
 							muted = true;
 						}
 						
-						if (ServiceTools.channelsDisabled.contains(((ChannelUpdatePacket)packet).getGroupName())) {
+						if (Statics.channelsDisabled.contains(((ChannelUpdatePacket)packet).getGroupName())) {
 							enabled = false;
 						}
 						
 						channelList.add(new Channel(((ChannelUpdatePacket)packet).getGroupName(), Convert.byteToInt(((ChannelUpdatePacket)packet).getGroupID()), enabled, muted));
 						
-						msg = Message.obtain(null, ServiceTools.MESSAGE_CHANNEL);
+						msg = Message.obtain(null, Statics.MESSAGE_CHANNEL);
 						msg.obj = channelList;
 					}
 				}
 				
 				//Private group invitation
 				if(packet.getType() == PrivateChannelInvitePacket.TYPE) {
+					Logging.log(APP_TAG, "Got PrivateChannelInvitePacket");
 					Logging.log(APP_TAG, "Got invitation");
+					
 					boolean addChannel = true;
 					
 					for (Channel channel : invitationList) {
@@ -809,7 +845,7 @@ public class ClientService extends Service {
 					
 					if (addChannel) {
 						invitationList.add(new Channel(
-								ServiceTools.PREFIX_PRIVATE_GROUP + chatClient.getCharTable().getName(((PrivateChannelInvitePacket) packet).getGroupID()),
+								Statics.PREFIX_PRIVATE_GROUP + chatClient.getCharTable().getName(((PrivateChannelInvitePacket) packet).getGroupID()),
 							((PrivateChannelInvitePacket) packet).getGroupID(),
 							true,
 							false
@@ -826,12 +862,14 @@ public class ClientService extends Service {
 							);
 					}
 					
-					msg = Message.obtain(null, ServiceTools.MESSAGE_PRIVATE_CHANNEL_INVITATION);
+					msg = Message.obtain(null, Statics.MESSAGE_PRIVATE_INVITATION);
 					msg.obj = invitationList;
 				}
 				
 				//Private group join
 				if(packet.getType() == PrivateChannelCharacterJoinPacket.TYPE) {
+					Logging.log(APP_TAG, "Got PrivateChannelCharacterJoinPacket");
+
 					databaseHandler.addPost(
 							String.format(
 									getString(R.string.joined_channel), 
@@ -839,20 +877,22 @@ public class ClientService extends Service {
 									chatClient.getCharTable().getName(((PrivateChannelCharacterJoinPacket)packet).getCharID())
 							),
 							chatClient.getCharTable().getName(((PrivateChannelCharacterJoinPacket)packet).getCharID()),
-							ServiceTools.PREFIX_PRIVATE_GROUP + chatClient.getCharTable().getName(((PrivateChannelCharacterJoinPacket)packet).getGroupID()),
+							Statics.PREFIX_PRIVATE_GROUP + chatClient.getCharTable().getName(((PrivateChannelCharacterJoinPacket)packet).getGroupID()),
 							currentCharacter.getID(),
 							currentAccount.getServer().getID()
 						);
 					
-					message(Message.obtain(null, ServiceTools.MESSAGE_UPDATE, 0, 0));
+					message(Message.obtain(null, Statics.MESSAGE_UPDATE, 0, 0));
 				}
 				
 				//Private group kick
 				if(packet.getType() == PrivateChannelKickPacket.TYPE) {
+					Logging.log(APP_TAG, "Got PrivateChannelKickPacket");
+
 					databaseHandler.addPost(
 							String.format(getString(R.string.kicked_from_channel), chatClient.getCharTable().getName(((PrivateChannelKickPacket)packet).getGroupID())),
 							chatClient.getCharTable().getName(((PrivateChannelKickPacket)packet).getGroupID()),
-							ServiceTools.PREFIX_PRIVATE_GROUP + chatClient.getCharTable().getName(((PrivateChannelKickPacket)packet).getGroupID()),
+							Statics.PREFIX_PRIVATE_GROUP + chatClient.getCharTable().getName(((PrivateChannelKickPacket)packet).getGroupID()),
 							currentCharacter.getID(),
 							currentAccount.getServer().getID()
 						);
@@ -869,15 +909,17 @@ public class ClientService extends Service {
 					}
 					
 					Message message = Message.obtain();
-					message.what = ServiceTools.MESSAGE_PRIVATE_CHANNEL;
+					message.what = Statics.MESSAGE_PRIVATE_CHANNEL;
 					message.obj = privateList;
 					
 					message(message);
-					message(Message.obtain(null, ServiceTools.MESSAGE_UPDATE, 0, 0));
+					message(Message.obtain(null, Statics.MESSAGE_UPDATE, 0, 0));
 				}
 				
 				//Private group leave
 				if(packet.getType() == PrivateChannelCharacterLeavePacket.TYPE) {
+					Logging.log(APP_TAG, "Got PrivateChannelCharacterLeavePacket");
+
 					databaseHandler.addPost(
 							String.format(
 									getString(R.string.left_channel), 
@@ -885,25 +927,27 @@ public class ClientService extends Service {
 									chatClient.getCharTable().getName(((PrivateChannelCharacterLeavePacket)packet).getCharID())
 							),
 							chatClient.getCharTable().getName(((PrivateChannelCharacterLeavePacket)packet).getCharID()),
-							ServiceTools.PREFIX_PRIVATE_GROUP + chatClient.getCharTable().getName(((PrivateChannelCharacterLeavePacket)packet).getGroupID()),
+							Statics.PREFIX_PRIVATE_GROUP + chatClient.getCharTable().getName(((PrivateChannelCharacterLeavePacket)packet).getGroupID()),
 							currentCharacter.getID(),
 							currentAccount.getServer().getID()
 						);
 					
-					message(Message.obtain(null, ServiceTools.MESSAGE_UPDATE, 0, 0));
+					message(Message.obtain(null, Statics.MESSAGE_UPDATE, 0, 0));
 				}
 				
 				//Private group message
 				if(packet.getType() == PrivateChannelMessagePacket.TYPE) {
+					Logging.log(APP_TAG, "Got PrivateChannelMessagePacket");
+
 					databaseHandler.addPost(
 							((PrivateChannelMessagePacket)packet).display(chatClient.getCharTable(), chatClient.getGroupTable()),
 							chatClient.getCharTable().getName(((PrivateChannelMessagePacket)packet).getCharID()),
-							ServiceTools.PREFIX_PRIVATE_GROUP + chatClient.getCharTable().getName(((PrivateChannelMessagePacket)packet).getGroupID()),
+							Statics.PREFIX_PRIVATE_GROUP + chatClient.getCharTable().getName(((PrivateChannelMessagePacket)packet).getGroupID()),
 							currentCharacter.getID(),
 							currentAccount.getServer().getID()
 						);
 					
-					message(Message.obtain(null, ServiceTools.MESSAGE_UPDATE, 0, 0));
+					message(Message.obtain(null, Statics.MESSAGE_UPDATE, 0, 0));
 				}
 				
             	// Send message if one exists
@@ -954,7 +998,7 @@ public class ClientService extends Service {
 					if (key.equals("StreamTitle")) {
 						currentTrack = value;
 						
-						Message message = Message.obtain(null, ServiceTools.MESSAGE_PLAYER_TRACK, 0, 0);
+						Message message = Message.obtain(null, Statics.MESSAGE_PLAYER_TRACK, 0, 0);
 						message.obj = value;
 						message(message);
 					}
@@ -999,6 +1043,7 @@ public class ClientService extends Service {
 	
 	@Override
 	public void onDestroy() {
+        stopForeground(true);
 	}
 	
 	@Override
@@ -1035,7 +1080,7 @@ public class ClientService extends Service {
 	    	msg.arg2 = 0;
 	    }
 	    
-	    msg.what = ServiceTools.MESSAGE_REGISTERED;
+	    msg.what = Statics.MESSAGE_REGISTERED;
 	    msg.setTarget(null);
 	    
 	    List<Object> registerData = new ArrayList<Object>();
@@ -1055,11 +1100,12 @@ public class ClientService extends Service {
 	    registerData.add(invitationList);
 	    registerData.add(privateList);
 	    registerData.add(currentTrack);
+	    registerData.add(chatClient.getState() == ClientState.LOGGED_IN);
 	
 	    msg.obj = registerData;
 	    
 		Logging.log(APP_TAG, "Channels: " + channelList.size());
-	    ClientService.this.message(msg);		
+	    ClientService.this.message(msg);
 	}
 
 	public boolean sendMessage(ChatMessage message, int show) {
@@ -1073,11 +1119,11 @@ public class ClientService extends Service {
 					databaseHandler.addPost(
 							String.format(getString(R.string.message_to), message.getCharacter(), message.getMessage()),
 							message.getCharacter(),
-							ServiceTools.CHANNEL_PM,
+							Statics.CHANNEL_PM,
 							currentCharacter.getID(),
 							chatClient.getDimensionID()
 						);
-					message(Message.obtain(null, ServiceTools.MESSAGE_UPDATE, 0, 0));
+					message(Message.obtain(null, Statics.MESSAGE_UPDATE, 0, 0));
 				}
 			} catch (IOException e) {
 				Logging.log(APP_TAG, e.getMessage());
@@ -1087,9 +1133,9 @@ public class ClientService extends Service {
 		
 		if (!message.getChannel().equals("")) {
 			try {
-				if (message.getChannel().startsWith(ServiceTools.PREFIX_PRIVATE_GROUP)) {
+				if (message.getChannel().startsWith(Statics.PREFIX_PRIVATE_GROUP)) {
 					Logging.log(APP_TAG, "Sending to private group");
-					chatClient.sendPrivateChannelMessage(message.getChannel().replace(ServiceTools.PREFIX_PRIVATE_GROUP, ""), message.getMessage());
+					chatClient.sendPrivateChannelMessage(message.getChannel().replace(Statics.PREFIX_PRIVATE_GROUP, ""), message.getMessage());
 				} else {
 					Logging.log(APP_TAG, "Sending to public group");
 					chatClient.sendChannelMessage(message.getChannel(), message.getMessage());
@@ -1134,7 +1180,7 @@ public class ClientService extends Service {
 		setNotificationPlaying(isPlaying);
 	}
 
-	private void setNotificationFace(Bitmap face) {
+	private static void setNotificationFace(Bitmap face) {
 		if (face != null) {
 		    notificationBuilder.setLargeIcon(face);
 		    notificationManager.notify(NOTIFICATION, notificationBuilder.build());
@@ -1189,7 +1235,7 @@ public class ClientService extends Service {
 		}
 
 		protected void onPostExecute(String result) {
-			Message msg = Message.obtain(null, ServiceTools.MESSAGE_FRIEND);
+			Message msg = Message.obtain(null, Statics.MESSAGE_FRIEND);
 			msg.obj = friendList;
 			message(msg);
 	    	 
@@ -1259,8 +1305,16 @@ public class ClientService extends Service {
 	    	        	
 	    	        	try {
 		    	        	for(Friend f : friendList) {
-		    	        		if (f.getName().toLowerCase().equals(json_data.getString("name").toLowerCase())) {
-		    	    	        	Logging.log(APP_TAG, json_data.getString("name") + " is online at AOSpeak");
+		    	        		String fixedName = "";
+		    	        		
+		    	        		if (json_data.getString("name").contains(" ")) {
+		    	        			fixedName = json_data.getString("name").split(" ")[0].trim();
+		    	        		} else {
+		    	        			fixedName = json_data.getString("name");
+		    	        		}
+		    	        		
+		    	        		if (f.getName().toLowerCase().equals(fixedName.toLowerCase(Locale.getDefault()))) {
+		    	    	        	Logging.log(APP_TAG, fixedName + " is online at AOSpeak");
 		    	        			f.setAOSpeakStatus(true);
 		    	        		}
 		    	        	}
@@ -1326,7 +1380,7 @@ public class ClientService extends Service {
 	        				chatClient.connect(currentAccount.getServer());
 	        			}
 	        		} catch (IOException e) {
-	                	message(Message.obtain(null, ServiceTools.MESSAGE_CONNECTION_ERROR, 0, 0));
+	                	message(Message.obtain(null, Statics.MESSAGE_CONNECTION_ERROR, 0, 0));
 	                	
 	                	accountFailed = true;
 						Logging.log(APP_TAG, e.getMessage());
@@ -1344,7 +1398,7 @@ public class ClientService extends Service {
 					chatClient.authenticate(currentAccount.getUsername(), currentAccount.getPassword());
 				}
 			} catch (IOException e) {
-            	message(Message.obtain(null, ServiceTools.MESSAGE_CONNECTION_ERROR, 0, 0));
+            	message(Message.obtain(null, Statics.MESSAGE_CONNECTION_ERROR, 0, 0));
 
             	accountFailed = true;
 				Logging.log(APP_TAG, e.getMessage());
@@ -1363,7 +1417,7 @@ public class ClientService extends Service {
 						Logging.log(APP_TAG, "Logging in");
 						chatClient.login(character);
 					} catch (IOException e) {
-	                	message(Message.obtain(null, ServiceTools.MESSAGE_CONNECTION_ERROR, 0, 0));
+	                	message(Message.obtain(null, Statics.MESSAGE_CONNECTION_ERROR, 0, 0));
 
 	                	accountFailed = true;
 						Logging.log(APP_TAG, e.getMessage());
@@ -1404,7 +1458,7 @@ public class ClientService extends Service {
 				Logging.toast(context, String.format(getString(R.string.already_in_buddy_list), name));				
 			}
 		} else {
-			Logging.toast(context, getString(R.string.disconnected));
+			Logging.toast(context, getString(R.string.not_connected));
 		}
 		
 		return false;
@@ -1437,7 +1491,7 @@ public class ClientService extends Service {
 					
 					Logging.toast(context, String.format(getString(R.string.removed_from_buddy_list), name));
 					
-					Message msg = Message.obtain(null, ServiceTools.MESSAGE_FRIEND);
+					Message msg = Message.obtain(null, Statics.MESSAGE_FRIEND);
 					msg.obj = friendList;
 					
 					message(msg);

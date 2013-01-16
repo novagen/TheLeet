@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 import com.rubika.aotalk.util.Logging;
 
 public class BBCodeConverter {
-	private static final String APP_TAG = "--> AnarchyTalk::BBCodeConverter";
+	private static final String APP_TAG = "--> The Leet ::BBCodeConverter";
 
     public static String convertString(String bbCodeString)
     {

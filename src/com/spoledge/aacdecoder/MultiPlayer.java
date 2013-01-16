@@ -19,9 +19,9 @@
 */
 package com.spoledge.aacdecoder;
 
-import android.util.Log;
-
 import java.net.URLConnection;
+
+import com.rubika.aotalk.util.Logging;
 
 
 /**
@@ -36,8 +36,7 @@ import java.net.URLConnection;
  * </pre>
  */
 public class MultiPlayer extends AACPlayer {
-
-    private static final String LOG = "MultiPlayer";
+	private static final String APP_TAG = "--> The Leet ::MultiPlayer";
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -95,7 +94,7 @@ public class MultiPlayer extends AACPlayer {
         mp3Decoder = Decoder.createByName( name );
 
         if (mp3Decoder == null) {
-            Log.e( LOG, "Cannot find decoder by name '" + name + "'");
+            Logging.log(APP_TAG, "Cannot find decoder by name '" + name + "'");
             throw new RuntimeException("MP3 Decoder not found");
         }
 
@@ -113,7 +112,7 @@ public class MultiPlayer extends AACPlayer {
                     String ct = s;
 
                     if (!s.startsWith( "audio/" )) {
-                        Log.w( LOG, "Content type not audio: " + s ); 
+                        Logging.log(APP_TAG, "Content type not audio: " + s);
                         continue;
                     }
 
@@ -126,16 +125,17 @@ public class MultiPlayer extends AACPlayer {
                         || s.startsWith( "mpeg" )
                         || s.startsWith( "mpg" );
 
-                    Log.i( LOG, "Setting " + (isMp3 ? "MP3" : "AAC") + " decoder for content type " + ct );
+                    Logging.log(APP_TAG, "Setting " + (isMp3 ? "MP3" : "AAC") + " decoder for content type " + ct);
                     setDecoder( isMp3 ? mp3Decoder : aacDecoder );
 
                     return;
                 }
-                Log.w( LOG, "Content type not recognized" );
+
+                Logging.log(APP_TAG, "Content type not recognized");
             }
         }
 
-        Log.e( LOG, "Could not recognize the type of the stream." );
+        Logging.log(APP_TAG, "Could not recognize the type of the stream.");
         throw new RuntimeException( "Could not recognize the type of the stream." );
     }
 

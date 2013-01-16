@@ -59,7 +59,7 @@ public class ChatClient implements Client {
     private final Object m_readLock = new Object();
     private final Object m_writeLock = new Object();
     private final Object m_stateLock = new Object();
-    private ArrayList<Object[]> lookupQueue = new ArrayList();
+    private ArrayList<Object[]> lookupQueue = new ArrayList<Object[]>();
     private PacketQueue packetQueue;
     //Chat related
     private CharacterIDTable chartable = new CharacterIDTable();

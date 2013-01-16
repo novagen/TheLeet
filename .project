@@ -3,6 +3,10 @@
 	<name>AnarchyTalk</name>
 	<comment></comment>
 	<projects>
+		<project>ActionBarSherlock</project>
+		<project>GraphView</project>
+		<project>NotificationCompat2</project>
+		<project>ViewPagerIndicator</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

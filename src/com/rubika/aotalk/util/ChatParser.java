@@ -20,6 +20,7 @@ package com.rubika.aotalk.util;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 public class ChatParser {
 	public final static int TYPE_SYSTEM_MESSAGE  = 0;
@@ -44,13 +45,13 @@ public class ChatParser {
 	}
 	
     public static String getFormattedTime() {
-    	SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm");
+    	SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
         Date date = new Date();
         return "<b><font color=#ffffff>[" + dateFormat.format(date) + "]</font></b>";
     }
 	
     public static String getFormattedTimeFromLong(long datetime) {
-    	SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm");
+    	SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
         Date date = new Date(datetime);
         return "<b>[" + dateFormat.format(date) + "]</b>";
     }

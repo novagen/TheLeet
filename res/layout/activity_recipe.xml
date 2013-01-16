@@ -4,57 +4,19 @@ xmlns:android="http://schemas.android.com/apk/res/android"
 android:layout_width="fill_parent"
 android:layout_height="fill_parent"
 >
-   	<LinearLayout
-  	android:id="@+id/buttons"
+  	<Button
+  	android:id="@+id/close"
 	android:layout_width="fill_parent"
 	android:layout_height="wrap_content"
 	android:layout_alignParentBottom="true"
-	android:orientation="horizontal"
-	android:weightSum="2"
-   	>
-	   	<Button
-	  	android:id="@+id/close"
-		android:layout_width="0px"
-		android:layout_height="wrap_content"
-		android:text="@string/close"
-		android:layout_weight="2"
-	  	/>
-	   	<Button
-	   	android:visibility="gone"
-	  	android:id="@+id/forum"
-		android:layout_width="0px"
-		android:layout_height="wrap_content"
-		android:text="@string/forum"
-		android:layout_weight="1"
-	  	/>
-   	</LinearLayout>
-   	<ScrollView
-  	android:id="@+id/scroll"
+	android:text="@string/close"
+  	/>
+    <WebView
+	android:id="@+id/web"
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
+	android:background="@android:color/black"
 	android:layout_alignParentTop="true"
-	android:layout_above="@id/buttons"
-	android:background="@color/actbg"
-	>
-		<RelativeLayout 
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:padding="5dp"
-		>
-		    <TextView
-		    android:id="@+id/text"
-		    android:textSize="16dp"
-		    android:textColor="@color/mainwhite"
-		    android:layout_gravity="center_vertical"
-		    android:layout_width="wrap_content"
-		    android:layout_height="wrap_content" 
-		    android:layout_marginTop="10dp"
-			android:shadowColor="@color/textshadow"
-			android:shadowDx="1"
-			android:shadowDy="1"
-			android:shadowRadius="3"
-			android:textColorLink="@color/link"
-		    />
-		</RelativeLayout>
-	</ScrollView>
+	android:layout_above="@id/close"
+	/>
 </RelativeLayout>

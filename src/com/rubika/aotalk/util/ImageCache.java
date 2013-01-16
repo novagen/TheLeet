@@ -11,45 +11,62 @@ import java.net.URLConnection;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Debug;
 
 public class ImageCache {
-	private static final String APP_TAG = "ImageCache";
+	private static final String APP_TAG = "--> The Leet ::ImageCache";
 	
-	public static Bitmap getImage(Context context, String path, String base, File cacheDirectory) {
+	public static Bitmap getImage(Context context, String path, String base, File cacheDirectory, Bitmap.CompressFormat type) {
 		File cachedFile = null;
+		File hashedFile = null;
+		
+		String hashName = String.valueOf((base + path).hashCode());
 		
 		if (cacheDirectory!= null) {
 			cachedFile = new File(cacheDirectory.toString() + "/" + path);
+			hashedFile = new File(cachedFile.toString().replace(cachedFile.getName(), hashName));
 		}
 		
-		if (cacheDirectory != null && cachedFile.exists()) {
-			Logging.log(APP_TAG, "File exists, loading from cache");
-			return BitmapFactory.decodeFile(cachedFile.toString());
-		} else {
-			Logging.log(APP_TAG, "File DONT exists, loading from web");
-			Bitmap b = downloadImage(context, path, base);
-			
-			if (cacheDirectory != null && b != null) {
-				File folder = new File(cachedFile.toString().replace(cachedFile.getName(), ""));
-				if (!folder.exists()) {
-					folder.mkdirs();
-				}
+		Debug.MemoryInfo memoryInfo = new Debug.MemoryInfo();
+		Debug.getMemoryInfo(memoryInfo);
+		
+		if (Runtime.getRuntime().maxMemory() - (memoryInfo.getTotalPss() * 1024) > 43475 * 2) {
+			if (cacheDirectory != null && hashedFile.exists()) {
+				Logging.log(APP_TAG, "File '" + hashedFile.getName() + "' exist, loading from cache");
+				return BitmapFactory.decodeFile(hashedFile.toString());
+			} else {
+				Logging.log(APP_TAG, "File '" + hashedFile.getName() + "' DONT exist, loading from web");
+				Bitmap b = downloadImage(context, path, base);
 				
-				try {
-					FileOutputStream out = new FileOutputStream(cachedFile);
-					b.compress(Bitmap.CompressFormat.JPEG, 80, out);
-				} catch (Exception e) {
-					e.printStackTrace();
+				if (cacheDirectory != null && b != null) {
+					File folder = new File(cachedFile.toString().replace(cachedFile.getName(), ""));
+					if (!folder.exists()) {
+						folder.mkdirs();
+					}
+					
+					try {
+						FileOutputStream out = new FileOutputStream(hashedFile.toString());
+						b.compress(type, 100, out);
+						
+						Logging.log(APP_TAG, "File '" + path + "' saved as '" + hashedFile.toString() + "'");
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
+	
+				return b;
 			}
-			
-			return b;
+		} else {
+			Logging.log(APP_TAG, "Low on memory!");
+			return null;
 		}
 	}
 	
 	private static Bitmap downloadImage(Context context, String path, String base) {
 		try {
 			URL url = new URL(base + path);
+			
+			Logging.log(APP_TAG, url.toString());
 									
 			URLConnection connection = url.openConnection();
 			connection.setUseCaches(true);
@@ -63,21 +80,11 @@ public class ImageCache {
 			return null;
 		}
 	}
-	
-	private static boolean isExternalStorageAvailable() {
-        return android.os.Environment.getExternalStorageState().equals(
-                android.os.Environment.MEDIA_MOUNTED);
-    }
-
-    private static boolean isExternalStorageReadOnly() {
-        return android.os.Environment.getExternalStorageState().equals(
-                android.os.Environment.MEDIA_MOUNTED_READ_ONLY);
-    }
     
     public static File getCacheDirectory(String packageName, String subdirectoryName) {
         File cacheDirectory = null;
         
-    	if (isExternalStorageAvailable() && !isExternalStorageReadOnly()) {
+    	if (StorageTools.isExternalStorageAvailable() && !StorageTools.isExternalStorageReadOnly()) {
             cacheDirectory = new File(
                     android.os.Environment.getExternalStorageDirectory().getAbsolutePath()
                         + File.separator + "Android" 
@@ -94,15 +101,13 @@ public class ImageCache {
                     Logging.log(APP_TAG, "Cache directory '" + cacheDirectory + "' could not be created");
                     return null;
                 }
-            }
-            else {
-                Logging.log(APP_TAG, "Cache directory '" + cacheDirectory + "' is already present");
+            } else {
+                Logging.log(APP_TAG, "Cache directory '" + cacheDirectory + "' exists");
             }
             
             return cacheDirectory;
         } else {
         	return null;
         }
-       
     }
 }

@@ -1,13 +1,9 @@
 package com.rubika.aotalk.recipebook;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -28,33 +24,29 @@ import org.xml.sax.SAXException;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
-import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.Html;
-import android.text.Spanned;
-import android.text.Html.ImageGetter;
-import android.text.method.LinkMovementMethod;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
+import com.rubika.aotalk.Information;
 import com.rubika.aotalk.R;
 import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.Statics;
 
 public class ActivityRecipe extends SherlockActivity {
 	protected static final String APP_TAG = "--> AOTalk::ActivityRecipe";
-	private String id;
+	private String id = null;
 	private ProgressDialog mProgressDialog;
-	private ProgressDialog iProgressDialog;
-	private int imageCount = 0;
-	private TextView text;
+	private WebView info;
 
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,12 +67,34 @@ public class ActivityRecipe extends SherlockActivity {
 	        }
         }
 
-        text = (TextView) findViewById(R.id.text);
-        text.setMovementMethod(LinkMovementMethod.getInstance());
+        info = (WebView) findViewById(R.id.web);
+        info.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+        info.setBackgroundColor(0);
+        info.setVisibility(View.INVISIBLE);
+        
+        info.setWebViewClient(new WebViewClient() {  
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+	    		Intent intent;
+	    		
+            	if (url.startsWith("aorb://")) {
+					intent = new Intent(ActivityRecipe.this, ActivityRecipe.class);
+					intent.putExtra("id", url.replace("aorb://", ""));
+					intent.setData(Uri.parse(url));
+					startActivity(intent);
+	            } else {
+					intent = new Intent(ActivityRecipe.this, Information.class);
+					intent.setData(Uri.parse(url));
+					startActivity(intent);
+	    		}
+            	
+				return true;
+           }
+        });
 
         final ActionBar bar = getSupportActionBar();
         
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
         
@@ -89,12 +103,6 @@ public class ActivityRecipe extends SherlockActivity {
         mProgressDialog.setCancelable(true);
         mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         mProgressDialog.show();
-        
-        iProgressDialog = new ProgressDialog(this);
-        iProgressDialog.setMessage("Loading..");
-        iProgressDialog.setCancelable(true);
-        iProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        iProgressDialog.setProgress(0);
         
         ((Button) findViewById(R.id.close)).setOnClickListener(new OnClickListener() {
 			@Override
@@ -128,31 +136,32 @@ public class ActivityRecipe extends SherlockActivity {
 	    }
 	}
 	
-	private void postRecipeData(String recipeTitle, Spanned recipeText) {
-		if (recipeTitle != null) {
+	private void postRecipeData(String recipeTitle, String recipeText) {
+        Logging.log(APP_TAG, recipeText);
+
+        if (recipeTitle != null) {
 			setTitle(recipeTitle);
 		}
 	
-		if (recipeText != null) {
-			text.setText(recipeText);
-			Logging.log(APP_TAG, recipeText.toString());
-		} else {
-			Toast.makeText(this, R.string.data_load_failed, Toast.LENGTH_LONG).show();
-		}
+		String text = "";
+		
+    	if(recipeText != null && recipeText.length() > 0) {
+        	text = Statics.HTML_START + recipeText + Statics.HTML_END;
+        } else {
+        	text = Statics.HTML_START + getString(R.string.no_data).replace("\n", "<br />") + Statics.HTML_END;
+        }
+    	
+    	info.loadData(Uri.encode(text), "text/html", "UTF-8");
+    	info.setVisibility(View.VISIBLE);
 		
 		if (mProgressDialog != null) {
 			mProgressDialog.dismiss();
 			mProgressDialog = null;
 		}
-		
-		if (iProgressDialog != null) {
-			iProgressDialog.dismiss();
-			iProgressDialog = null;
-		}
 	}
 	
 	private class RecipeData extends AsyncTask<URL, Integer, Long> {
-		private Spanned recipeText;
+		private String recipeText;
 		private String recipeTitle;
 		
 		protected void onProgressUpdate(Integer... progress) {
@@ -169,14 +178,17 @@ public class ActivityRecipe extends SherlockActivity {
 		protected Long doInBackground(URL... arg0) {
         	String xml = null;
             Document doc = null;
-
+            
+            //Pattern pattern;
+            //Matcher matcher;
+            
             try {
                 DefaultHttpClient httpClient = new DefaultHttpClient();
                 HttpGet httpGet = new HttpGet(String.format(RecipeBook.RECIPES_INFO_URL, id));
                 HttpResponse httpResponse = httpClient.execute(httpGet);
                 HttpEntity httpEntity = httpResponse.getEntity();
                 xml = EntityUtils.toString(httpEntity);
-                Logging.log(APP_TAG, String.format(RecipeBook.RECIPES_INFO_URL, id) + "\r" + xml);
+                Logging.log(APP_TAG, String.format(RecipeBook.RECIPES_INFO_URL, id) + "\r\n" + xml);
             } catch (UnsupportedEncodingException e) {
 				Logging.log(APP_TAG, e.getMessage());
             } catch (ClientProtocolException e) {
@@ -186,7 +198,19 @@ public class ActivityRecipe extends SherlockActivity {
             }
             
             if (xml != null) {
-            	DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                /*
+            	pattern = Pattern.compile("<recipe_text>(.*?)</recipe_text>");
+	            matcher = pattern.matcher(xml);
+	            
+	            if (matcher.find()) {
+	            	xml = xml.replace(matcher.group(1), matcher.group(1).replaceAll("<","&lt;").replaceAll(">","&gt;"));
+	            }
+	            */
+            	
+                Logging.log(APP_TAG, "Fixed\n\r\n\r" + xml);
+
+	            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+	            
 	            try {
 	                DocumentBuilder db = dbf.newDocumentBuilder();
 	     
@@ -209,75 +233,15 @@ public class ActivityRecipe extends SherlockActivity {
             	NodeList nl = doc.getElementsByTagName("xml");
 	            
 	            for (int i = nl.getLength() - 1; i >= 0; i--) {
-	                Logging.log(APP_TAG, "Content " + i);
 	            	Element e = (Element) nl.item(i);
-	                
-	            	String recipeHtml = null;
-	            	recipeTitle = getValue(e, "recipe_name");
 	            	
-	                Pattern pattern = Pattern.compile("<recipe_text>(.*?)</recipe_text>");
-		            Matcher matcher = pattern.matcher(xml);
-		            
-		            if (matcher.find()) {
-		            	recipeHtml = RecipeParser.preProcess(matcher.group(1));
-		            }
+	            	recipeTitle = getValue(e, "recipe_name");
 			        
-			        if (recipeHtml != null) {
-			            pattern = Pattern.compile("#L \"([^/\"]*?)\" \"/tell recipebook rshow (.*?)\"");
-				        matcher = pattern.matcher(recipeHtml);
-				        
-				        while(matcher.find()) {
-				        	recipeHtml = recipeHtml.replace(
-					        	"#L \"" + matcher.group(1) + "\" \"/tell recipebook rshow " + matcher.group(2) + "\"", 
-					        	"<a href=\"aorb://" + matcher.group(2) + "\">" + matcher.group(1) + "</a>"
-				        	);
-				        }
-		                	
-				        pattern = Pattern.compile("#L \"([^/\"]*?)\" \"([0-9]*?)\"");
-				        matcher = pattern.matcher(recipeHtml);
-				        
-				        while(matcher.find()) {
-				        	recipeHtml = recipeHtml.replace(
-					        	"#L \"" + matcher.group(1) + "\" \"" + matcher.group(2) + "\"", 
-					        	"<a href=\"itemref://" + matcher.group(2) + "/0/0\">" + matcher.group(1) + "</a>"
-				        	);
-				        }
-				        
-				        pattern = Pattern.compile("#L \"([^/\"]*?)\" \"(.*?)\"");
-				        matcher = pattern.matcher(recipeHtml);
-				        
-				        while(matcher.find()) {
-				        	recipeHtml = recipeHtml.replace(
-					        	"#L \"" + matcher.group(1) + "\" \"" + matcher.group(2) + "\"", 
-					        	matcher.group(1)
-				        	);
-				        }
-	
-				        pattern = Pattern.compile("<img src=\'?rdb://([0-9]*?)\'?>");
-				        matcher = pattern.matcher(recipeHtml);
-				        
-				        while(matcher.find()) {
-				        	recipeHtml = recipeHtml.replace(
-					        	"<img src=rdb://" + matcher.group(1) + ">", 
-					        	"<img src=\"http://109.74.0.178/icon/" + matcher.group(1) + ".gif\" class=\"icon\">"
-				        	);
-				        	
-				        	recipeHtml = recipeHtml.replace(
-						        "<img src='rdb://" + matcher.group(1) + "'>", 
-						        "<img src=\"http://109.74.0.178/icon/" + matcher.group(1) + ".gif\" class=\"icon\">"
-					        );
-				        	
-		                	imageCount++;
-				        }
-		                
-		                Logging.log(APP_TAG, recipeHtml);
-		                
-	                	recipeText = Html.fromHtml(RecipeParser.parse(recipeHtml), getImage, null);
+			        if (getValue(e, "recipe_text") != null) {
+	                	recipeText = RecipeParser.parse(getValue(e, "recipe_text"));
 			        } else {
-			        	recipeText = Html.fromHtml("");
+		                recipeText = "";
 			        }
-
-	    	        Logging.log(APP_TAG, "All done");
 	            }
             }
 
@@ -306,6 +270,7 @@ public class ActivityRecipe extends SherlockActivity {
         }
 	}
 	
+	/*
     private ImageGetter getImage = new ImageGetter() {
     	@Override
     	public Drawable getDrawable(String source) {                  
@@ -363,4 +328,5 @@ public class ActivityRecipe extends SherlockActivity {
         	return content;
         }
     };
+    */
 }

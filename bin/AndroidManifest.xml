@@ -1,165 +1,272 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.rubika.aotalk"
-    android:versionCode="84"
-    android:versionName="4.0.1" >
+    android:versionCode="92"
+    android:versionName="1.1.0" >
 
-    <uses-sdk android:minSdkVersion="7" android:targetSdkVersion="14" />
-    
+    <uses-sdk
+        android:minSdkVersion="7"
+        android:targetSdkVersion="14" />
+
+    <permission
+        android:name="com.rubika.aotalk.permission.C2D_MESSAGE"
+        android:protectionLevel="signature" />
+
     <uses-permission android:name="android.permission.INTERNET" />
-   	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-	   
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
+    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
+    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="com.rubika.aotalk.permission.C2D_MESSAGE" />
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+
     <application
-	android:theme="@style/AOTalkTheme"
-	android:icon="@drawable/ic_launcher"
-	android:label="@string/app_name"
-	>
+        android:name=".TheLeet"
+        android:allowBackup="true"
+        android:backupAgent="LeetBackup"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AOTalkTheme" >
         <activity
-		android:name=".AOTalk"
-		android:label="@string/app_name"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-       	android:windowSoftInputMode="stateHidden|adjustResize"
-        android:launchMode="singleTop"
-		>
-           <intent-filter>
-               <action android:name="android.intent.action.MAIN" />
-               <category android:name="android.intent.category.LAUNCHER" />
-           </intent-filter>
+            android:name=".AOTalk"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="stateHidden|adjustResize" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+            </intent-filter>
         </activity>
-        
         <activity
-        android:name=".Preferences"
-		android:label="@string/preferences"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-        />
-        
+            android:name=".Preferences"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/preferences"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
         <activity
-        android:name=".Help"
-		android:label="@string/help"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-        />
-        
+            android:name=".Help"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/help"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
         <activity
-        android:name=".Information"
-		android:label="@string/app_name"
-        android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-        >
-        	<intent-filter>
-			    <category android:name="android.intent.category.DEFAULT" />
-			    <action android:name="android.intent.action.VIEW" />
-			    <data android:scheme="text" />  
-			</intent-filter>
-        	<intent-filter>
-			    <category android:name="android.intent.category.DEFAULT" />
-			    <action android:name="android.intent.action.VIEW" />
-			    <data android:scheme="chatcmd" />  
-			</intent-filter>
-        	<intent-filter>
-			    <category android:name="android.intent.category.DEFAULT" />
-			    <action android:name="android.intent.action.VIEW" />
-			    <data android:scheme="itemref" />  
-			</intent-filter>
-        	<intent-filter>
-			    <category android:name="android.intent.category.DEFAULT" />
-			    <action android:name="android.intent.action.VIEW" />
-			    <data android:scheme="user" />  
-			</intent-filter>
+            android:name=".Information"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/app_name"
+            android:windowSoftInputMode="stateHidden|adjustResize" >
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <data android:scheme="text" />
+            </intent-filter>
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <data android:scheme="chatcmd" />
+            </intent-filter>
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <data android:scheme="itemref" />
+            </intent-filter>
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <data android:scheme="user" />
+            </intent-filter>
         </activity>
-        
         <activity
-		android:label="@string/market_monitor"
-		android:name=".market.Market"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-		/>
-        
+            android:name=".market.Market"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/market_monitor"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
         <activity
-		android:label="@string/towerwars"
-		android:name=".towerwars.Towerwars"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-		/>
-        
+            android:name=".towerwars.Towerwars"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/towerwars"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
         <activity
-		android:label="@string/media"
-		android:name=".media.Media"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-		/>
-        
-        <activity
-		android:label="@string/map"
-		android:name=".map.Map"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-		/>
-        
-        <activity
-		android:label="@string/recipebook"
-		android:name=".recipebook.RecipeBook"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-		>
-        	<intent-filter>
-			    <category android:name="android.intent.category.DEFAULT" />
-			    <action android:name="android.intent.action.VIEW" />
-			    <data android:scheme="aorbid" />  
-			</intent-filter>
+            android:name=".map.Map"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/map"
+            android:windowSoftInputMode="stateHidden|adjustResize" >
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <data android:scheme="aomap" />
+            </intent-filter>
         </activity>
-        
         <activity
-		android:label="@string/recipebook"
-		android:name=".recipebook.ActivityRecipe"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-		>
-        	<intent-filter>
-			    <category android:name="android.intent.category.DEFAULT" />
-			    <action android:name="android.intent.action.VIEW" />
-			    <data android:scheme="aorb" />  
-			</intent-filter>
+            android:name=".recipebook.RecipeBook"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/recipebook"
+            android:windowSoftInputMode="stateHidden|adjustResize" >
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <data android:scheme="aorb" />
+            </intent-filter>
         </activity>
-        
         <activity
-		android:label="@string/ao_universe"
-		android:name=".aou.AOU"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-		/>
-        
-        <activity
-		android:label="@string/ao_universe"
-		android:name=".aou.ActivityNews"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-		/>
-        
-        <activity
-		android:label="@string/ao_universe"
-		android:name=".aou.ActivityCalendar"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-		/>
-        
-        <activity
-		android:label="@string/ao_universe"
-		android:name=".aou.ActivityGuide"
-		android:configChanges="orientation|screenSize|keyboardHidden"
-        android:windowSoftInputMode="stateHidden|adjustResize"
-		>
-        	<intent-filter>
-			    <category android:name="android.intent.category.DEFAULT" />
-			    <action android:name="android.intent.action.VIEW" />
-			    <data android:scheme="guideref" />  
-			</intent-filter>
+            android:name=".aou.GuideSearch"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/search_results"
+            android:windowSoftInputMode="stateHidden|adjustResize" >
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <data android:scheme="gitem" />
+            </intent-filter>
         </activity>
-        
+        <activity
+            android:name="com.rubika.aotalk.itemsearch.ItemSearch"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/search_results"
+            android:windowSoftInputMode="stateHidden|adjustResize" >
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <data android:scheme="sitem" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".recipebook.ActivityRecipe"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/recipebook"
+            android:windowSoftInputMode="stateHidden|adjustResize" >
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <data android:scheme="aorb" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".aou.AOU"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/ao_universe"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
+        <activity
+            android:name=".aou.ActivityNews"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/ao_universe"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
+        <activity
+            android:name=".aou.ActivityCalendar"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/ao_universe"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
+        <activity
+            android:name=".aou.ActivityGuide"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/ao_universe"
+            android:windowSoftInputMode="stateHidden|adjustResize" >
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <data android:scheme="guideref" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".account.AccountPreferences"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/account_settings"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
+        <activity
+            android:name=".account.LoginActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".account.ProfileActivity"
+            android:label="@string/profile" >
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="@string/account_mime" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".account.SyncAdapterService"
+            android:exported="true"
+            android:process=":sync" >
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.content.SyncAdapter"
+                android:resource="@xml/sync_adapter" />
+        </service>
+        <service
+            android:name=".account.AccountAuthenticatorService"
+            android:exported="true"
+            android:process=":auth" >
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
+        </service>
         <service android:name=".service.ClientService" />
+
+        <receiver
+            android:name="com.google.android.gcm.GCMBroadcastReceiver"
+            android:permission="com.google.android.c2dm.permission.SEND" >
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+                <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
+
+                <category android:name="com.rubika.aotalk" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".GCMIntentService" />
+
+        <meta-data
+            android:name="com.google.android.backup.api_key"
+            android:value="AEdPqrEAAAAIAazCo3rDMYYYGIwyKFfCvY7Jusl2GMz32r_IgQ" />
         
-	</application>
+        <uses-library android:required="false" android:name="com.sec.android.app.multiwindow"></uses-library>
+        
+        <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />
+        <meta-data android:name="com.sec.android.multiwindow.DEFAULT_SIZE_W" android:resource="@dimen/app_defaultsize_w" />
+		<meta-data android:name="com.sec.android.multiwindow.DEFAULT_SIZE_H" android:resource="@dimen/app_defaultsize_h" />
+		<meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_W" android:resource="@dimen/app_minimumsize_w" />
+		<meta-data android:name="com.sec.android.multiwindow.MINIMUM_SIZE_H" android:resource="@dimen/app_minimumsize_h" />
+    </application>
+
 </manifest>

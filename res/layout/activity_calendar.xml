@@ -13,35 +13,35 @@ android:layout_height="fill_parent"
 	android:weightSum="2"
    	>
 	   	<Button
-	  	android:id="@+id/close"
-		android:layout_width="0px"
-		android:layout_height="wrap_content"
-		android:text="@string/close"
-		android:layout_weight="1"
-	  	/>
-	   	<Button
 	  	android:id="@+id/forum"
 		android:layout_width="0px"
 		android:layout_height="wrap_content"
 		android:text="@string/forum"
 		android:layout_weight="1"
 	  	/>
-   	</LinearLayout>
+	   	<Button
+	  	android:id="@+id/close"
+		android:layout_width="0px"
+		android:layout_height="wrap_content"
+		android:text="@string/close"
+		android:layout_weight="1"
+	  	/>
+	</LinearLayout>
   	<ScrollView
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
 	android:layout_alignParentTop="true"
 	android:layout_above="@id/buttons"
-	android:background="@color/actbg"
+	android:background="@drawable/applicationbg"
 	>
 		<RelativeLayout 
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:padding="5dp"
+		android:padding="5sp"
 		>
 		    <TextView
 		    android:id="@+id/date"
-		    android:textSize="14dp"
+		    android:textSize="14sp"
 		    android:textColor="@color/subgrey"
 		    android:layout_gravity="center_vertical"
 		    android:layout_width="wrap_content"
@@ -55,7 +55,7 @@ android:layout_height="fill_parent"
 		    />
 		    <TextView
 		    android:id="@+id/server"
-		    android:textSize="14dp"
+		    android:textSize="14sp"
 		    android:textColor="@color/subgrey"
 		    android:layout_gravity="center_vertical"
 		    android:layout_width="wrap_content"
@@ -69,13 +69,13 @@ android:layout_height="fill_parent"
 		    />
 		    <TextView
 		    android:id="@+id/text"
-		    android:textSize="16dp"
+		    android:textSize="16sp"
 		    android:textColor="@color/mainwhite"
 		    android:layout_gravity="center_vertical"
 		    android:layout_width="wrap_content"
 		    android:layout_height="wrap_content" 
 		    android:layout_below="@id/date"
-		    android:layout_marginTop="10dp"
+		    android:layout_marginTop="10sp"
 			android:shadowColor="@color/textshadow"
 			android:shadowDx="1"
 			android:shadowDy="1"

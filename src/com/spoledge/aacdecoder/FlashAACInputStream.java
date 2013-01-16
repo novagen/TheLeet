@@ -9,14 +9,16 @@
 
 package com.spoledge.aacdecoder;
 
-import android.util.Log;
-
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 
+import com.rubika.aotalk.util.Logging;
+
 public class FlashAACInputStream extends InputStream {
-    private DataInputStream dis = null;
+	private static final String APP_TAG = "--> The Leet ::FlashAACInputStream";
+
+	private DataInputStream dis = null;
     private int countInBackBuffer = 0;
     private int backBufferLen = 65536;
     private byte[] backBuffer = new byte[backBufferLen];
@@ -34,7 +36,7 @@ public class FlashAACInputStream extends InputStream {
             throw new IOException("The file is not a FLV file.");
 
         // Check if audio stream exists in the video stream
-        byte version = dis.readByte();
+        //byte version = dis.readByte();
         byte exists = dis.readByte();
 
         if ((exists != 5) && (exists != 4))
@@ -63,7 +65,7 @@ public class FlashAACInputStream extends InputStream {
         if (len > readBufferLen) 
             throw new IndexOutOfBoundsException("len exceeds readBufferLen");
 
-        Log.d("FlashAACInputStream", "read: countInBackBuffer = " + countInBackBuffer);
+        Logging.log(APP_TAG, "read: countInBackBuffer = " + countInBackBuffer);
 
         if (countInBackBuffer > 0) {
             if (countInBackBuffer >= len) {
@@ -108,7 +110,7 @@ public class FlashAACInputStream extends InputStream {
 
     // reads FLV Tag data
     private int readFrame(byte[] buf) throws IOException {
-        int previousTagSize = dis.readInt(); // PreviousTagSize0 skipping
+        //int previousTagSize = dis.readInt(); // PreviousTagSize0 skipping
 
         byte tagType = dis.readByte();
         while (tagType != 8) {
@@ -122,7 +124,8 @@ public class FlashAACInputStream extends InputStream {
         int timestamps = dis.readInt();
         long streamID = readNext3Bytes();
         byte audioHeader = dis.readByte();
-        Log.d("FlashAACInputStream", "dataSize = " + dataSize + ", timestamps = " + timestamps + ", streamId = " + streamID + ", audioHeader = " + audioHeader);
+
+        Logging.log(APP_TAG, "dataSize = " + dataSize + ", timestamps = " + timestamps + ", streamId = " + streamID + ", audioHeader = " + audioHeader);
 
         return fillBuffer(buf, (int)dataSize);
     }
@@ -140,9 +143,7 @@ public class FlashAACInputStream extends InputStream {
         bits <<= 4;
         _channelConfig = readBits(bits, 4);
     
-        Log.d("FlashAACInputStream", "aacProf = " + _aacProfile);
-        Log.d("FlashAACInputStream", "_sampleRateIndex = " + _sampleRateIndex);
-        Log.d("FlashAACInputStream", "_channelConfig = " + _channelConfig);
+        Logging.log(APP_TAG, "aacProf = " + _aacProfile + "\n_sampleRateIndex = " + _sampleRateIndex + "\n_channelConfig = " + _channelConfig);
 
         if ((_aacProfile < 0) || (_aacProfile > 3))
             throw new IOException("Unsupported AAC profile.");
@@ -224,7 +225,7 @@ public class FlashAACInputStream extends InputStream {
             File f = new File(args[0]);
             FileInputStream fis = new FileInputStream(f);
             FlashAACInputStream aacStream = new FlashAACInputStream(fis);
-           */
+            */
            
             // static file on server
             String url = "http://184.82.135.71/download.flv";
@@ -240,7 +241,7 @@ public class FlashAACInputStream extends InputStream {
 
             File outFile = new File("output.aac");
             FileOutputStream fos = new FileOutputStream(outFile);
-            DataOutputStream dos = new DataOutputStream(fos);
+            //DataOutputStream dos = new DataOutputStream(fos);
 
             byte [] myChunk = new byte[4096];
             int bytesRead;
@@ -249,6 +250,8 @@ public class FlashAACInputStream extends InputStream {
                 System.out.println("bytesRead = " + bytesRead);
                 fos.write(myChunk, 0, bytesRead);
             }
+            
+            flvStream.close();
             fos.close();
         } catch (Exception e) {
             System.out.println(e);

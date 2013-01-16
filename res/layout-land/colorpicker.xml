@@ -18,8 +18,8 @@
 	xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:paddingLeft="5dp"
-    android:paddingRight="5dp"
+    android:paddingLeft="5sp"
+    android:paddingRight="5sp"
     android:orientation="horizontal">
 		
 	<com.rubika.aotalk.ui.colorpicker.ColorPickerView
@@ -33,24 +33,24 @@
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:orientation="vertical"
-		android:layout_marginBottom="10dp">
+		android:layout_marginBottom="10sp">
 		
 		<TextView
 			android:layout_width="wrap_content" 
 			android:layout_height="wrap_content"	
 			android:text="@string/press_color_to_apply"
 			android:gravity="center"
-			android:layout_marginTop="6dp"
-			android:layout_marginLeft="6dp"
-			android:layout_marginRight="6dp"
-			android:layout_marginBottom="5dp"
+			android:layout_marginTop="6sp"
+			android:layout_marginLeft="6sp"
+			android:layout_marginRight="6sp"
+			android:layout_marginBottom="5sp"
 			android:textAppearance="?android:attr/textAppearanceSmall"
 		/>
 
 		<com.rubika.aotalk.ui.colorpicker.ColorPickerPanelView
 			android:id="@+id/old_color_panel"
 			android:layout_width="fill_parent"
-			android:layout_height="40dp"
+			android:layout_height="40sp"
 			android:layout_weight="0.5"
 		/>
 	
@@ -60,14 +60,14 @@
 			android:text="↓"
 			android:textSize="20sp"
 			android:gravity="center"
-			android:layout_marginTop="10dp"
-			android:layout_marginBottom="10dp"
+			android:layout_marginTop="10sp"
+			android:layout_marginBottom="10sp"
 		/>
 	
 		<com.rubika.aotalk.ui.colorpicker.ColorPickerPanelView
 			android:id="@+id/new_color_panel"
 			android:layout_width="fill_parent"
-			android:layout_height="40dp"
+			android:layout_height="40sp"
 			android:layout_weight="0.5"
 		/>
 	

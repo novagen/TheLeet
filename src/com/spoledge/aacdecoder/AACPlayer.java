@@ -19,14 +19,13 @@
 */
 package com.spoledge.aacdecoder;
 
-import android.util.Log;
-
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.io.IOException;
 
 import java.net.URL;
 import java.net.URLConnection;
+
+import com.rubika.aotalk.util.Logging;
 
 
 /**
@@ -41,6 +40,7 @@ import java.net.URLConnection;
  * </pre>
  */
 public class AACPlayer {
+	private static final String APP_TAG = "--> The Leet ::AACPlayer";
 
     /**
      * The default expected bitrate.
@@ -61,9 +61,6 @@ public class AACPlayer {
      * @see setDecodeBufferCapacityMs(int)
      */
     public static final int DEFAULT_DECODE_BUFFER_CAPACITY_MS = 700;
-
-
-    private static final String LOG = "AACPlayer";
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -248,7 +245,7 @@ public class AACPlayer {
                     play( url, expectedKBitSecRate );
                 }
                 catch (Exception e) {
-                    Log.e( LOG, "playAsync():", e);
+                    Logging.log(APP_TAG, e.getMessage());
 
                     if (playerCallback != null) playerCallback.playerException( e );
                 }
@@ -350,7 +347,7 @@ public class AACPlayer {
         try {
             Decoder.Info info = decoder.start( reader );
 
-            Log.d( LOG, "play(): samplerate=" + info.getSampleRate() + ", channels=" + info.getChannels());
+            Logging.log(APP_TAG, "play(): samplerate=" + info.getSampleRate() + ", channels=" + info.getChannels());
 
             profSampleRate = info.getSampleRate() * info.getChannels();
 
@@ -380,14 +377,15 @@ public class AACPlayer {
                 profSamples += nsamp;
                 profCount++;
 
-                Log.d( LOG, "play(): decoded " + nsamp + " samples" );
+                Logging.log(APP_TAG, "play(): decoded " + nsamp + " samples");
 
                 if (nsamp == 0 || stopped) break;
                 if (!pcmfeed.feed( decodeBuffer, nsamp ) || stopped) break;
 
                 int kBitSecRate = computeAvgKBitSecRate( info );
                 if (Math.abs(expectedKBitSecRate - kBitSecRate) > 1) {
-                    Log.i( LOG, "play(): changing kBitSecRate: " + expectedKBitSecRate + " -> " + kBitSecRate );
+                    Logging.log(APP_TAG, "play(): changing kBitSecRate: " + expectedKBitSecRate + " -> " + kBitSecRate);
+                    
                     reader.setCapacity( computeInputBufferSize( kBitSecRate, decodeBufferCapacityMs ));
                     expectedKBitSecRate = kBitSecRate;
                 }
@@ -404,12 +402,14 @@ public class AACPlayer {
 
             int perf = 0;
 
-            if (profCount > 0) Log.i( LOG, "play(): average decoding time: " + profMs / profCount + " ms");
+            if (profCount > 0) {
+                Logging.log(APP_TAG, "play(): average decoding time: " + profMs / profCount + " ms");
+            }
 
             if (profMs > 0) {
                 perf = (int)((1000*profSamples / profMs - profSampleRate) * 100 / profSampleRate);
 
-                Log.i( LOG, "play(): average rate (samples/sec): audio=" + profSampleRate
+                Logging.log(APP_TAG, "play(): average rate (samples/sec): audio=" + profSampleRate
                     + ", decoding=" + (1000*profSamples / profMs)
                     + ", audio/decoding= " + perf
                     + " %  (the higher, the better; negative means that decoding is slower than needed by audio)");
@@ -467,7 +467,7 @@ public class AACPlayer {
         InputStream ret = conn.getInputStream();
 
         if (!metadataEnabled) {
-            Log.i( LOG, "Metadata not enabled" );
+            Logging.log(APP_TAG, "Metadata not enabled");
         }
         else if (smetaint != null) {
             int period = -1;
@@ -475,16 +475,17 @@ public class AACPlayer {
                 period = Integer.parseInt( smetaint );
             }
             catch (Exception e) {
-                Log.e( LOG, "The icy-metaint '" + smetaint + "' cannot be parsed: '" + e );
+                Logging.log(APP_TAG, "The icy-metaint '" + smetaint + "' cannot be parsed: '" + e);
             }
 
             if (period > 0) {
-                Log.i( LOG, "The dynamic metainfo is sent every " + period + " bytes" );
+                Logging.log(APP_TAG, "The dynamic metainfo is sent every " + period + " bytes");
 
                 ret = new IcyInputStream( ret, period, playerCallback );
             }
+        } else {
+            Logging.log(APP_TAG, "This stream does not provide dynamic metainfo");
         }
-        else Log.i( LOG, "This stream does not provide dynamic metainfo" );
 
         return ret;
     }
@@ -509,7 +510,7 @@ public class AACPlayer {
     protected void dumpHeaders( URLConnection cn ) {
         for (java.util.Map.Entry<String, java.util.List<String>> me : cn.getHeaderFields().entrySet()) {
             for (String s : me.getValue()) {
-                Log.d( LOG, "header: key=" + me.getKey() + ", val=" + s);
+                Logging.log(APP_TAG, "header: key=" + me.getKey() + ", val=" + s);
             }
         }
     }

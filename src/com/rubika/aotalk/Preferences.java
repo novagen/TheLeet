@@ -1,8 +1,20 @@
 package com.rubika.aotalk;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockPreferenceActivity;
@@ -10,12 +22,17 @@ import com.actionbarsherlock.view.MenuItem;
 import com.rubika.aotalk.adapter.FriendAdapter;
 import com.rubika.aotalk.item.Channel;
 import com.rubika.aotalk.item.Friend;
+import com.rubika.aotalk.item.TowerSite;
+import com.rubika.aotalk.market.Market;
 import com.rubika.aotalk.service.ClientService;
-import com.rubika.aotalk.service.ServiceTools;
 import com.rubika.aotalk.ui.colorpicker.ColorPickerPreference;
 import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.Statics;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -24,8 +41,8 @@ import android.content.DialogInterface.OnMultiChoiceClickListener;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.graphics.Color;
 import android.media.RingtoneManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -48,37 +65,33 @@ import android.widget.EditText;
 import ao.misc.NameFormat;
 
 public class Preferences extends SherlockPreferenceActivity  {
-	private static final String APP_TAG = "--> AnarchyTalk::Preferences";
+	private static final String APP_TAG = "--> The Leet ::Preferences";
 	
 	private Context context;
 	private Messenger service = null;
 	private boolean serviceIsBound = false;	
 	private PreferenceManager prefManager;
-	private List<Friend> friendList = new ArrayList<Friend>();
-	private List<Channel> channelList = new ArrayList<Channel>();
 	
-	public static int COLOR_ORG_APP = Color.parseColor("#CC99CC");
-	public static int COLOR_ORG_SYS = Color.parseColor("#FFCC33");
-	public static int COLOR_ORG_PRV = Color.parseColor("#88FF88");
-	public static int COLOR_ORG_GRP = Color.parseColor("#FFFFFF");
-	public static int COLOR_ORG_ORG = Color.parseColor("#BBBBFF");
-	public static int COLOR_ORG_FRN = Color.parseColor("#FFEE55");
-	//public static int COLOR_ORG_OTH = Color.parseColor("#FFFFFF");
+	private static List<Friend> friendList = new ArrayList<Friend>();
+	private static List<Channel> channelList = new ArrayList<Channel>();
 	
-	final Messenger messenger = new Messenger(new IncomingHandler());
+	final static Messenger messenger = new Messenger(new IncomingHandler());
 	
+	/*
 	private CheckBoxPreference checkboxPrefWhoisWeb;
 	private CheckBoxPreference checkboxPrefWhoisFallback;
-
-	class IncomingHandler extends Handler {
+	*/
+	
+	static class IncomingHandler extends Handler {
+		@SuppressWarnings("unchecked")
 		@Override
 	    public void handleMessage(Message message) {
 	    	switch (message.what) {
-            case ServiceTools.MESSAGE_FRIEND:
+            case Statics.MESSAGE_FRIEND:
             	friendList = (List<Friend>)message.obj;
     	        
                 break;
-            case ServiceTools.MESSAGE_REGISTERED:
+            case Statics.MESSAGE_REGISTERED:
     			List<Object> registerData = (ArrayList<Object>) message.obj;
     			friendList = (List<Friend>)registerData.get(0);
     			channelList = (List<Channel>)registerData.get(1);
@@ -90,15 +103,25 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    }
 	}
 	
+	private AccountManager accountManager;
+	private Account[] accounts;
+	
+	@SuppressWarnings("deprecation")
 	@Override 
 	protected void onCreate(Bundle savedInstanceState) { 
 	    super.onCreate(savedInstanceState); 
 
 	    context = this;
 	    
+        accountManager = AccountManager.get(context);
+	    
+    	loader = new ProgressDialog(context);
+		loader.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+		loader.setCancelable(false);
+	    
         final ActionBar bar = getSupportActionBar();
         
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
 	            
@@ -108,6 +131,7 @@ public class Preferences extends SherlockPreferenceActivity  {
 	private PreferenceScreen prefScreen;
 	private PreferenceCategory prefCat;
 	
+	@SuppressWarnings("deprecation")
 	private PreferenceScreen createPreferenceHierarchy() {        
 		prefManager = getPreferenceManager();
 		PreferenceScreen root = prefManager.createPreferenceScreen(this);
@@ -141,7 +165,8 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    CheckBoxPreference checkboxShowChatWhenOnline = new CheckBoxPreference(this);
         checkboxShowChatWhenOnline.setKey("showChatWhenOnline");
         checkboxShowChatWhenOnline.setTitle(getString(R.string.show_chat_when_online));
-        checkboxShowChatWhenOnline.setSummary(getString(R.string.show_chat_when_online_info));
+        checkboxShowChatWhenOnline.setSummaryOn(R.string.show_chat_when_online_info_on);
+        checkboxShowChatWhenOnline.setSummaryOff(R.string.show_chat_when_online_info_off);
         checkboxShowChatWhenOnline.setDefaultValue(true);
         root.addPreference(checkboxShowChatWhenOnline);
         
@@ -149,32 +174,34 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    CheckBoxPreference checkboxHideTitles = new CheckBoxPreference(this);
 	    checkboxHideTitles.setKey("hideTitles");
 	    checkboxHideTitles.setTitle(getString(R.string.hide_titles));
-	    checkboxHideTitles.setSummary(getString(R.string.hide_titles_info));
+	    checkboxHideTitles.setSummaryOn(R.string.hide_titles_info_on);
+	    checkboxHideTitles.setSummaryOff(R.string.hide_titles_info_off);
 	    checkboxHideTitles.setDefaultValue(false);
         root.addPreference(checkboxHideTitles);
-       
-        //Manage hidden channels
-        prefScreen = prefManager.createPreferenceScreen(this);
-        prefScreen.setKey("disabledchannels_button");
-        prefScreen.setTitle(getString(R.string.mute_channels));
-        prefScreen.setSummary(getString(R.string.select_channels_to_mute));
-        prefScreen.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-			@Override
-			public boolean onPreferenceClick(Preference arg0) {
-				handleChannels();
-				return false;
-			}
-	    });
-	    root.addPreference(prefScreen);
 
-        ListPreference server = new ListPreference(this);
-		server.setKey("server");
-        server.setTitle(getString(R.string.server));
-        server.setSummary(getString(R.string.server_info));
-        server.setEntries(R.array.server);
-        server.setEntryValues(R.array.server_values);
-        server.setDefaultValue("1");
-        root.addPreference(server);
+        CheckBoxPreference checkboxEnableAnimations = new CheckBoxPreference(this);
+        checkboxEnableAnimations.setKey("enableAnimations");
+        checkboxEnableAnimations.setTitle(getString(R.string.enable_animations));
+        checkboxEnableAnimations.setSummaryOn(R.string.enable_animations_info_on);
+        checkboxEnableAnimations.setSummaryOff(R.string.enable_animations_info_off);
+        checkboxEnableAnimations.setDefaultValue(true);
+        root.addPreference(checkboxEnableAnimations);
+
+        CheckBoxPreference checkboxEnableFaces = new CheckBoxPreference(this);
+        checkboxEnableFaces.setKey("enableFaces");
+        checkboxEnableFaces.setTitle(getString(R.string.enable_faces));
+        checkboxEnableFaces.setSummaryOn(R.string.enable_faces_info_on);
+        checkboxEnableFaces.setSummaryOff(R.string.enable_faces_info_off);
+        checkboxEnableFaces.setDefaultValue(true);
+        root.addPreference(checkboxEnableFaces);
+
+        CheckBoxPreference checkboxEnableTimestamp = new CheckBoxPreference(this);
+        checkboxEnableTimestamp.setKey("showTimestamp");
+        checkboxEnableTimestamp.setTitle(getString(R.string.show_timestamps));
+        checkboxEnableTimestamp.setSummaryOn(R.string.show_timestamps_info_on);
+        checkboxEnableTimestamp.setSummaryOff(R.string.show_timestamps_info_off);
+        checkboxEnableTimestamp.setDefaultValue(true);
+        root.addPreference(checkboxEnableTimestamp);
 	    
         //Colors
         prefScreen = prefManager.createPreferenceScreen(this);
@@ -186,7 +213,7 @@ public class Preferences extends SherlockPreferenceActivity  {
         colorPref1.setTitle(getString(R.string.color_app));
         colorPref1.setSummary(getString(R.string.color_app_info));
         colorPref1.setAlphaSliderEnabled(false);
-        colorPref1.setDefaultValue(COLOR_ORG_APP);
+        colorPref1.setDefaultValue(Statics.COLOR_ORG_APP);
 	    prefScreen.addPreference(colorPref1);
 	            
 	    ColorPickerPreference colorPref2 = new ColorPickerPreference(this);
@@ -194,7 +221,7 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    colorPref2.setTitle(getString(R.string.color_sys));
 	    colorPref2.setSummary(getString(R.string.color_sys_info));
 	    colorPref2.setAlphaSliderEnabled(false);
-        colorPref2.setDefaultValue(COLOR_ORG_SYS);
+        colorPref2.setDefaultValue(Statics.COLOR_ORG_SYS);
         prefScreen.addPreference(colorPref2);
 	    
         ColorPickerPreference colorPref3 = new ColorPickerPreference(this);
@@ -202,7 +229,7 @@ public class Preferences extends SherlockPreferenceActivity  {
         colorPref3.setTitle(getString(R.string.color_prv));
         colorPref3.setSummary(getString(R.string.color_prv_info));
         colorPref3.setAlphaSliderEnabled(false);
-        colorPref3.setDefaultValue(COLOR_ORG_PRV);
+        colorPref3.setDefaultValue(Statics.COLOR_ORG_PRV);
 	    prefScreen.addPreference(colorPref3);
 	    
 	    ColorPickerPreference colorPref4 = new ColorPickerPreference(this);
@@ -210,7 +237,7 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    colorPref4.setTitle(getString(R.string.color_grp));
 	    colorPref4.setSummary(getString(R.string.color_grp_info));
 	    colorPref4.setAlphaSliderEnabled(false);
-        colorPref4.setDefaultValue(COLOR_ORG_GRP);
+        colorPref4.setDefaultValue(Statics.COLOR_ORG_GRP);
 	    prefScreen.addPreference(colorPref4);
 	    
 	    ColorPickerPreference colorPref5 = new ColorPickerPreference(this);
@@ -218,7 +245,7 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    colorPref5.setTitle(getString(R.string.color_frn));
 	    colorPref5.setSummary(getString(R.string.color_frn_info));
 	    colorPref5.setAlphaSliderEnabled(false);
-	    colorPref5.setDefaultValue(COLOR_ORG_FRN);
+	    colorPref5.setDefaultValue(Statics.COLOR_ORG_FRN);
 	    prefScreen.addPreference(colorPref5);
 	    
 	    /*
@@ -243,23 +270,56 @@ public class Preferences extends SherlockPreferenceActivity  {
 			}
 	    });
 	    prefScreen.addPreference(resetColors);
+
+        root.addPreference(prefScreen);
 	    
-	    root.addPreference(prefScreen);
+        CheckBoxPreference checkboxSortLoginCharacters = new CheckBoxPreference(this);
+        checkboxSortLoginCharacters.setKey("sortLoginCharacters");
+        checkboxSortLoginCharacters.setTitle(getString(R.string.sort_login_characters));
+        checkboxSortLoginCharacters.setSummaryOn(R.string.sort_login_characters_info_on);
+        checkboxSortLoginCharacters.setSummaryOff(R.string.sort_login_characters_info_off);
+        checkboxSortLoginCharacters.setDefaultValue(false);
+        root.addPreference(checkboxSortLoginCharacters);
 	    
 	    
 	    // Connection settings
 	    prefCat = new PreferenceCategory(this);
 	    prefCat.setTitle(getString(R.string.connection));
         root.addPreference(prefCat);
+
+        ListPreference server = new ListPreference(this);
+		server.setKey("server");
+        server.setTitle(getString(R.string.server));
+        server.setSummary(getString(R.string.server_info));
+        server.setEntries(R.array.server);
+        server.setEntryValues(R.array.server_values);
+        server.setDefaultValue("1");
+        root.addPreference(server);
         
 	    //Automatic reconnect
         CheckBoxPreference checkboxPrefReconnect = new CheckBoxPreference(this);
         checkboxPrefReconnect.setKey("autoReconnect");
         checkboxPrefReconnect.setTitle(getString(R.string.automatic_reconnect));
-        checkboxPrefReconnect.setSummary(getString(R.string.automatic_reconnect_info));
+        checkboxPrefReconnect.setSummaryOn(R.string.automatic_reconnect_info_on);
+        checkboxPrefReconnect.setSummaryOff(R.string.automatic_reconnect_info_off);
         checkboxPrefReconnect.setDefaultValue(true);
         root.addPreference(checkboxPrefReconnect);
         
+        //Manage hidden channels
+        prefScreen = prefManager.createPreferenceScreen(this);
+        prefScreen.setKey("disabledchannels_button");
+        prefScreen.setTitle(getString(R.string.mute_channels));
+        prefScreen.setSummary(getString(R.string.select_channels_to_mute));
+        prefScreen.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference arg0) {
+				handleChannels();
+				return false;
+			}
+	    });
+	    root.addPreference(prefScreen);
+        
+        /*
 	    //Do lookups on web page
         checkboxPrefWhoisWeb = new CheckBoxPreference(this);
         checkboxPrefWhoisWeb.setKey("whoisFromWeb");
@@ -275,7 +335,7 @@ public class Preferences extends SherlockPreferenceActivity  {
         checkboxPrefWhoisFallback.setSummary(getString(R.string.whois_fallback_info));
         checkboxPrefWhoisFallback.setDefaultValue(true);
         root.addPreference(checkboxPrefWhoisFallback);
-
+		*/
 
         // Notifications
 	    prefCat = new PreferenceCategory(this);
@@ -285,7 +345,8 @@ public class Preferences extends SherlockPreferenceActivity  {
         CheckBoxPreference checkboxPrefNotification = new CheckBoxPreference(this);
         checkboxPrefNotification.setKey("notificationEnabled");
         checkboxPrefNotification.setTitle(getString(R.string.enable_notifications));
-        checkboxPrefNotification.setSummary(getString(R.string.enable_notifications_info));
+        checkboxPrefNotification.setSummaryOn(R.string.enable_notifications_info_on);
+        checkboxPrefNotification.setSummaryOff(R.string.enable_notifications_info_off);
         checkboxPrefNotification.setDefaultValue(true);
         root.addPreference(checkboxPrefNotification);
 
@@ -298,7 +359,32 @@ public class Preferences extends SherlockPreferenceActivity  {
         ringPreference.setShowDefault(true);
         ringPreference.setShowSilent(true);
 	    root.addPreference(ringPreference); 
-
+        
+	    /*
+	    prefScreen = prefManager.createPreferenceScreen(this);
+	    prefScreen.setKey("towernotifications");
+	    prefScreen.setTitle(getString(R.string.tower_attack_notifications));
+	    prefScreen.setSummary(getString(R.string.tower_attack_notifications_info));
+	    prefScreen.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference arg0) {
+				if (android.os.Build.VERSION.SDK_INT > 7) {
+					accounts = accountManager.getAccountsByType(context.getString(R.string.account_type));
+	
+					if (accounts.length > 0) {
+			    		new GetTowersites().execute();
+			        } else {
+			        	accountManager.addAccount(context.getString(R.string.account_type), null, null, null, Preferences.this, null, null);
+			        }
+				} else {
+					Logging.toast(context, getString(R.string.unsupported_version));
+				}
+		        
+				return false;
+			}
+	    });
+	    root.addPreference(prefScreen); 
+		*/
         
 	    // Friends
 	    prefCat = new PreferenceCategory(this);
@@ -334,7 +420,8 @@ public class Preferences extends SherlockPreferenceActivity  {
         CheckBoxPreference checkboxOnlineOnly = new CheckBoxPreference(this);
         checkboxOnlineOnly.setKey("showOnlyOnline");
         checkboxOnlineOnly.setTitle(getString(R.string.show_only_online));
-        checkboxOnlineOnly.setSummary(getString(R.string.show_only_online_info));
+        checkboxOnlineOnly.setSummaryOn(R.string.show_only_online_info_on);
+        checkboxOnlineOnly.setSummaryOff(R.string.show_only_online_info_off);
         checkboxOnlineOnly.setDefaultValue(false);
         root.addPreference(checkboxOnlineOnly);
 
@@ -344,19 +431,20 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    prefCat.setTitle(getString(R.string.market_monitor));
         root.addPreference(prefCat);
         
+        CheckBoxPreference checkboxMarketAutoUpdate = new CheckBoxPreference(this);
+        checkboxMarketAutoUpdate.setKey("marketautoupdate");
+        checkboxMarketAutoUpdate.setTitle(getString(R.string.market_autoupdate));
+        checkboxMarketAutoUpdate.setSummaryOn(R.string.market_autoupdate_info_on);
+        checkboxMarketAutoUpdate.setSummaryOff(R.string.market_autoupdate_info_off);
+        checkboxMarketAutoUpdate.setDefaultValue(true);
+        root.addPreference(checkboxMarketAutoUpdate);
+        
         EditTextPreference interval = new EditTextPreference(this);
         interval.setKey("marketinterval");
         interval.setTitle(getString(R.string.market_interval));
         interval.setSummary(getString(R.string.market_interval_info));
-        interval.setDefaultValue("5");
+        interval.setDefaultValue(Market.MARKET_INTERVAL);
         root.addPreference(interval);
-        
-        CheckBoxPreference autoupdate = new CheckBoxPreference(this);
-        autoupdate.setKey("marketautoupdate");
-        autoupdate.setTitle(getString(R.string.market_autoupdate));
-        autoupdate.setSummary(getString(R.string.market_autoupdate_info));
-        autoupdate.setDefaultValue(true);
-        root.addPreference(autoupdate);
         
         
 	    // Other settings
@@ -364,36 +452,34 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    prefCat.setTitle(getString(R.string.other_settings));
         root.addPreference(prefCat);
 
+        CheckBoxPreference checkboxKeepScreenOn = new CheckBoxPreference(this);
+        checkboxKeepScreenOn.setKey("keepScreenOn");
+        checkboxKeepScreenOn.setTitle(getString(R.string.keep_screen_on));
+        checkboxKeepScreenOn.setSummaryOn(R.string.keep_screen_on_info_on);
+        checkboxKeepScreenOn.setSummaryOff(R.string.keep_screen_on_info_off);
+        checkboxKeepScreenOn.setDefaultValue(false);
+        root.addPreference(checkboxKeepScreenOn);
+
         CheckBoxPreference checkboxDebugOutput = new CheckBoxPreference(this);
         checkboxDebugOutput.setKey("enableDebug");
         checkboxDebugOutput.setTitle(getString(R.string.enable_debug_output));
-        checkboxDebugOutput.setSummary(getString(R.string.enable_debug_output_info));
+        checkboxDebugOutput.setSummaryOn(R.string.enable_debug_output_info_on);
+        checkboxDebugOutput.setSummaryOff(R.string.enable_debug_output_info_off);
         checkboxDebugOutput.setDefaultValue(false);
         root.addPreference(checkboxDebugOutput);
 
-        CheckBoxPreference checkboxSortLoginCharacters = new CheckBoxPreference(this);
-        checkboxSortLoginCharacters.setKey("sortLoginCharacters");
-        checkboxSortLoginCharacters.setTitle(getString(R.string.sort_login_characters));
-        checkboxSortLoginCharacters.setSummary(getString(R.string.sort_login_characters_info));
-        checkboxSortLoginCharacters.setDefaultValue(false);
-        root.addPreference(checkboxSortLoginCharacters);
-
-        CheckBoxPreference checkboxEnableAnimations = new CheckBoxPreference(this);
-        checkboxEnableAnimations.setKey("enableAnimations");
-        checkboxEnableAnimations.setTitle(getString(R.string.enable_animations));
-        checkboxEnableAnimations.setSummary(getString(R.string.enable_animations_info));
-        checkboxEnableAnimations.setDefaultValue(true);
-        root.addPreference(checkboxEnableAnimations);
-       
+        
 	    return root;
 	}
+	
+	private ProgressDialog loader;
 	
 	private ServiceConnection serviceConnection = new ServiceConnection() {
 	    public void onServiceConnected(ComponentName className, IBinder ibinder) {
 	        service = new Messenger(ibinder);
 
 	        try {
-	            Message message = Message.obtain(null, ServiceTools.MESSAGE_CLIENT_REGISTER);
+	            Message message = Message.obtain(null, Statics.MESSAGE_CLIENT_REGISTER);
 	            message.replyTo = messenger;
 	            service.send(message);
 	        } catch (RemoteException e) {
@@ -420,7 +506,7 @@ public class Preferences extends SherlockPreferenceActivity  {
 		if (serviceIsBound) {
 	        if (service != null) {
 	            try {
-	                Message msg = Message.obtain(null, ServiceTools.MESSAGE_CLIENT_UNREGISTER);
+	                Message msg = Message.obtain(null, Statics.MESSAGE_CLIENT_UNREGISTER);
 	                msg.replyTo = messenger;
 	                service.send(msg);
 	            } catch (RemoteException e) {
@@ -444,12 +530,12 @@ public class Preferences extends SherlockPreferenceActivity  {
 				SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
 				SharedPreferences.Editor editor = settings.edit();
 				
-				editor.putInt("color_app", COLOR_ORG_APP);
-				editor.putInt("color_system", COLOR_ORG_SYS);
-				editor.putInt("color_tell", COLOR_ORG_PRV);
-				editor.putInt("color_group", COLOR_ORG_GRP);
-				editor.putInt("color_org", COLOR_ORG_ORG);
-				editor.putInt("color_frn", COLOR_ORG_FRN);
+				editor.putInt("color_app", Statics.COLOR_ORG_APP);
+				editor.putInt("color_system", Statics.COLOR_ORG_SYS);
+				editor.putInt("color_tell", Statics.COLOR_ORG_PRV);
+				editor.putInt("color_group", Statics.COLOR_ORG_GRP);
+				editor.putInt("color_org", Statics.COLOR_ORG_ORG);
+				editor.putInt("color_frn", Statics.COLOR_ORG_FRN);
 				
 				editor.commit();
 				finish();
@@ -473,7 +559,7 @@ public class Preferences extends SherlockPreferenceActivity  {
 					EditText name = (EditText) layout.findViewById(R.id.username);
 					
 			    	if (name.getText().toString().length() > 0) {
-						Message msg = Message.obtain(null, ServiceTools.MESSAGE_FRIEND_ADD);
+						Message msg = Message.obtain(null, Statics.MESSAGE_FRIEND_ADD);
 				        msg.replyTo = messenger;
 				        msg.obj = NameFormat.format(name.getText().toString().trim());
 				        
@@ -504,7 +590,7 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    	new AlertDialog.Builder(this)
 	    	.setTitle(getString(R.string.remove_friend))
 	    	
-			.setAdapter(new FriendAdapter(context, R.id.friendlist, tempList), new DialogInterface.OnClickListener() {
+			.setAdapter(new FriendAdapter(context, R.id.friendlist, tempList, false), new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 	    	    	final String fname = NameFormat.format(tempList.get(which).getName().toString());
@@ -516,7 +602,7 @@ public class Preferences extends SherlockPreferenceActivity  {
 	    	    		            
 	    	    	acceptRemoveDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.ok), new DialogInterface.OnClickListener() {
 	    				public void onClick(DialogInterface dialog, int which) {
-	    			    	Message msg = Message.obtain(null, ServiceTools.MESSAGE_FRIEND_REMOVE);
+	    			    	Message msg = Message.obtain(null, Statics.MESSAGE_FRIEND_REMOVE);
 	    			        msg.replyTo = messenger;
 	    			        msg.obj = fname;
 	    			        
@@ -546,7 +632,212 @@ public class Preferences extends SherlockPreferenceActivity  {
     		Logging.toast(context, getString(R.string.not_connected));
     	}
 	}
+	
+    private List<TowerSite> towerSites = new ArrayList<TowerSite>();
+
+    public class GetTowersites extends AsyncTask<Void, Void, String> {
+        @Override    
+        protected void onPreExecute() {
+    		loader.setMessage("Loading tower sites..");
+    		loader.show();
+        }
+
+        @Override 
+		protected void onPostExecute(String result) {
+	    	 handleTowersites();
+	     }
+
+		@Override
+		protected String doInBackground(Void... params) {
+	    	/** TODO
+	    	 * Load sites from own server instead of Demoders.
+	    	 * Include boolean to show if site is selected for current account
+	    	 */
+			towerSites.clear();
+	    	
+			HttpClient httpclient;
+	    	HttpGet httpget;
+	        
+	    	HttpResponse response;
+	    	HttpEntity entity;
+	    	InputStream is;
+	    	BufferedReader reader;
+	    	StringBuilder sb;
+	    	String line;
+	    	String resultData;
+	    	
+	    	JSONArray jArray;
+	    	JSONObject json_data;
+	    	
+	    	try{
+	    		httpclient = new DefaultHttpClient();
+		        httpget = new HttpGet(String.format(Statics.TOWER_WARS_SITES, PreferenceManager.getDefaultSharedPreferences(context).getString("server", "1")));
+		        	        
+		        response = httpclient.execute(httpget);
+		        entity = response.getEntity();
+		        is = entity.getContent();
+		        
+		    	try{
+		    		reader = new BufferedReader(new InputStreamReader(is, "iso-8859-1"), 8);
+	    	        sb = new StringBuilder();
+	    	        line = null;
+	    	        
+	    	        while ((line = reader.readLine()) != null) {
+	    	        	sb.append(line + "\n");
+	    	        }
+	    	        
+	    	        is.close();
+	    	 
+	    	        resultData = sb.toString();
+		    	} catch(Exception e){
+		    	    Logging.log(APP_TAG, "Error converting result " + e.toString());
+		    	    resultData = null;
+		    	}
+	    	} catch(Exception e){
+	    		Logging.log(APP_TAG, "Error in http connection " + e.toString());
+	    		resultData = null;
+	    	}
+
+	    	try{
+	    		if(resultData != null) {
+		    		if((!resultData.startsWith("null"))) {
+		    			jArray = new JSONArray(resultData);
+		    				    			
+		    	        for(int i = 0; i < jArray.length(); i++){
+		    	        	json_data = jArray.getJSONObject(i);
+		    	        	
+		    	        	towerSites.add(new TowerSite(
+		                		json_data.getInt("site_id"),
+		                		json_data.getInt("zone_id"),
+		                		json_data.getString("zone_name"),
+		                		json_data.getString("faction_name"),
+		                		json_data.getString("site_name"),
+		                		json_data.getInt("site_minlvl"),
+		                		json_data.getInt("site_maxlvl"),
+		                		json_data.getLong("lastresult"),
+		                		false,
+		                		0,
+		                		0
+			                ));
+
+		    	        }
+		    		}
+	    		}
+	    	} catch(JSONException e){
+	    		Logging.log(APP_TAG, "Error parsing data " + e.toString());
+	    	}
+	    	
+	    	Collections.sort(towerSites, new TowerSite.SitenameComparator());
+	        
+			return null;
+		}
+	};
+	
+	private void handleTowersites() {
+    	if (loader != null) {
+    		loader.dismiss();
+    	}
 		
+    	if (towerSites != null && towerSites.size() > 0) {
+	    	final CharSequence[] sites = new CharSequence[towerSites.size()];
+	        final boolean[] values = new boolean[towerSites.size()];
+	        
+	        for (int i = 0; i < towerSites.size(); i++) {
+	        	sites[i] = towerSites.get(i).getSitename();
+	        	values[i] = towerSites.get(i).getNotify();
+		        Logging.log(APP_TAG, "Adding row: " + towerSites.get(i).getSitename());
+	        }
+	
+	        Logging.log(APP_TAG, "Creating alert");
+	        
+	        new AlertDialog.Builder(this)
+	        .setTitle("Select sites")
+	        
+	        .setMultiChoiceItems(sites, values, new OnMultiChoiceClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+					Logging.log(APP_TAG, "marking " + towerSites.get(which).getSitename());
+					towerSites.get(which).setNotify(isChecked);
+				}
+			})
+	        
+	        .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+	            public void onClick(DialogInterface dialog, int whichButton) {
+	                new SaveTowersites().execute();
+	            }
+	        })
+	        
+	        .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+	            public void onClick(DialogInterface dialog, int whichButton) {
+	            }
+	        })
+	        
+	        .create().show();
+    	} else {
+    		Logging.toast(this, "Unable to load sites");
+    	}
+	}
+	
+	public class SaveTowersites extends AsyncTask<Void, Void, String> {
+        @Override    
+        protected void onPreExecute() {
+    		loader.setMessage("Saving tower sites..");
+    		loader.show();
+        }
+        
+        @Override 
+		protected void onPostExecute(String result) {
+	    	 saveTowersites();
+	     }
+
+		@Override
+		protected String doInBackground(Void... params) {
+			/** TODO
+			 * Save selected sites
+			 */
+			JSONObject json = new JSONObject();
+			
+			if (accounts.length > 0) {
+				try {
+					json.put("gcmid", AOTalk.getGCMRegistrationId());
+					json.put("userid", accounts[0].name);
+					json.put("pword", accountManager.getPassword(accounts[0]));
+					
+					JSONObject jsonsites = new JSONObject();
+					
+					for (TowerSite s : towerSites) {
+						if (s.getNotify()) {
+							jsonsites.put("siteid", String.valueOf(s.getId()));
+						}
+					}
+					
+					json.put("sites", jsonsites);
+				} catch (JSONException e) {
+					Logging.log(APP_TAG, e.getMessage());
+				}
+			}
+			
+			try {
+				Logging.log(APP_TAG, json.toString(1));
+			} catch (JSONException e) {
+				Logging.log(APP_TAG, e.getMessage());
+			}
+
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			return null;
+		}
+	}
+	
+	public void saveTowersites() {
+		if (loader != null) {
+			loader.dismiss();
+		}
+	}
+	
     private void handleChannels() {   	
     	if (channelList.size() > 0) {
 	    	final List<Channel> tempList = new ArrayList<Channel>();
@@ -576,7 +867,7 @@ public class Preferences extends SherlockPreferenceActivity  {
 	        
 	        .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
 	            public void onClick(DialogInterface dialog, int whichButton) {
-			    	Message msg = Message.obtain(null, ServiceTools.MESSAGE_MUTED_CHANNELS);
+			    	Message msg = Message.obtain(null, Statics.MESSAGE_MUTED_CHANNELS);
 			        msg.replyTo = messenger;
 			        msg.obj = tempList;
 			        

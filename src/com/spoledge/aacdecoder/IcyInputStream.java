@@ -19,19 +19,18 @@
 */
 package com.spoledge.aacdecoder;
 
-import android.util.Log;
-
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
+import com.rubika.aotalk.util.Logging;
 
 
 /**
  * This is an InputStream which allows to fetch Icecast/Shoutcast metadata from.
  */
 public class IcyInputStream extends FilterInputStream {
-
-    private static final String LOG = "IcyInputStream";
+	private static final String APP_TAG = "--> The Leet ::IcyInputStream";
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -140,7 +139,8 @@ public class IcyInputStream extends FilterInputStream {
         if (mbuffer.length < size) {
             mbuffer = null;
             mbuffer = new byte[ size ];
-            Log.d( LOG, "Enlarged metadata buffer to " + size + " bytes");
+
+            Logging.log(APP_TAG, "Enlarged metadata buffer to " + size + " bytes");
         }
 
         size = readFully( mbuffer, 0, size );
@@ -159,11 +159,11 @@ public class IcyInputStream extends FilterInputStream {
             s = new String( mbuffer, 0, size, "UTF-8" );
         }
         catch (Exception e) {
-            Log.e( LOG, "Cannot convert bytes to String" );
+            Logging.log(APP_TAG, "Cannot convert bytes to String");
             return;
         }
 
-        Log.d( LOG, "Metadata string: " + s );
+        Logging.log(APP_TAG, "Metadata string: " + s);
 
         parseMetadata( s );
     }

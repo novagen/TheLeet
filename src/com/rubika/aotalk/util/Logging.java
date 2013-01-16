@@ -1,6 +1,6 @@
 package com.rubika.aotalk.util;
 
-import com.rubika.aotalk.AOTalk;
+import com.rubika.aotalk.TheLeet;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -10,8 +10,8 @@ import android.widget.Toast;
 
 public class Logging {
 	public static void log(String tag, String message) {
-		if (AOTalk.getContext() != null) {
-			SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(AOTalk.getContext());
+		if (TheLeet.getContext() != null) {
+			SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(TheLeet.getContext());
 			
 			if (settings.getBoolean("enableDebug", false)) {
 				Log.d(tag, "--------------------\n" + message + "\n--------------------");

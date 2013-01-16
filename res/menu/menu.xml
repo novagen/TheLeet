@@ -7,9 +7,15 @@
     android:showAsAction="ifRoom"
     />
     <item
-    android:id="@+id/lookup"
-    android:icon="@drawable/ic_menu_search"
-    android:title="@string/whois" 
+    android:id="@+id/aou"
+    android:icon="@drawable/ic_menu_compass"
+    android:title="@string/ao_universe" 
+    android:showAsAction="never"
+    />
+    <item
+    android:id="@+id/atlas"
+    android:icon="@drawable/ic_menu_mylocation"
+    android:title="@string/map" 
     android:showAsAction="never"
     />
     <item
@@ -19,15 +25,15 @@
     android:showAsAction="never"
     />
     <item
-    android:id="@+id/aou"
-    android:icon="@drawable/ic_menu_compass"
-    android:title="@string/ao_universe" 
-    android:showAsAction="never"
-    />
-    <item
     android:id="@+id/aorb"
     android:icon="@drawable/ic_menu_star"
     android:title="@string/recipebook" 
+    android:showAsAction="never"
+    />
+    <item
+    android:id="@+id/tower"
+    android:icon="@drawable/ic_menu_star"
+    android:title="@string/towerwars" 
     android:showAsAction="never"
     />
     <item

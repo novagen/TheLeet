@@ -33,13 +33,13 @@ public class Help extends SherlockActivity {
         setContentView(R.layout.activity_help);
         
         final ActionBar bar = getSupportActionBar();
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.actionbar_background));
+		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
                 
         WebView webView = (WebView) findViewById(R.id.webview);
         webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
-        webView.setBackgroundColor(R.color.actbg);
+        webView.setBackgroundColor(getResources().getColor(R.color.actbg));
         
         String url = "http://109.74.0.178/help.html";
         webView.loadUrl(url);

@@ -32,7 +32,11 @@ package ao.protocol;
  */
 public class ClientStateException extends RuntimeException {
     
-    private final Client.ClientState m_currentState, m_requiredState;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 6059884402181039389L;
+	private final Client.ClientState m_currentState, m_requiredState;
     
     /** 
      * Creates a new instance of AOBotStateException. 

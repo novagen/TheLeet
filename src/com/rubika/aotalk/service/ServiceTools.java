@@ -1,16 +1,15 @@
 package com.rubika.aotalk.service;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,140 +32,78 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import com.rubika.aotalk.AOTalk;
 import com.rubika.aotalk.R;
+import com.rubika.aotalk.util.ImageCache;
+import com.rubika.aotalk.util.ImageTools;
 import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.Statics;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
 public class ServiceTools {
-	private static final String APP_TAG = "--> AnarchyTalk::ServiceTools";
-	
-	public static final String BASE_CHAR_URL = "http://people.anarchy-online.com/character/bio/d/%d/name/%s/bio.xml";
+	private static final String APP_TAG = "--> The Leet ::ServiceTools";
 
-	public static final String BOTNAME = "Anarchytalk";
-	public static final String WHOIS_MESSAGE = "!aotalk_whois %s";
-	public static final String WHOIS_START = "<font color=#DEDE42><font color=#DEDE42><a href=\"text://";
-	public static final String WHOIS_END   = "\">Details</a></font></font>";
-	
-	public static final String HTML_START = 
-		"<html><head></head><style type=\"text/css\">" +
-		"body { background-color:#466C7A; color:#ffffff; font-size:0.9em; overflow:hidden; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }" +
-		"a { color:#9FBCFF; }" +
-		".item { float:right; }" +
-		"hr { height:0px; overflow:hidden; border-bottom:1px solid #2b4751; }" + 
-		"img { box-shadow: 0px 2px 7px 0px rgba(0, 0, 0, 0.3); border:1px solid #222222; padding:1px; background-color:#FFFFFF; }" +
-		".icon { margin:0 5px 0 0; position:relative; top:-2px; vertical-align:middle; }" +
-		".item { background-color:#FFFFFF; }" +
-		"</style><body>";
-	public static final String HTML_END   = "<div style=\"clear:both;\"></div></body></html>";
-	
-	public static final String PREFIX_PRIVATE_GROUP = "PG: ";
-	
-	// From client
-	public static final int MESSAGE_CONNECT = 0;
-	public static final int MESSAGE_CHARACTER = 2;
-	public static final int MESSAGE_DISCONNECT = 3;
-	public static final int MESSAGE_CLIENT_REGISTER = 4;
-	public static final int MESSAGE_CLIENT_UNREGISTER = 5;
-	public static final int MESSAGE_STATUS = 20;
-	public static final int MESSAGE_SEND = 24;
-	public static final int MESSAGE_SET_CHANNEL = 25;
-	public static final int MESSAGE_SET_CHARACTER = 26;
-	public static final int MESSAGE_SET_SHOW = 28;
-	public static final int MESSAGE_FRIEND_ADD = 30;
-	public static final int MESSAGE_FRIEND_REMOVE = 29;
-	public static final int MESSAGE_MUTED_CHANNELS = 36;
-	public static final int MESSAGE_PRIVATE_CHANNEL_JOIN = 38;
-	public static final int MESSAGE_PRIVATE_CHANNEL_DENY = 39;
-	
-	// To client
-	public static final int MESSAGE_CLIENT_ERROR = 7;
-	public static final int MESSAGE_STARTED = 11;
-	public static final int MESSAGE_CONNECTION_ERROR = 6;
-	public static final int MESSAGE_DISCONNECTED = 13;
-	public static final int MESSAGE_CHARACTERS = 14;
-	public static final int MESSAGE_LOGIN_ERROR = 15;
-	public static final int MESSAGE_FRIEND = 16;
-	public static final int MESSAGE_UPDATE = 18;
-	public static final int MESSAGE_IS_CONNECTED = 21;
-	public static final int MESSAGE_IS_DISCONNECTED = 19;
-	public static final int MESSAGE_REGISTERED = 22;
-	public static final int MESSAGE_CHANNEL = 23;
-	public static final int MESSAGE_WHOIS = 27;
-	public static final int MESSAGE_PRIVATE_CHANNEL = 37;
-	public static final int MESSAGE_PRIVATE_CHANNEL_INVITATION = 40;
-	
-	// Player messages
-	public static final int MESSAGE_PLAYER_ERROR = 31;
-	public static final int MESSAGE_PLAYER_STARTED = 32;
-	public static final int MESSAGE_PLAYER_STOPPED = 33;
-	public static final int MESSAGE_PLAYER_PLAY = 34;
-	public static final int MESSAGE_PLAYER_STOP = 35;
-	public static final int MESSAGE_PLAYER_TRACK = 41;
-	
-	// Channel types
-	public static final String CHANNEL_MAIN = "main";
-	public static final String CHANNEL_PM = "pm";
-	public static final String CHANNEL_SYSTEM = "sys";
-	public static final String CHANNEL_PRIVATE = "priv";
-	public static final String CHANNEL_FRIEND = "frnd";
-	public static final String CHANNEL_APPLICATION = "app";
-	
-	public static final List<String> channelsDisabled = Arrays.asList(
-			"Tower Battle Outcome", "Tour Announcements", "IRRK News Wire", "Org Msg", "All Towers"
-		);
-
-	public static Bitmap getUserImage(String dataurl, Context context) {
-		Logging.log("ServiceTools", "Character url: " + dataurl);
-		
+	public static Bitmap getUserImage(int serverId, String charName, Context context) {
+		String dataurl = String.format(Statics.BASE_CHAR_URL, serverId, charName);
 		Bitmap currentUserImage = null;
+		
+		Logging.log(APP_TAG, "Character url: " + dataurl);
 		
 		HttpClient client = new DefaultHttpClient();
 		HttpConnectionParams.setConnectionTimeout(client.getParams(), 0);
 		HttpResponse response = null;
 
-		String imagepath = null;
+		String imageName = null;
 		
-		try {
-			HttpGet get = new HttpGet(dataurl);
-			response = client.execute(get);
-		} catch (Exception e) {
-			Logging.log(APP_TAG, e.getMessage());
+		if (charName != null && ClientService.databaseHandler != null) {
+			imageName = ClientService.databaseHandler.getCharacterImage(charName, serverId);
 		}
-
-		if (response != null) {
-			InputStream in;
-
+		
+		if (imageName == null) {
 			try {
-				in = response.getEntity().getContent();
-				String result = convertStreamToString(in);
-
-				if (result != null) {
-					Pattern pattern = Pattern.compile("<pictureurl>(.*?)</pictureurl>");
-			        Matcher matcher = pattern.matcher(result);
-			        
-			        while(matcher.find()) {
-			        	imagepath = matcher.group(1).replace("www.", "people.").trim();
-			    		Logging.log("ServiceTools", "Image path: " + imagepath);
-			        }
-				}
-			} catch (IllegalStateException e) {
-				Logging.log(APP_TAG, e.getMessage());
-			} catch (IOException e) {
+				HttpGet get = new HttpGet(dataurl);
+				response = client.execute(get);
+			} catch (Exception e) {
 				Logging.log(APP_TAG, e.getMessage());
 			}
+	
+			if (response != null) {
+				InputStream in;
+	
+				try {
+					in = response.getEntity().getContent();
+					String result = convertStreamToString(in);
+	
+					if (result != null) {
+						Pattern pattern = Pattern.compile("<pictureurl>(.*?)</pictureurl>");
+				        Matcher matcher = pattern.matcher(result);
+				        
+				        while(matcher.find()) {
+				        	imageName = matcher.group(1).replace("http://www.anarchy-online.com/character/photos/", "").trim();
+				    		Logging.log(APP_TAG, "Image path: " + imageName);
+				        }
+					}
+				} catch (IllegalStateException e) {
+					Logging.log(APP_TAG, e.getMessage());
+				} catch (IOException e) {
+					Logging.log(APP_TAG, e.getMessage());
+				}
+			}
 		}
-
-		if (imagepath != null) {
-			currentUserImage = cropImage(
-				resizeImage(
-					downloadImage(context, imagepath), 
+		
+		File cacheDir = ImageCache.getCacheDirectory(ClientService.getContext().getPackageName(), "photos");
+		
+		if (imageName != null) {
+			ClientService.databaseHandler.addCharacterData(charName, imageName, serverId);
+			
+			currentUserImage = ImageTools.cropImage(
+				ImageTools.resizeImage(
+					ImageCache.getImage(ClientService.getContext(), imageName, "http://people.anarchy-online.com/character/photos/", cacheDir, Bitmap.CompressFormat.JPEG),
 					(int)Math.round(context.getResources().getDimensionPixelSize(android.R.dimen.notification_large_icon_height) * 1.5), 
 					context.getResources().getDimensionPixelSize(android.R.dimen.notification_large_icon_width)
 				), 
@@ -208,8 +145,24 @@ public class ServiceTools {
 		return sb.toString();
 	}
 	
+	public static String getUserImageName(Context context, String name, int server) {
+		String path = null;
+		
+		path = AOTalk.databaseHandler.getCharacterImage(name, server);
+		
+		if (path == null || path.equals("0")) {
+			List<String> userData = ServiceTools.getUserData(context, name, server);
+			
+    		if (userData != null && !userData.isEmpty() && userData.get(2) != null) {
+	    		path = userData.get(2);
+    		}
+		}
+		
+		return path;
+	}
+	
 	public static List<String> getUserData(Context context, String username, int server) {
-		String dataurl = String.format(BASE_CHAR_URL, server, username);
+		String dataurl = String.format(Locale.US, Statics.BASE_CHAR_URL, server, username);
 		String charInfo = "";
 		String charName = "";
 		
@@ -233,7 +186,7 @@ public class ServiceTools {
 			Logging.log(APP_TAG, e.getMessage());
         }
         
-        if (xml != null) {
+        if (xml != null && !xml.startsWith("<html>")) {
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             
             try {
@@ -266,12 +219,15 @@ public class ServiceTools {
         String organization_name = "";
         String rank = "";
         
+        String imageName = null;
+        
         if (doc != null) {
         	Pattern pattern = Pattern.compile("<pictureurl>(.*?)</pictureurl>");
 	        Matcher matcher = pattern.matcher(xml);
 	        
 	        while(matcher.find()) {
 	        	charInfo += "<img src=\"" + matcher.group(1).replace("www.", "people.") + "\" style=\"float:right; margin:0 0 0 5px;\" />";
+	        	imageName = matcher.group(1).replace("http://www.anarchy-online.com/character/photos/", "").trim();
 	        }
 
 	        NodeList nl = doc.getElementsByTagName("name");
@@ -399,89 +355,17 @@ public class ServiceTools {
 		charData.add(charName);
 		charData.add(charInfo);
 		
+		if (imageName == null) {
+			imageName = "0";
+		} else {
+			Logging.log(APP_TAG, "found image name: " + imageName);
+			ClientService.databaseHandler.addCharacterData(username, imageName, server);
+		}
+		
+		charData.add(imageName);
+		
 		return charData;
 	}
-	
-	public static Bitmap cropImage(Bitmap bitmap, Context context) {
-		Logging.log(APP_TAG, "cropImage");
-		
-	    if (bitmap != null) {
-	    	if (bitmap.getWidth() > 0 && bitmap.getHeight() > 0 && bitmap.getHeight() > bitmap.getWidth()) {
-		    	int startY = 0;
-		    	
-		    	if (bitmap.getHeight() - bitmap.getWidth()  > 1) {
-		    		startY = Math.round((bitmap.getHeight() - bitmap.getWidth()) / 2);
-		    	}
-		    	
-		    	if (startY + bitmap.getWidth() > bitmap.getHeight()) {
-		    		startY = 0;
-		    	}
-		    	
-		    	Logging.log(APP_TAG, "startY: " + startY + ", w: " + bitmap.getWidth() + ", h: " + bitmap.getHeight());
-	    		
-	    		bitmap = Bitmap.createBitmap(
-		    			bitmap, 
-		    			0, 
-		    			startY, 
-		    			bitmap.getWidth(),
-		    			bitmap.getWidth()
-		    		);
-	    	}
-	    	
-	    	return bitmap;
-	    } else {
-	    	return null;
-	    }
-	}
-	
-	
-	public static Bitmap resizeImage(Bitmap bitmap, int height, int width) {
-		Logging.log(APP_TAG, "resizeImage");
-
-		if (bitmap != null) {
-	    	if (bitmap.getWidth() > 0 && bitmap.getHeight() > 0) {
-				int currentWidth = bitmap.getWidth();
-				int currentHeight = bitmap.getHeight();
-		
-				float scaleWidth = ((float) width) / currentWidth;
-				float scaleHeight = ((float) height) / currentHeight;
-				
-				if (width > currentWidth || height > currentHeight) {
-					scaleWidth = 1;
-					scaleHeight = 1;
-				}
-		
-				Matrix matrix = new Matrix();
-				matrix.postScale(scaleWidth, scaleHeight);
-		
-				Bitmap resizedBitmap = Bitmap.createBitmap(bitmap, 0, 0, currentWidth, currentHeight, matrix, false);
-				return resizedBitmap;
-	    	} else {
-	    		return null;
-	    	}
-		} else {
-			return null;
-		}
-	}
-	
-	
-	private static Bitmap downloadImage(Context context, String path) {
-		Logging.log(APP_TAG, "downloadImage");
-
-		try {
-			URL url = new URL(path);
-			InputStream is = (InputStream) url.getContent();
-			Drawable d = Drawable.createFromStream(is, "src");
-			return ((BitmapDrawable)d).getBitmap();
-		} catch (MalformedURLException e) {
-			Logging.log(APP_TAG, e.getMessage());
-			return null;
-		} catch (IOException e) {
-			Logging.log(APP_TAG, e.getMessage());
-			return null;
-		}
-	}
-
 	
 	public static boolean isOnline(Context context) {
 	    ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);

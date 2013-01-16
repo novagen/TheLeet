@@ -19,8 +19,7 @@
 */
 package com.spoledge.aacdecoder;
 
-import android.util.Log;
-
+import com.rubika.aotalk.util.Logging;
 
 /**
  * This is the MP3 Stream player class.
@@ -34,8 +33,7 @@ import android.util.Log;
  * </pre>
  */
 public class MP3Player extends AACPlayer {
-
-    private static final String LOG = "MP3Player";
+	private static final String APP_TAG = "--> The Leet ::MP3Player";
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -83,7 +81,7 @@ public class MP3Player extends AACPlayer {
         Decoder ret = Decoder.createByName( name );
 
         if (ret == null) {
-            Log.e( LOG, "Cannot find decoder by name '" + name + "'");
+            Logging.log(APP_TAG, "Cannot find decoder by name '" + name + "'");
             throw new RuntimeException("MP3 Decoder not found");
         }
 

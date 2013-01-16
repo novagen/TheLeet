@@ -3,15 +3,14 @@
 xmlns:android="http://schemas.android.com/apk/res/android"
 android:layout_width="fill_parent"
 android:layout_height="fill_parent"
-android:background="@drawable/fragment_background"
 >
 	<RelativeLayout
 	android:id="@+id/inputbar"
 	android:layout_width="fill_parent"
-	android:layout_height="45dp"
+	android:layout_height="45sp"
     android:layout_alignParentBottom="true"
-    android:background="@color/inputbg"
-    android:padding="2dp"
+    android:background="@drawable/footbg"
+    android:padding="2sp"
 	>
 		<ImageButton 
 		android:id="@+id/add_friend"
@@ -23,7 +22,7 @@ android:background="@drawable/fragment_background"
 		android:contentDescription="@string/set_channel"
 		android:layout_centerVertical="true"
 		android:gravity="center"
-    	android:padding="2dp"
+    	android:padding="2sp"
 		/>
 		<EditText 
 		android:id="@+id/input"

@@ -1,26 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout 
+<RelativeLayout 
 xmlns:android="http://schemas.android.com/apk/res/android"
 android:id="@+id/messagepost"
-android:orientation="vertical"
 android:layout_width="fill_parent"
 android:layout_height="wrap_content"
+android:background="@drawable/listbg"
 >
-	<TextView 
+    <LinearLayout
+    android:id="@+id/iconholder"
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content" 
+	android:background="@drawable/photobg"
+	android:layout_marginLeft="5sp"
+	android:layout_marginTop="5sp"
+	android:layout_marginRight="0sp"
+	android:layout_marginBottom="5sp"
+	android:layout_alignParentLeft="true"
+    >
+	    <ImageView 
+	    android:id="@+id/icon"
+	    android:layout_width="32sp"
+	    android:layout_height="48sp" 
+		android:adjustViewBounds="true"
+		android:contentDescription="@string/content_description_photo"
+	    />
+    </LinearLayout>
+   	<LinearLayout
+    android:id="@+id/iconholder2"
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content" 
+	android:background="@drawable/photobg"
+	android:layout_marginLeft="0sp"
+	android:layout_marginTop="5sp"
+	android:layout_marginRight="5sp"
+	android:layout_marginBottom="5sp"
+	android:layout_alignParentRight="true"
+    >
+	   	<ImageView 
+	    android:id="@+id/icon2"
+	    android:layout_width="32sp"
+	    android:layout_height="48sp" 
+		android:adjustViewBounds="true"
+		android:contentDescription="@string/content_description_photo"
+	    />
+	</LinearLayout>
+   	<TextView 
 	android:id="@+id/message"
 	android:layout_width="fill_parent"
     android:layout_height="wrap_content"
 	android:textColor="@color/mainwhite"
-	android:lineSpacingExtra="2dip"
+	android:lineSpacingExtra="1dip"
 	android:textColorLink="@color/link"
-	android:background="@drawable/channel_button_background"
-	android:paddingLeft="5dp"
-	android:paddingTop="5dp"
-	android:paddingRight="5dp"
-	android:paddingBottom="5dp"
+	android:textSize="13sp"
 	android:shadowColor="@color/textshadow"
+	android:padding="5sp"
 	android:shadowDx="1"
 	android:shadowDy="1"
 	android:shadowRadius="3"
+	android:gravity="center_vertical"
+	android:layout_toRightOf="@id/iconholder"
+	android:layout_toLeftOf="@id/iconholder2"
     />
-</LinearLayout>
+</RelativeLayout>

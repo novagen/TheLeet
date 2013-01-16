@@ -18,28 +18,36 @@
  */
 package com.rubika.aotalk.adapter;
 
-import java.util.Calendar;
 import java.util.List;
 
 import com.rubika.aotalk.R;
 import com.rubika.aotalk.item.MarketMessage;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.text.Html;
+import android.text.format.DateUtils;
 import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.ScaleAnimation;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 public class MarketMessageAdapter extends BaseAdapter {
     private Context context;
     private List<MarketMessage> listMessages;
+    private boolean animationEnabled;
+	private SharedPreferences settings;
 
-    public MarketMessageAdapter(Context context, List<MarketMessage> listMessages) {
+    public MarketMessageAdapter(Context context, List<MarketMessage> listMessages, boolean enableAnimations) {
         this.context = context;
         this.listMessages = listMessages;
+		animationEnabled = enableAnimations;
+		settings = PreferenceManager.getDefaultSharedPreferences(context);
     }
 
     public int getCount() {
@@ -62,44 +70,26 @@ public class MarketMessageAdapter extends BaseAdapter {
             convertView = inflater.inflate(R.layout.message_market, null);
         }
         
-        String name = entry.getCharacter();
-        String namecolor = "fff";
+        int namecolor = context.getResources().getColor(R.color.mainwhite);
         
         if(entry.getSide() == 1) {
-        	namecolor = "48b4ff";
+        	namecolor = context.getResources().getColor(R.color.omni_blue);
         }
         
         if(entry.getSide() == 2) {
-        	namecolor = "f86868";
+        	namecolor = context.getResources().getColor(R.color.clan_red);
         }
         
         if(entry.getSide() == 3) {
-        	namecolor = "f1f16e";
+        	namecolor = context.getResources().getColor(R.color.neutral_yellow);
         }
         
-        name = "<font color=#" + namecolor + ">" + name + "</font>";
-        
-        //Calendar date = new Calendar(entry.getTimestamp() * 1000);
-        Calendar date = Calendar.getInstance();
-        date.setTimeInMillis(entry.getTimestamp() * 1000);
-        
-        String time_h = "" + date.get(Calendar.HOUR_OF_DAY);
-        String time_m = "" + date.get(Calendar.MINUTE);
-        
-        if(time_h.length() < 2) {
-        	time_h = "0" + time_h;
-        }
-        
-        if(time_m.length() < 2) {
-        	time_m = "0" + time_m;
-        }
-        
-        String time = "<b>[" + time_h + ":" + time_m + "]</b> ";
-        
-        name = time + name;
-               
         TextView from = (TextView) convertView.findViewById(R.id.from);
-        from.setText(Html.fromHtml(name));
+        from.setText(Html.fromHtml(entry.getCharacter()));
+        from.setTextColor(namecolor);
+        
+        TextView stamp = (TextView) convertView.findViewById(R.id.time);
+        stamp.setText(DateUtils.getRelativeTimeSpanString(entry.getTimestamp() * 1000));
         
         TextView message = (TextView) convertView.findViewById(R.id.message);
         message.setText("");
@@ -107,6 +97,18 @@ public class MarketMessageAdapter extends BaseAdapter {
         message.append(Html.fromHtml(entry.getMessage()));
         message.setMovementMethod(LinkMovementMethod.getInstance());
         
-        return convertView;
+		if (entry.showAnimation() && animationEnabled && settings.getBoolean("enableAnimations", true)) {
+	        Animation animation = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF, (float)0.5, Animation.RELATIVE_TO_SELF, (float)1); 
+	        
+			animation.setDuration(200);
+			animation.setFillAfter(true);
+			
+			convertView.setAnimation(animation);
+			convertView.startAnimation(animation);
+			
+			entry.showAnimation(false);
+		}
+
+		return convertView;
     }
 }

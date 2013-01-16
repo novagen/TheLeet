@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AnarchyTalk</string>
+    <string name="app_name">The Leet</string>
 	<string name="username">Username</string>
 	<string name="password">Password</string>
 	<string name="save_account">Save account</string>
+	<string name="account_settings">Account settings</string>
+	<string name="login">Login</string>
+	<string name="profile">Profile</string>
+	<string name="register">Register</string>
 	<string name="login_title">Login</string>
 	<string name="ok">OK</string>
 	<string name="cancel">Cancel</string>
@@ -51,10 +55,14 @@
 	<string name="not_add_yourself">You can not add yourself as a friend</string>
 	<string name="preferences">Settings</string>
     <string name="no_news">Could not find any news</string>
+    <string name="no_items">Could not find any items</string>
     <string name="no_calendar">Could not find any calendar events</string>
     <string name="no_guides">Could not find any guides</string>
     <string name="no_recipes">Could not find any recipes</string>
     <string name="data_load_failed">Failed to load data</string>
+    <string name="find_guides">Find guides</string>
+    <string name="find_recipes">Find recipes</string>
+    <string name="on_web">On Web</string>
     <string name="share">Share</string>
     <string name="search">Search</string>
 	<string name="ao_universe">AO Universe</string>
@@ -67,7 +75,7 @@
 	<string name="about_aotalk">Show help and license information</string>
 	<string name="visual">Visual</string>
 	<string name="fullscreen">Fullscreen</string>
-	<string name="fullscreen_about">Show AnarchyTalk in fullscreen</string>
+	<string name="fullscreen_about">Show The Leet in fullscreen</string>
 	<string name="market_server">Monitor server</string>
 	<string name="market_server_info">Server to monitor market channels on</string>
 	<string name="tower_server">Tower wars server</string>
@@ -75,6 +83,8 @@
 	<string name="map">Atlas</string>
 	<string name="market_autoupdate">Automatic updates</string>
 	<string name="market_autoupdate_info">Get new market data automatically</string>
+	<string name="market_autoupdate_info_on">Get new market data automatically</string>
+	<string name="market_autoupdate_info_off">Don\'t get new market data automatically</string>
 	<string name="market_interval">Update interval</string>
 	<string name="market_interval_info">Time between automatic updates</string>
 	<string name="remove_friend_title" formatted="false">Remove %s</string>
@@ -90,10 +100,16 @@
 	<string name="character_info_org" formatted="false"><Data><![CDATA[<br /><br />%s<br />%s]]></Data></string>
 	<string name="automatic_reconnect">Reconnect automatically</string>
 	<string name="automatic_reconnect_info">Reconnect if the connection is lost</string>
+	<string name="automatic_reconnect_info_on">Reconnecting if the connection is lost</string>
+	<string name="automatic_reconnect_info_off">Don\'t reconnect if the connection is lost</string>
 	<string name="enable_debug_output">Enable debug data</string>
 	<string name="enable_debug_output_info">Print debug data to logcat</string>
+	<string name="enable_debug_output_info_on">Print debug data to logcat</string>
+	<string name="enable_debug_output_info_off">Don\'t print debug data to logcat</string>
 	<string name="sort_login_characters">Sort names at login</string>
 	<string name="sort_login_characters_info">Alphabetically sort your characters when logging in</string>
+	<string name="sort_login_characters_info_on">Characters will be sorted</string>
+	<string name="sort_login_characters_info_off">Characters will not be sorted</string>
 	<string name="whois">Lookup</string>
 	<string name="whois_fallback">Character lookup fallback</string>
 	<string name="whois_fallback_info">Fall back to bot lookup if AO web is unavailable</string>
@@ -102,6 +118,8 @@
 	<string name="notifications">Notifications</string>
 	<string name="enable_notifications">Enable notifications</string>
 	<string name="enable_notifications_info">Show notification when receiving a private message</string>
+	<string name="enable_notifications_info_on">Show notification when receiving a private message</string>
+	<string name="enable_notifications_info_off">Don\'t show notification when receiving a private message</string>
 	<string name="notification_sound">Notification sound</string>
 	<string name="notification_sound_info">Set the sound to play when receiving a private message</string>
 	<string name="not_connected">You are not connected</string>
@@ -110,10 +128,14 @@
 	<string name="app_about">\n\nMade by Novagen (RK1)\nBased on the Java AOChat API by Losobie</string>
 	<string name="brought_to_you_by">\n\nBrought to you by</string>	<string name="show_only_online">Show only online</string>
 	<string name="show_only_online_info">Show only online friends in the friends list</string>
+	<string name="show_only_online_info_on">Only online friends will be shown in the friends list</string>
+	<string name="show_only_online_info_off">All friends will be shown in the friends list</string>
 	<string name="send_private_message">Send private message</string>
 	<string name="play">Play</string>
 	<string name="show_chat_when_online">Switch to chat view</string>
 	<string name="show_chat_when_online_info">Switch to the chat list when online</string>
+	<string name="show_chat_when_online_info_on">Switching to chat automatically</string>
+	<string name="show_chat_when_online_info_off">Will not switch to chat automatically</string>
 	<string name="help">Help</string>
 	<string name="unable_to_load_guide">Unable to load guide</string>
 	<string name="mute_channels">Muted channels</string>
@@ -153,8 +175,10 @@
 	<string name="forum">Forum</string>
 	<string name="other_settings">Other settings</string>
 	<string name="web">Web</string>
-	<string name="hide_titles">Hide titles</string>
+	<string name="hide_titles">Hide pager titles</string>
 	<string name="hide_titles_info">Hide the title bar</string>
+	<string name="hide_titles_info_on">The titles are hidden</string>
+	<string name="hide_titles_info_off">The titles are visible</string>
 	<string name="recipebook">RecipeBook</string>
 	<string name="back">Back</string>
 	<string name="connection">Connection</string>
@@ -162,8 +186,34 @@
 	<string name="media">Media</string>
 	<string name="defender_title">Defender</string>
 	<string name="attacker_title">Attacker</string>
-	<string name="server">Prefered server</string>
-	<string name="server_info">Server used for Market and Tower wars</string>
+	<string name="server">Preferred server</string>
+	<string name="server_info">Server used for Market, Tower wars and character look ups</string>
 	<string name="enable_animations">Enable animations</string>
 	<string name="enable_animations_info">Turn on some funky animations</string>
+	<string name="enable_animations_info_on">Animations are enabled</string>
+	<string name="enable_animations_info_off">Animations are disabled</string>
+	<string name="enable_faces">Enable faces</string>
+	<string name="enable_faces_info">Show faces in messages and friends list</string>
+	<string name="enable_faces_info_on">Faces are enabled in chat and friends list</string>
+	<string name="enable_faces_info_off">Faces are disabled in chat and friends list</string>
+	<string name="select_search">Select what to search for</string>
+	<string name="search_results">Search results</string>
+	<string name="searchinf">Searching</string>
+	<string name="show_timestamps">Enable timestamps</string>
+	<string name="show_timestamps_info">Show timestamps in chat messages</string>
+	<string name="show_timestamps_info_on">Timestamps are enabled</string>
+	<string name="show_timestamps_info_off">Timestamps are disabled</string>
+	<string name="content_description_photo">User image</string>
+	<string name="content_description_aospeak">AOSpeak status</string>
+	<string name="search_not_empty">Search can not be empty</string>
+	<string name="account_mime">vnd.android.cursor.item/vnd.com.rubika.aotalk.profile</string>
+    <string name="account_type">com.rubika.aotalk.account</string>
+    <string name="authenticating">Authenticating</string>
+    <string name="unsupported_version">Your Android version does not support this function.\n\nAndroid 2.2 or higher is required.</string>
+    <string name="tower_attack_notifications">Tower attack watcher</string>
+    <string name="tower_attack_notifications_info">Select tower sites to watch</string>
+    <string name="keep_screen_on">Keep screen on</string>
+    <string name="keep_screen_on_info_on">Screen will remain on</string>
+    <string name="keep_screen_on_info_off">Screen will turn off</string>
+    <string name="account_not_found">Could not access account</string>
 </resources>

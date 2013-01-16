@@ -13,30 +13,22 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.actionbarsherlock.app.SherlockFragment;
-import com.rubika.aotalk.adapter.GridAdapter;
-import com.rubika.aotalk.service.ServiceTools;
 import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.Statics;
 
 public class FragmentTools extends SherlockFragment {
-	private static final String APP_TAG = "--> AnarchyTalk::FragmentTools";
-	private AOTalk activity;
+	private static final String APP_TAG = "--> The Leet ::FragmentTools";
 	private TextView title;
-	private GridAdapter adapter;
 	private ImageButton play;
 	
 	final Handler handler = new Handler();
 	
-	public static FragmentTools newInstance(AOTalk activity, GridAdapter adapter) {
-		FragmentTools f = new FragmentTools(activity, adapter);
+	public static FragmentTools newInstance() {
+		FragmentTools f = new FragmentTools();
         return f;
     }
 	
 	public FragmentTools() {
-	}
-	
-	public FragmentTools(AOTalk activity, GridAdapter adapter) {
-		this.activity = activity;
-		this.adapter = adapter;
 	}
 	
 	@Override
@@ -47,10 +39,6 @@ public class FragmentTools extends SherlockFragment {
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		Logging.log(APP_TAG, "onCreateView");
-		
-		if (activity == null) {
-			getActivity().finish();
-		}
 		
 		if (container == null) {
             return null;
@@ -64,65 +52,56 @@ public class FragmentTools extends SherlockFragment {
 			grid.setLayoutAnimation(null);
 		}
 		
-		grid.setAdapter(adapter);
+		grid.setAdapter(AOTalk.gridAdapter);
 		
 		title = (TextView) fragmentTools.findViewById(R.id.gsptext);
 		play = (ImageButton) fragmentTools.findViewById(R.id.gspplay);
 		
-		
-        if (activity != null) {
-			if (activity.isPlaying) {
-	            play.setImageResource(R.drawable.ic_menu_stop);
-	            
-				if (activity.currentTrack != null) {
-					title.setText(activity.currentTrack);
-				} else {
-					title.setText(getString(R.string.gsp2));
-				}
+		if (AOTalk.isPlaying) {
+            play.setImageResource(R.drawable.ic_menu_stop);
+            
+			if (AOTalk.currentTrack != null) {
+				title.setText(AOTalk.currentTrack);
 			} else {
-				play.setImageResource(R.drawable.ic_menu_play);
 				title.setText(getString(R.string.gsp2));
 			}
-        } else {
-        	Logging.log(APP_TAG, "activity is NULL");
-        }
+		} else {
+			play.setImageResource(R.drawable.ic_menu_play);
+			title.setText(getString(R.string.gsp2));
+		}
 		
 		play.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-                if (activity != null) {
-					if (activity.service != null) {
-	                	if (activity.isPlaying) {
-							Message msg = Message.obtain(null, ServiceTools.MESSAGE_PLAYER_STOP);
-			                msg.replyTo = activity.serviceMessenger;
-			                try {
-			                	activity.service.send(msg);
-							} catch (RemoteException e) {
-								Logging.log(APP_TAG, e.getMessage());
-							}
-	
-			                play.setImageResource(R.drawable.button_play);
-			                activity.isPlaying = false;
-							
-							title.setText(getString(R.string.gsp2));
-	                	} else {
-			                Message msg = Message.obtain(null, ServiceTools.MESSAGE_PLAYER_PLAY);
-			                msg.replyTo = activity.serviceMessenger;
-			                
-			                try {
-			                	activity.service.send(msg);
-							} catch (RemoteException e) {
-								Logging.log(APP_TAG, e.getMessage());
-							}
-							
-							play.setImageResource(R.drawable.button_stop);
-							activity.isPlaying = true;
-	                	}
-	                } else {
-	                	Logging.log(APP_TAG, "service is NULL");
-	                }
+				if (AOTalk.service != null) {
+                	if (AOTalk.isPlaying) {
+						Message msg = Message.obtain(null, Statics.MESSAGE_PLAYER_STOP);
+		                msg.replyTo = AOTalk.serviceMessenger;
+		                try {
+		                	AOTalk.service.send(msg);
+						} catch (RemoteException e) {
+							Logging.log(APP_TAG, e.getMessage());
+						}
+
+		                play.setImageResource(R.drawable.button_play);
+		                AOTalk.isPlaying = false;
+						
+						title.setText(getString(R.string.gsp2));
+                	} else {
+		                Message msg = Message.obtain(null, Statics.MESSAGE_PLAYER_PLAY);
+		                msg.replyTo = AOTalk.serviceMessenger;
+		                
+		                try {
+		                	AOTalk.service.send(msg);
+						} catch (RemoteException e) {
+							Logging.log(APP_TAG, e.getMessage());
+						}
+						
+						play.setImageResource(R.drawable.button_stop);
+						AOTalk.isPlaying = true;
+                	}
                 } else {
-                	Logging.log(APP_TAG, "activity is NULL");
+                	Logging.log(APP_TAG, "service is NULL");
                 }
 			}
 		});
@@ -132,11 +111,13 @@ public class FragmentTools extends SherlockFragment {
 
 	@Override
     public void onActivityCreated(Bundle savedInstanceState) {
-		Logging.log("FragmentChat", "onActivityCreated");
+		Logging.log(APP_TAG, "onActivityCreated");
         super.onActivityCreated(savedInstanceState);
     }
 	
 	public void updateTitle(String text) {
-		title.setText(text);
+		if (text != null && title != null) {
+			title.setText(text);
+		}
 	}
 }

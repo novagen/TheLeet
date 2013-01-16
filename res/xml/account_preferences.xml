@@ -1,0 +1,11 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+	<!-- PreferenceCategory android:title="Push notifications" />
+
+	<CheckBoxPreference
+	    android:key="enable_gcm"
+	    android:defaultValue="true"
+	    android:title="Enable push notifications"
+	    android:summaryOn="Push notifications is on"
+	    android:summaryOff="Push notifications is off"
+	    /-->
+</PreferenceScreen>

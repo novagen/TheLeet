@@ -74,8 +74,11 @@ import android.widget.TextView;
  * Demonstration of the implementation of a custom Loader.
  */
 public class FragmentActivityRecipes extends SherlockFragmentActivity {
-	private static final String APP_TAG = "--> AnarchyTalk::LoaderRecipes";
+	private static final String APP_TAG = "--> The Leet::LoaderRecipes";
 
+	public FragmentActivityRecipes() {
+	}
+	
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -177,7 +180,7 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
         	String xml = null;
             Document doc = null;
             
-	        if (folders == null && adapter.getSearchId() == null) {
+	        if (folders == null && adapter.getSearchId() == null && adapter.getSearchText() == null) {
             	try {
 	                DefaultHttpClient httpClient = new DefaultHttpClient();
 	                HttpGet httpGet = new HttpGet(RecipeBook.RECIPES_CATEGORIES_URL);
@@ -222,6 +225,9 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
                 if (adapter.getSearchId() != null) {
                 	dataUrl = String.format(RecipeBook.RECIPES_BY_ITEM_URL, adapter.getSearchId());
     				Logging.log(APP_TAG, "adapter searchid was set");
+                } else if (adapter.getSearchText() != null) {
+                	dataUrl = String.format(RecipeBook.RECIPES_SEARCH_URL, adapter.getSearchText());
+    				Logging.log(APP_TAG, "adapter searchtext was set");
                 } else {
                 	dataUrl = String.format(RecipeBook.RECIPES_CATEGORY_URL, adapter.getFolder());
     				Logging.log(APP_TAG, "adapter searchid was NOT set");
@@ -389,6 +395,7 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
         private final LayoutInflater mInflater;
         private String folder = "0";
         private String searchId = null;
+        private String searchText = null;
         private boolean animationEnabled;
 
         public ListAdapter(Context context, boolean enableAnimation) {
@@ -413,6 +420,15 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
         public void setSearchId(String id) {
 			Logging.log(APP_TAG, "setSearchId was called with id " + id);
         	searchId = id;
+        }
+        
+        public String getSearchText() {
+        	return searchText;
+        }
+        
+        public void setSearchText(String text) {
+			Logging.log(APP_TAG, "setSearchText was called with id " + text);
+        	searchText = text;
         }
 
         /**
@@ -459,6 +475,7 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
             
             setEmptyText(getString(R.string.no_recipes));
             getListView().setFastScrollEnabled(true);
+            getListView().setDividerHeight(0);
 
             setHasOptionsMenu(true);
 
@@ -468,6 +485,10 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
             	mAdapter.setSearchId(((RecipeBook) getActivity()).searchId);
             }
             
+            if (((RecipeBook) getActivity()).searchText != null) {
+            	mAdapter.setSearchText(((RecipeBook) getActivity()).searchText);
+            }
+            
             setListAdapter(mAdapter);
             setListShown(false);
             
@@ -475,7 +496,7 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
         }
         
         @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        	container.setBackgroundResource(R.drawable.fragment_background);
+        	container.setBackgroundResource(R.drawable.applicationbg);
         	return super.onCreateView(inflater, container, savedInstanceState);
         }
         
