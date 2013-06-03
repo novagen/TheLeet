@@ -19,9 +19,7 @@ package com.rubika.aotalk.recipebook;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -46,14 +44,15 @@ import com.actionbarsherlock.app.SherlockListFragment;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
 import com.rubika.aotalk.R;
+import com.rubika.aotalk.item.Recipe;
 import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.Statics;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.FragmentManager;
@@ -75,73 +74,22 @@ import android.widget.TextView;
  */
 public class FragmentActivityRecipes extends SherlockFragmentActivity {
 	private static final String APP_TAG = "--> The Leet::LoaderRecipes";
-
+	
 	public FragmentActivityRecipes() {
 	}
 	
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+		//super.setTheme(R.style.Theme_AOTalkTheme_Light);
         
         FragmentManager fm = getSupportFragmentManager();
 
         if (fm.findFragmentById(android.R.id.content) == null) {
-        	DataListFragment list = new DataListFragment();
-            fm.beginTransaction().add(android.R.id.content, list).commit();
+            fm.beginTransaction().add(android.R.id.content, DataListFragment.newInstance(null)).commit();
         }
     }
-    
-    public static class DataEntry {
-    	private ListLoader loader;
-    	private String desc;
-    	private String id;
-    	private int type;
-    	private int icon;
-    	
-    	public DataEntry(ListLoader loader, String desc, String id, int icon, int type) {
-    		this.loader = loader;
-    		this.desc = desc;
-    		this.id = id;
-    		this.icon = icon;
-    		this.type = type;
-    	}
-
-        public String getLabel() {
-            return desc;
-        }
-        
-        public Drawable getIcon() {
-        	return loader.getContext().getResources().getDrawable(icon);
-        }
-        
-        public String getID() {
-        	return id;
-        }
-        
-        public ListLoader getLoader() {
-        	return loader;
-        }
-        
-        public int getType() {
-        	return type;
-        }
-        
-        @Override public String toString() {
-            return desc;
-        }
-   }
-    
-    /**
-     * Perform alphabetical comparison of application entry objects.
-     */
-    public static final Comparator<DataEntry> ALPHA_COMPARATOR = new Comparator<DataEntry>() {
-        private final Collator sCollator = Collator.getInstance();
-        @Override
-        public int compare(DataEntry object1, DataEntry object2) {
-            return sCollator.compare(object1.getLabel(), object2.getLabel());
-        }
-    };
-
+	    
     /**
      * Helper for determining if the configuration has changed in an interesting
      * way so we need to rebuild the app list.
@@ -163,8 +111,8 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
     }
 
 
-    public static class ListLoader extends AsyncTaskLoader<List<DataEntry>> {
-        List<DataEntry> dataList;
+    public static class ListLoader extends AsyncTaskLoader<List<Recipe>> {
+        List<Recipe> dataList;
         ListAdapter adapter;
         Document folders = null;
        
@@ -175,20 +123,20 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
             this.adapter = adapter;
         }
     	
-        @Override public List<DataEntry> loadInBackground() {
-	        List<DataEntry> items = new ArrayList<DataEntry>();
+        @Override public List<Recipe> loadInBackground() {
+	        List<Recipe> items = new ArrayList<Recipe>();
         	String xml = null;
             Document doc = null;
             
 	        if (folders == null && adapter.getSearchId() == null && adapter.getSearchText() == null) {
             	try {
 	                DefaultHttpClient httpClient = new DefaultHttpClient();
-	                HttpGet httpGet = new HttpGet(RecipeBook.RECIPES_CATEGORIES_URL);
+	                HttpGet httpGet = new HttpGet(Statics.RECIPES_CATEGORIES_URL);
 	     
 	                HttpResponse httpResponse = httpClient.execute(httpGet);
 	                HttpEntity httpEntity = httpResponse.getEntity();
 	                xml = EntityUtils.toString(httpEntity);
-	            	Logging.log(APP_TAG, RecipeBook.RECIPES_CATEGORIES_URL + "\r" + xml);
+	            	Logging.log(APP_TAG, Statics.RECIPES_CATEGORIES_URL + "\r" + xml);
 	            } catch (UnsupportedEncodingException e) {
 					Logging.log(APP_TAG, e.getMessage());
 	            } catch (ClientProtocolException e) {
@@ -223,13 +171,13 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
                 String dataUrl = "";
                 
                 if (adapter.getSearchId() != null) {
-                	dataUrl = String.format(RecipeBook.RECIPES_BY_ITEM_URL, adapter.getSearchId());
+                	dataUrl = String.format(Statics.RECIPES_BY_ITEM_URL, adapter.getSearchId());
     				Logging.log(APP_TAG, "adapter searchid was set");
                 } else if (adapter.getSearchText() != null) {
-                	dataUrl = String.format(RecipeBook.RECIPES_SEARCH_URL, adapter.getSearchText());
+                	dataUrl = String.format(Statics.RECIPES_SEARCH_URL, adapter.getSearchText());
     				Logging.log(APP_TAG, "adapter searchtext was set");
                 } else {
-                	dataUrl = String.format(RecipeBook.RECIPES_CATEGORY_URL, adapter.getFolder());
+                	dataUrl = String.format(Statics.RECIPES_CATEGORY_URL, adapter.getFolder());
     				Logging.log(APP_TAG, "adapter searchid was NOT set");
                 }
                 
@@ -268,7 +216,7 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
             }
             
             if (!adapter.getFolder().equals("0")) {
-            	items.add(new DataEntry(this, getContext().getString(R.string.back), "0", R.drawable.ic_menu_revert, 2));	            	
+            	items.add(new Recipe(this, getContext().getString(R.string.back), "0", R.drawable.icon_undo, 2));	            	
             }
                         
             if (folders != null && adapter.getFolder().equals("0")) {
@@ -280,7 +228,7 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
 	                String title = Html.fromHtml(getValue(e, "category_name")).toString();
 	                String id = getValue(e, "category_id");
 	                
-	                DataEntry entry = new DataEntry(this, title, id, R.drawable.ic_menu_archive, 0);
+	                Recipe entry = new Recipe(this, title, id, R.drawable.icon_archive, 0);
 	                items.add(entry);
 	            }
             }
@@ -294,7 +242,7 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
 	                String title = Html.fromHtml(getValue(e, "recipe_name")).toString();
 	                String id = getValue(e, "recipe_id");
 	                
-		            DataEntry entry = new DataEntry(this, title, id, R.drawable.ic_menu_compass, 1);
+	                Recipe entry = new Recipe(this, title, id, R.drawable.icon_directions, 1);
 		            items.add(entry);
 	            }
             }
@@ -323,13 +271,13 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
         	return "";
         }
         
-        @Override public void deliverResult(List<DataEntry> news) {
+        @Override public void deliverResult(List<Recipe> news) {
             if (isReset()) {
                 if (news != null) {
                     onReleaseResources(news);
                 }
             }
-            List<DataEntry> oldNews = news;
+            List<Recipe> oldNews = news;
             dataList = news;
 
             if (isStarted()) {
@@ -363,7 +311,7 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
         /**
          * Handles a request to cancel a load.
          */
-        @Override public void onCanceled(List<DataEntry> news) {
+        @Override public void onCanceled(List<Recipe> news) {
             super.onCanceled(news);
 
             onReleaseResources(news);
@@ -387,11 +335,11 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
          * Helper function to take care of releasing resources associated
          * with an actively loaded data set.
          */
-        protected void onReleaseResources(List<DataEntry> news) {
+        protected void onReleaseResources(List<Recipe> news) {
         }
 	}
 
-    public static class ListAdapter extends ArrayAdapter<DataEntry> {
+    public static class ListAdapter extends ArrayAdapter<Recipe> {
         private final LayoutInflater mInflater;
         private String folder = "0";
         private String searchId = null;
@@ -404,10 +352,10 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
             animationEnabled = enableAnimation;
        }
 
-        public void setData(List<DataEntry> data) {
+        public void setData(List<Recipe> data) {
             clear();
             if (data != null) {
-                for (DataEntry entry : data) {
+                for (Recipe entry : data) {
                 	add(entry);
                 }
             }
@@ -439,7 +387,7 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
             	convertView = mInflater.inflate(R.layout.list_item_guide, parent, false);
             }
 
-            DataEntry item = getItem(position);
+            Recipe item = getItem(position);
 
             ((TextView)convertView.findViewById(R.id.text)).setText(item.getLabel());
             ((TextView)convertView.findViewById(R.id.text)).setCompoundDrawablesWithIntrinsicBounds(item.getIcon(), null, null, null);
@@ -466,9 +414,22 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
         }
     }
 
-    public static class DataListFragment extends SherlockListFragment implements LoaderManager.LoaderCallbacks<List<DataEntry>> {
+    public static class DataListFragment extends SherlockListFragment implements LoaderManager.LoaderCallbacks<List<Recipe>> {
         ListAdapter mAdapter;
         String mCurFilter;
+        private static RecipeBook fragmentHolder;
+        
+        public DataListFragment() {
+        }
+        
+        public static DataListFragment newInstance(RecipeBook parent) {
+        	DataListFragment f = new DataListFragment();
+        	
+            fragmentHolder = parent;
+        	
+            return f;
+        }
+
 
         @Override public void onActivityCreated(Bundle savedInstanceState) {
             super.onActivityCreated(savedInstanceState);
@@ -496,7 +457,7 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
         }
         
         @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        	container.setBackgroundResource(R.drawable.applicationbg);
+        	container.setBackgroundResource(0);
         	return super.onCreateView(inflater, container, savedInstanceState);
         }
         
@@ -512,7 +473,11 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
     			intent.putExtra("title", mAdapter.getItem(position).getLabel());
     			intent.putExtra("id", mAdapter.getItem(position).getID());
     			
-    			mAdapter.getContext().startActivity(intent);	            
+    			if (fragmentHolder != null && fragmentHolder.isTablet) {
+    				fragmentHolder.loadFragment(intent, 1);
+    			} else {
+    				mAdapter.getContext().startActivity(intent);
+    			}
             } else {
 	            mAdapter.setFolder(mAdapter.getItem(position).getID());
 	            
@@ -521,11 +486,11 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
             }
         }
 
-        @Override public Loader<List<DataEntry>> onCreateLoader(int id, Bundle args) {
+        @Override public Loader<List<Recipe>> onCreateLoader(int id, Bundle args) {
             return new ListLoader(getActivity(), mAdapter);
         }
 
-        @Override public void onLoadFinished(Loader<List<DataEntry>> loader, List<DataEntry> data) {
+        @Override public void onLoadFinished(Loader<List<Recipe>> loader, List<Recipe> data) {
             mAdapter.setData(data);
 
             if (isResumed()) {
@@ -535,7 +500,7 @@ public class FragmentActivityRecipes extends SherlockFragmentActivity {
             }
         }
 
-        @Override public void onLoaderReset(Loader<List<DataEntry>> loader) {
+        @Override public void onLoaderReset(Loader<List<Recipe>> loader) {
             // Clear the data in the adapter.
             mAdapter.setData(null);
         }

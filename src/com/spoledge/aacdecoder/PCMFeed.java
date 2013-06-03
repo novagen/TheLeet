@@ -46,7 +46,7 @@ import android.media.AudioTrack;
  * </pre>
  */
 public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateListener {
-	private static final String APP_TAG = "--> The Leet ::PCMFeed";
+	private static final String APP_TAG = "--> The Leet :: PCMFeed";
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -316,8 +316,6 @@ public class PCMFeed implements Runnable, AudioTrack.OnPlaybackPositionUpdateLis
 
                 writtenTotal += written;
                 int buffered = writtenTotal - atrack.getPlaybackHeadPosition()*channels;
-
-                // Log.d( LOG, "PCM fed by " + ln + " and written " + written + " samples - buffered " + buffered);
 
                 if (!isPlaying) {
                     if (buffered*2 >= bufferSizeInBytes) {

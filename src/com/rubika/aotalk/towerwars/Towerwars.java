@@ -15,12 +15,15 @@ import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.app.SherlockListFragment;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
-import com.rubika.aotalk.AOUFragmentAdapter;
+import com.google.analytics.tracking.android.EasyTracker;
 import com.rubika.aotalk.Preferences;
 import com.rubika.aotalk.R;
+import com.rubika.aotalk.util.Logging;
 import com.viewpagerindicator.TitlePageIndicator;
 
 public class Towerwars extends SherlockFragmentActivity implements ViewPager.OnPageChangeListener {
+	protected static final String APP_TAG   = "--> The Leet :: Towerwars";
+
 	public static ViewPager fragmentPager;
 	private static TitlePageIndicator titleIndicator;
 	private static List<SherlockListFragment> fragments;
@@ -29,6 +32,7 @@ public class Towerwars extends SherlockFragmentActivity implements ViewPager.OnP
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+		//super.setTheme(R.style.Theme_AOTalkTheme_Light);
                 
         setContentView(R.layout.main);
         
@@ -36,7 +40,6 @@ public class Towerwars extends SherlockFragmentActivity implements ViewPager.OnP
 
         final ActionBar bar = getSupportActionBar();
         
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
         
@@ -44,7 +47,7 @@ public class Towerwars extends SherlockFragmentActivity implements ViewPager.OnP
         fragments.add(FragmentAttacks.newInstance());
         fragments.add(FragmentSites.newInstance());
         
-        AOUFragmentAdapter fragmentAdapter = new AOUFragmentAdapter(super.getSupportFragmentManager(), fragments);
+        FragmentAdapter fragmentAdapter = new FragmentAdapter(super.getSupportFragmentManager(), fragments);
 
         fragmentPager = (ViewPager) findViewById(R.id.fragmentpager);
         fragmentPager.setAdapter(fragmentAdapter);
@@ -87,6 +90,28 @@ public class Towerwars extends SherlockFragmentActivity implements ViewPager.OnP
     protected void onResume() {
     	super.onResume();
         setTitleIndicator();
+    }
+    
+    @Override
+    protected void onStart() {
+    	super.onStart();
+    	
+    	try {
+        	EasyTracker.getInstance().activityStart(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
+    }
+    
+    @Override
+    protected void onStop() {
+    	super.onStop();
+
+    	try {
+            EasyTracker.getInstance().activityStop(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
     }
     
     @Override

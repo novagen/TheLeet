@@ -1,52 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout 
 xmlns:android="http://schemas.android.com/apk/res/android"
+style="?attr/listItemStyle"
 android:layout_width="match_parent"
 android:layout_height="wrap_content"
 android:padding="5sp"
-android:background="@drawable/listbg"
 >
     <TextView
+	style="?attr/listTextSubStyle"
     android:id="@+id/date"
-    android:textSize="11sp"
-    android:textColor="@color/subgrey"
-    android:layout_gravity="center_vertical"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content" 
     android:layout_alignParentTop="true"
     android:layout_alignParentLeft="true"
-	android:shadowColor="@color/textshadow"
-	android:shadowDx="1"
-	android:shadowDy="1"
-	android:shadowRadius="3"
     />
     <TextView
+	style="?attr/listTextSubStyle"
     android:id="@+id/target"
-    android:textSize="11sp"
-    android:textColor="@color/subgrey"
-    android:layout_gravity="center_vertical"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content" 
     android:layout_alignParentRight="true"
     android:layout_alignParentTop="true"
-	android:shadowColor="@color/textshadow"
-	android:shadowDx="1"
-	android:shadowDy="1"
-	android:shadowRadius="3"
     />
     <TextView
+	style="?attr/listTextMainStyle"
     android:id="@+id/text"
-    android:textSize="13sp"
-    android:textColor="@color/mainwhite"
-    android:layout_gravity="center_vertical"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content" 
     android:layout_below="@id/date"
     android:layout_alignParentLeft="true"
     android:layout_marginTop="2sp"
-	android:shadowColor="@color/textshadow"
-	android:shadowDx="1"
-	android:shadowDy="1"
-	android:shadowRadius="3"
     />
 </RelativeLayout>

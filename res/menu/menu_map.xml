@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+    android:id="@+id/aoumarkers"
+    android:icon="@drawable/icon_location"
+    android:title="@string/aoumarkers" 
+    android:showAsAction="never"
+    />
+    <item
+    android:id="@+id/rknmarkers"
+    android:icon="@drawable/icon_location"
+    android:title="@string/rknmarkers" 
+    android:showAsAction="never"
+    />
+    <item
     android:id="@+id/preferences"
-    android:icon="@drawable/ic_menu_preferences"
+    android:icon="@drawable/icon_settings"
     android:title="@string/preferences" 
     android:showAsAction="never"
     />

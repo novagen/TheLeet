@@ -3,8 +3,10 @@
 xmlns:android="http://schemas.android.com/apk/res/android"
 android:layout_width="fill_parent"
 android:layout_height="fill_parent"
+android:background="@android:color/transparent"
 >
    	<LinearLayout
+	style="?attr/applicationFooterStyle"
   	android:id="@+id/buttons"
 	android:layout_width="fill_parent"
 	android:layout_height="wrap_content"
@@ -32,7 +34,7 @@ android:layout_height="fill_parent"
 	android:layout_height="fill_parent"
 	android:layout_alignParentTop="true"
 	android:layout_above="@id/buttons"
-	android:background="@drawable/applicationbg"
+	android:background="@android:color/transparent"
 	>
 		<RelativeLayout 
 		android:layout_width="match_parent"
@@ -48,24 +50,8 @@ android:layout_height="fill_parent"
 		    android:layout_height="wrap_content" 
 		    android:layout_alignParentLeft="true"
 		    android:layout_alignParentTop="true"
-			android:shadowColor="@color/textshadow"
-			android:shadowDx="1"
-			android:shadowDy="1"
-			android:shadowRadius="3"
-		    />
-		    <TextView
-		    android:id="@+id/server"
-		    android:textSize="14sp"
-		    android:textColor="@color/subgrey"
-		    android:layout_gravity="center_vertical"
-		    android:layout_width="wrap_content"
-		    android:layout_height="wrap_content" 
-		    android:layout_alignParentRight="true"
-		    android:layout_alignParentTop="true"
-			android:shadowColor="@color/textshadow"
-			android:shadowDx="1"
-			android:shadowDy="1"
-			android:shadowRadius="3"
+    		style="@style/TextShadow"
+    		android:textIsSelectable="false"
 		    />
 		    <TextView
 		    android:id="@+id/text"
@@ -76,11 +62,9 @@ android:layout_height="fill_parent"
 		    android:layout_height="wrap_content" 
 		    android:layout_below="@id/date"
 		    android:layout_marginTop="10sp"
-			android:shadowColor="@color/textshadow"
-			android:shadowDx="1"
-			android:shadowDy="1"
-			android:shadowRadius="3"
 			android:textColorLink="@color/link"
+    		style="@style/TextShadow"
+    		android:textIsSelectable="true"
 		    />
 		</RelativeLayout>
 	</ScrollView>

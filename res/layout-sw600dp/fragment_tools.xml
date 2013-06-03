@@ -1,56 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
 xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:app="http://schemas.android.com/apk/res/com.rubika.aotalk"
 android:layout_width="fill_parent"
 android:layout_height="fill_parent"
 >
 	<RelativeLayout
+	style="?attr/applicationFooterStyle"
 	android:id="@+id/gsp_player"
 	android:layout_width="fill_parent"
 	android:layout_height="45sp"
-	android:background="@drawable/footbg"
 	android:layout_alignParentBottom="true"
 	android:visibility="visible"
 	>
+	    <LinearLayout
+        android:id="@+id/visualizer"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+	    android:layout_alignParentLeft="true"
+		android:layout_alignParentBottom="true"
+		android:visibility="gone"
+		/>
 	    <ImageView
 	    android:id="@+id/gsplogo"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:src="@drawable/gsplogo"
+		android:src="@drawable/button_gsplogo"
 		android:contentDescription="@string/gsp"
 	    android:layout_alignParentLeft="true"
 	    android:layout_centerVertical="true"
 	    />
-		<ImageButton
-	    android:id="@+id/gspplay"
-		android:layout_width="wrap_content"
-	    android:layout_height="33sp"
-	    android:src="@drawable/button_play"
-	    android:adjustViewBounds="true"
-	    android:background="@android:color/transparent"
-	    android:layout_centerVertical="true"
+		<RelativeLayout
+	    android:id="@+id/gspbuttons"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
 	    android:layout_alignParentRight="true"
-	    android:contentDescription="@string/play"
-	    android:layout_marginRight="3sp"
-		/>
-		<TextView
+    	android:padding="4sp"
+		>
+			<ImageButton
+		    android:id="@+id/gspplay"
+			android:layout_width="33sp"
+		    android:layout_height="33sp"
+		    android:src="@drawable/icon_play"
+		    android:adjustViewBounds="true"
+		    android:background="@android:color/transparent"
+		    android:layout_centerVertical="true"
+		    android:contentDescription="@string/play"
+			/>
+			<LinearLayout
+		    android:id="@+id/gspload"
+	        android:layout_width="33sp"
+	        android:layout_height="33sp"
+		    android:layout_centerVertical="true"
+		    android:visibility="gone"
+	        >
+		        <ProgressBar
+		        style="@android:style/Widget.ProgressBar"
+		        android:layout_width="match_parent"
+		        android:layout_height="match_parent"
+		    	android:background="@android:color/transparent"
+		        />
+	        </LinearLayout>
+        </RelativeLayout>
+		<com.rubika.aotalk.ui.improvedtextview.ImprovedTextView
 	    android:id="@+id/gsptext"
+        android:text="@string/gsp2"
+	    android:textSize="12sp"
+	    android:textColor="@android:color/white"
 		android:layout_width="fill_parent"
-		android:layout_height="wrap_content"
+		android:layout_height="fill_parent"
+	    android:textStyle="bold"
 	    android:layout_centerVertical="true"
 	    android:layout_toLeftOf="@id/gspplay"
 	    android:layout_toRightOf="@id/gsplogo"
-	    android:text="@string/gsp2"
 	    android:gravity="center"
-	    android:textSize="11sp"
-	    android:lines="1"
-	    android:maxLines="1"
-	    android:ellipsize="marquee"
-	    android:singleLine="true"
-	    android:scrollHorizontally="true"
-	    android:marqueeRepeatLimit="marquee_forever"
-		/>
-	</RelativeLayout>
+	    android:singleLine="true" 
+        android:ellipsize="marquee"
+        android:marqueeRepeatLimit ="marquee_forever"
+        android:focusable="true"
+        android:focusableInTouchMode="true" 
+        android:scrollHorizontally="true"
+	    app:mtvOuterShadowDy="0"
+	    app:mtvOuterShadowDx="0"
+	    app:mtvOuterShadowColor="@android:color/black"
+	    app:mtvOuterShadowRadius="5"
+	    app:mtvStrokeColor="@android:color/black"
+	    app:mtvStrokeJoinStyle="bevel"
+	    app:mtvStrokeWidth="1"
+	    app:mtvStrokeMiter="2"
+		/>	</RelativeLayout>
 	<RelativeLayout 
 	android:layout_width="fill_parent"
     android:layout_height="fill_parent"

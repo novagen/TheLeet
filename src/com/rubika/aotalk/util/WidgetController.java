@@ -24,12 +24,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.graphics.Color;
 import android.preference.PreferenceManager;
 import android.text.Html;
 
 public class WidgetController {
-	protected static final String APP_TAG = "--> The Leet ::WidgetController";
+	protected static final String APP_TAG = "--> The Leet :: WidgetController";
 	
 	public static final String BROADCAST  = "com.rubika.aotalk.UPDATE_WIDGET";
 	public static final String BROADCAST_SMALL  = "com.rubika.aotalk.UPDATE_WIDGET_SMALL";
@@ -40,6 +39,7 @@ public class WidgetController {
 	/**
 	 * Set message on the classic widgets
 	 * @param message
+	 * @param type
 	 * @param context
 	 */
 	public static void setText(String message, int type, Context context) {
@@ -48,30 +48,28 @@ public class WidgetController {
 		//Handle text colors
 		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
         
-        int COLOR_APP = settings.getInt("color_app", Color.parseColor("#CC99CC"));
-        int COLOR_SYS = settings.getInt("color_system", Color.parseColor("#FFCC33"));
-        int COLOR_PRV = settings.getInt("color_tell", Color.parseColor("#88FF88"));
-        int COLOR_GRP = settings.getInt("color_group", Color.parseColor("#FFFFFF"));
-        int COLOR_ORG = settings.getInt("color_org", Color.parseColor("#BBBBFF"));
-        int COLOR_OTH = settings.getInt("color_other", Color.parseColor("#FFFFFF"));
+        int COLOR_APP = settings.getInt("color_app", Statics.COLOR_ORG_APP);
+        int COLOR_SYS = settings.getInt("color_system", Statics.COLOR_ORG_SYS);
+        int COLOR_PRV = settings.getInt("color_prv", Statics.COLOR_ORG_PRV);
+        int COLOR_GRP = settings.getInt("color_group", Statics.COLOR_ORG_GRP);
     	
-        int color = COLOR_OTH;
+        int color = COLOR_GRP;
         
 		switch(type) {
-			case ChatParser.TYPE_SYSTEM_MESSAGE:
+			case ChatParser.MESSAGE_TYPE_SYSTEM:
 				color = COLOR_SYS;
 				break;
-			case ChatParser.TYPE_PRIVATE_MESSAGE:
+			case ChatParser.MESSAGE_TYPE_PRIVATE:
 				color = COLOR_PRV;
 				break;
-			case ChatParser.TYPE_CLIENT_MESSAGE:
+			case ChatParser.MESSAGE_TYPE_CLIENT:
 				color = COLOR_APP;
 				break;
-			case ChatParser.TYPE_GROUP_MESSAGE:
+			case ChatParser.MESSAGE_TYPE_GROUP:
 				color = COLOR_GRP;
 				break;
-			case ChatParser.TYPE_ORG_MESSAGE:
-				color = COLOR_ORG;
+			default:
+				color = COLOR_GRP;
 				break;
 		}
 		
@@ -93,8 +91,6 @@ public class WidgetController {
 		broadcast = new Intent(WALLPAPER);
 		broadcast.putExtra("wallpaper", ":!:" + type + ":!:" + message);
 	    context.getApplicationContext().sendBroadcast(broadcast);
-	    
-		Logging.log(APP_TAG, "Normal broadcast sent: " + message + ", " + type);
 	}
 	
 	/**
@@ -111,7 +107,7 @@ public class WidgetController {
 	    String time   = "";
 	    String text   = "";
 
-	    if(message.equals(ChatParser.parse(context.getString(R.string.disconnected), ChatParser.TYPE_CLIENT_MESSAGE))) {
+	    if(message.equals(ChatParser.parse(context.getString(R.string.disconnected), ChatParser.MESSAGE_TYPE_CLIENT))) {
 	    	target = context.getString(R.string.app_name);
 	    	try {
 	    	    time = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;

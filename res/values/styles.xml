@@ -1,16 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="AOTalkTheme" parent="Theme.Sherlock">
-        <item name="actionBarStyle">@style/Widget.Styled.ActionBar</item>
-        <item name="android:actionBarStyle">@style/Widget.Styled.ActionBar</item>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <style name="Theme.AOTalkTheme.Dialog" parent="Theme.AOTalkTheme">
     </style>
-
-    <style name="Widget.Styled.ActionBar" parent="Widget.Sherlock.ActionBar">
-        <item name="android:indeterminateProgressStyle">@style/IndeterminateProgress</item> 
-        <item name="indeterminateProgressStyle">@style/IndeterminateProgress</item> 
+    
+    <style name="Theme.AOTalkTheme" parent="Theme.Sherlock">
+        <item name="actionBarStyle">@style/ActionBar</item>
+                
+        <item name="android:windowBackground">@drawable/applicationbg</item>
+        
+        <item name="titlePageIndicatorStyle">@style/TitlePageIndicator</item>
+        <item name="applicationFooterStyle">@style/ApplicationFooter</item>
+        <item name="listTextSubStyle">@style/ListSubText</item>
+        <item name="listTextSubLargeStyle">@style/ListSubLargeText</item>
+        <item name="listTextMainStyle">@style/ListMainText</item>
+        <item name="listTextMainLargeStyle">@style/ListMainLargeText</item>
+        <item name="listTextMainSmallStyle">@style/ListMainSmallText</item>
+        <item name="listTextHeaderStyle">@style/ListHeaderText</item>
+        <item name="listItemStyle">@style/ListItem</item>
+        <item name="listItemSecondaryStyle">@style/ListItemSecondary</item>
+	</style>
+    
+    <style name="ListItem">
+        <item name="android:background">@drawable/listbg</item>
     </style>
-
+    
+    <style name="ListItemSecondary">
+        <item name="android:background">@drawable/listbgrev</item>
+    </style>
+    
+    <style name="ActionBar" parent="Widget.Sherlock.ActionBar">
+        <item name="indeterminateProgressStyle">@style/IndeterminateProgress</item>
+        
+    	<item name="background">@drawable/abbg</item>
+        <item name="android:background">@drawable/abbg</item>
+        
+   		<item name="backgroundStacked">@drawable/abbg</item>
+   		
+   		<item name="backgroundSplit">@drawable/abbg</item>
+	</style>
+    
     <style name="IndeterminateProgress" parent="@android:style/Widget.ProgressBar.Small"> 
        <item name="android:indeterminateDrawable">@drawable/progress_small_holo</item> 
-   </style>
+    </style>
+    
+    <style name="ListMainText">
+        <item name="android:shadowColor">@color/textshadow</item>
+		<item name="android:shadowDx">1</item>
+		<item name="android:shadowDy">1</item>
+		<item name="android:shadowRadius">3</item>
+		<item name="android:textSize">13sp</item>
+    	<item name="android:textColor">@color/mainwhite</item>
+    	<item name="android:layout_gravity">center_vertical</item>
+    </style>
+    
+     <style name="ListMainLargeText" parent="ListMainText">
+		<item name="android:textSize">17sp</item>
+    </style>
+    
+    <style name="ListSubText" parent="ListMainText">
+		<item name="android:textSize">11sp</item>
+    	<item name="android:textColor">@color/subgrey</item>
+    </style>
+    
+    <style name="ListSubLargeText" parent="ListSubText">
+		<item name="android:textSize">13sp</item>
+    </style>
+    
+    <style name="ListMainSmallText" parent="ListMainText">
+ 		<item name="android:textSize">12sp</item>
+    </style>
+ 		
+    <style name="ListHeaderText" parent="ListMainText">
+        <item name="android:background">@color/listheader</item>
+    </style>
+    
+    <style name="TextShadow">
+        <item name="android:shadowColor">@color/textshadow</item>
+		<item name="android:shadowDx">1</item>
+		<item name="android:shadowDy">1</item>
+		<item name="android:shadowRadius">3</item>
+    </style>
+    
+    <style name="TitlePageIndicator">
+        <item name="android:background">@drawable/titlebg</item>
+        <item name="android:padding">10sp</item>
+    </style>
+    
+    <style name="ApplicationFooter">
+        <item name="android:background">@drawable/footbg</item>
+    </style>
 </resources>

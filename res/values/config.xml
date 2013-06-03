@@ -6,6 +6,7 @@
     <color name="inputbg">#FF000000</color>
     <color name="ics_blue">#FF33B5E5</color>
     <color name="textshadow">#CC000000</color>
+    <color name="textshadow_light">#33FFFFFF</color>
     <color name="link">#9FBCFF</color>
     <color name="subgrey">#CECECE</color>
     <color name="mainwhite">#FFFFFF</color>

@@ -27,7 +27,7 @@ import com.rubika.aotalk.util.Logging;
 import com.rubika.aotalk.util.Statics;
 
 public class XyphosData {
-	private static final String APP_TAG = "--> The Leet ::XyphosData";
+	private static final String APP_TAG = "--> The Leet :: XyphosData";
 
 	public static String insertData(String string) {
     	String xml = null;
@@ -40,7 +40,7 @@ public class XyphosData {
 
             try {
                 DefaultHttpClient httpClient = new DefaultHttpClient();
-                HttpPost httpPost = new HttpPost(String.format("http://itemxml.xyphos.com/?id=%s", matcher.group(1)));
+                HttpPost httpPost = new HttpPost(String.format(Statics.XYPHOS_ITEM_URL, matcher.group(1)));
                 HttpResponse httpResponse = httpClient.execute(httpPost);
                 HttpEntity httpEntity = httpResponse.getEntity();
                 xml = EntityUtils.toString(httpEntity);
@@ -112,7 +112,7 @@ public class XyphosData {
 
             try {
                 DefaultHttpClient httpClient = new DefaultHttpClient();
-                HttpPost httpPost = new HttpPost(String.format("http://itemxml.xyphos.com/?id=%s", matcher.group(1)));
+                HttpPost httpPost = new HttpPost(String.format(Statics.XYPHOS_ITEM_URL, matcher.group(1)));
                 HttpResponse httpResponse = httpClient.execute(httpPost);
                 HttpEntity httpEntity = httpResponse.getEntity();
                 xml = EntityUtils.toString(httpEntity);
@@ -176,7 +176,7 @@ public class XyphosData {
 
             try {
                 DefaultHttpClient httpClient = new DefaultHttpClient();
-                HttpPost httpPost = new HttpPost(String.format("http://itemxml.xyphos.com/?id=%s", matcher.group(1)));
+                HttpPost httpPost = new HttpPost(String.format(Statics.XYPHOS_ITEM_URL, matcher.group(1)));
                 HttpResponse httpResponse = httpClient.execute(httpPost);
                 HttpEntity httpEntity = httpResponse.getEntity();
                 xml = EntityUtils.toString(httpEntity);

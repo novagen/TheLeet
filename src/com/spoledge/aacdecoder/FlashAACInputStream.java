@@ -16,7 +16,7 @@ import java.net.URLConnection;
 import com.rubika.aotalk.util.Logging;
 
 public class FlashAACInputStream extends InputStream {
-	private static final String APP_TAG = "--> The Leet ::FlashAACInputStream";
+	private static final String APP_TAG = "--> The Leet :: FlashAACInputStream";
 
 	private DataInputStream dis = null;
     private int countInBackBuffer = 0;

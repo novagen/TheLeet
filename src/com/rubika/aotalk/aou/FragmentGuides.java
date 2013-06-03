@@ -44,6 +44,9 @@ import org.xml.sax.SAXException;
 import com.actionbarsherlock.app.SherlockListFragment;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
+import com.google.analytics.tracking.android.EasyTracker;
+import com.google.analytics.tracking.android.Tracker;
+import com.rubika.aotalk.AOTalk;
 import com.rubika.aotalk.R;
 import com.rubika.aotalk.item.AouGuide;
 import com.rubika.aotalk.util.Logging;
@@ -73,17 +76,29 @@ import android.widget.TextView;
  * Demonstration of the implementation of a custom Loader.
  */
 public class FragmentGuides extends SherlockListFragment implements LoaderManager.LoaderCallbacks<List<AouGuide>> {
-	private static final String APP_TAG = "--> The Leet ::FragmentGuides";
+	private static final String APP_TAG = "--> The Leet :: FragmentGuides";
 	private ListAdapter mAdapter;
+    private static Tracker tracker;
+    private static AOU aou;
+	private Bundle extras;
 	
-	public static FragmentGuides newInstance() {
+	public static FragmentGuides newInstance(AOU a, String search) {
 		FragmentGuides f = new FragmentGuides();
+    	
+    	Bundle args = new Bundle();
+        args.putString("search", search);
+        f.setArguments(args);
+
+        aou = a;
         return f;
     }
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        EasyTracker.getInstance().setContext(AOTalk.getContext());
+        tracker = EasyTracker.getTracker();
     }
     
     /**
@@ -131,11 +146,18 @@ public class FragmentGuides extends SherlockListFragment implements LoaderManage
         }
     	
         @Override public List<AouGuide> loadInBackground() {
+	        long loadTime = System.currentTimeMillis();
+	        String searchUrl = null;
+	        
+            if (adapter.getSearchString() != null && adapter.getSearchString().length() > 0) {
+            	searchUrl = String.format(Statics.GUIDES_SEARCH_URL, adapter.getSearchString());
+            }
+	        
 	        List<AouGuide> items = new ArrayList<AouGuide>();
         	String xml = null;
             Document doc = null;
             
-	        if (folders == null) {
+	        if (folders == null && searchUrl == null) {
             	try {
 	                DefaultHttpClient httpClient = new DefaultHttpClient();
 	                HttpPost httpPost = new HttpPost(Statics.GUIDES_FOLDERS_URL);
@@ -174,7 +196,14 @@ public class FragmentGuides extends SherlockListFragment implements LoaderManage
 
             try {
                 DefaultHttpClient httpClient = new DefaultHttpClient();
-                HttpPost httpPost = new HttpPost(String.format(Statics.GUIDES_FOLDER_URL, adapter.getFolder()));
+                HttpPost httpPost;
+                
+                if (searchUrl != null) {
+                	httpPost = new HttpPost(String.format(Statics.GUIDES_SEARCH_URL, adapter.getSearchString()));
+                } else {
+                	httpPost = new HttpPost(String.format(Statics.GUIDES_FOLDER_URL, adapter.getFolder()));
+                }
+                
                 HttpResponse httpResponse = httpClient.execute(httpPost);
                 HttpEntity httpEntity = httpResponse.getEntity();
                 xml = EntityUtils.toString(httpEntity);
@@ -207,7 +236,7 @@ public class FragmentGuides extends SherlockListFragment implements LoaderManage
             }
             
             if (!adapter.getFolder().equals("0")) {
-            	items.add(new AouGuide(this, "Start", "0", R.drawable.ic_menu_home, 2));	            	
+            	items.add(new AouGuide(this, "Start", "0", R.drawable.icon_grid, 2));	            	
             }
            
             if (doc != null && !adapter.getFolder().equals("0")) {
@@ -219,10 +248,10 @@ public class FragmentGuides extends SherlockListFragment implements LoaderManage
 	                String title = Html.fromHtml(getValue(e, "name").replace("<![", "").replace("]]>", "").trim()).toString();
 	                String id = getValue(e, "id");
 	                
-	                int icon = R.drawable.ic_menu_revert;
+	                int icon = R.drawable.icon_undo;
 
                 	if (i == 0) {
-	                	icon = R.drawable.ic_menu_forward;
+	                	icon = R.drawable.icon_replay;
 	                }
 	                
 	                AouGuide entry = new AouGuide(this, title, id, icon, 0);
@@ -240,7 +269,7 @@ public class FragmentGuides extends SherlockListFragment implements LoaderManage
 	                String id = getValue(e, "id");
 	                
 	                if (getValue(e, "parent").equals(adapter.getFolder())) {
-		                AouGuide entry = new AouGuide(this, title, id, R.drawable.ic_menu_archive, 0);
+		                AouGuide entry = new AouGuide(this, title, id, R.drawable.icon_archive, 0);
 			            items.add(entry);
 	                }
 	            }
@@ -255,9 +284,13 @@ public class FragmentGuides extends SherlockListFragment implements LoaderManage
 	                String title = Html.fromHtml(getValue(e, "name").replace("<![", "").replace("]]>", "").trim()).toString();
 	                String id = getValue(e, "id");
 	                
-		            AouGuide entry = new AouGuide(this, title, id, R.drawable.ic_menu_compass, 1);
+		            AouGuide entry = new AouGuide(this, title, id, R.drawable.icon_directions, 1);
 		            items.add(entry);
 	            }
+            }
+			
+            if (items.size() > 0) {
+            	tracker.sendTiming("Loading", System.currentTimeMillis() - loadTime, "AOU Guides", null);
             }
             
 			return items;
@@ -356,6 +389,7 @@ public class FragmentGuides extends SherlockListFragment implements LoaderManage
         private final LayoutInflater mInflater;
         private String folder = "0";
         private boolean animationEnabled;
+        private String searchString = null;
 
         public ListAdapter(Context context, boolean enableAnimation) {
             super(context, android.R.layout.simple_list_item_2);
@@ -405,16 +439,27 @@ public class FragmentGuides extends SherlockListFragment implements LoaderManage
         public String getFolder() {
         	return folder;
         }
+        
+        public String getSearchString() {
+        	return searchString;
+        }
+        
+        public void setSearchString(String search) {
+			Logging.log(APP_TAG, "setSearchId was called with id " + search);
+        	searchString = search;
+        }
     }
 
     @Override public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         
         setEmptyText(getString(R.string.no_guides));
-
         setHasOptionsMenu(true);
+        
+        extras = this.getArguments();
 
         mAdapter = new ListAdapter(getActivity(), PreferenceManager.getDefaultSharedPreferences(this.getActivity().getBaseContext()).getBoolean("enableAnimations", true));
+        mAdapter.setSearchString(extras.getString("search"));
         setListAdapter(mAdapter);
 
         getListView().setFastScrollEnabled(true);
@@ -427,7 +472,7 @@ public class FragmentGuides extends SherlockListFragment implements LoaderManage
     }
     
     @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-    	container.setBackgroundResource(R.drawable.applicationbg);
+    	container.setBackgroundResource(0);
     	return super.onCreateView(inflater, container, savedInstanceState);
     }
     
@@ -443,7 +488,11 @@ public class FragmentGuides extends SherlockListFragment implements LoaderManage
 			intent.putExtra("title", mAdapter.getItem(position).getLabel());
 			intent.putExtra("id", mAdapter.getItem(position).getID());
 			
-			mAdapter.getContext().startActivity(intent);	            
+			if (AOU.isTablet) {
+				aou.loadFragment(intent, 2);
+			} else {
+				mAdapter.getContext().startActivity(intent);
+			}
         } else {
             mAdapter.setFolder(mAdapter.getItem(position).getID());
             

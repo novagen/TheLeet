@@ -67,7 +67,7 @@ import android.widget.TextView;
  * Demonstration of the implementation of a custom Loader.
  */
 public class FragmentSites extends SherlockListFragment implements LoaderManager.LoaderCallbacks<List<TowerSite>> {
-	private static final String APP_TAG = "--> The Leet ::FragmentSites";
+	private static final String APP_TAG = "--> The Leet :: FragmentSites";
     private ListAdapter mAdapter;
 
 	public static FragmentSites newInstance() {
@@ -132,11 +132,10 @@ public class FragmentSites extends SherlockListFragment implements LoaderManager
         private List<TowerSite> dataList;
         
         final InterestingConfigChanges mLastConfig = new InterestingConfigChanges();
-        private Context context;
       
         public ListLoader(Context context) {
             super(context);
-            this.context = context;
+            //this.context = context;
             // Retrieve the package manager for later use; note we don't
             // use 'context' directly but instead the save global application
             // context returned by getContext().
@@ -147,7 +146,7 @@ public class FragmentSites extends SherlockListFragment implements LoaderManager
 	        
 	    	try{
 	    		httpclient = new DefaultHttpClient();
-		        httpget = new HttpGet(String.format(Statics.TOWER_WARS_SITES, PreferenceManager.getDefaultSharedPreferences(context).getString("server", "1")));
+		        httpget = new HttpGet(Statics.TOWER_WARS_SITES);
 		        	        
 		        response = httpclient.execute(httpget);
 		        entity = response.getEntity();
@@ -197,7 +196,7 @@ public class FragmentSites extends SherlockListFragment implements LoaderManager
 		                		json_data.getString("site_name"),
 		                		json_data.getInt("site_minlvl"),
 		                		json_data.getInt("site_maxlvl"),
-		                		json_data.getLong("lastresult"),
+		                		json_data.isNull("lastresult") ? 0 : json_data.getLong("lastresult"),
 		                		false,
 		                		json_data.getInt("center_x"),
 		                		json_data.getInt("center_y")		                		
@@ -491,6 +490,7 @@ public class FragmentSites extends SherlockListFragment implements LoaderManager
     @Override public void onActivityCreated(Bundle savedInstanceState) {
 	    super.onActivityCreated(savedInstanceState);
 	        
+        setEmptyText(getString(R.string.no_sites));
 	    setHasOptionsMenu(true);
 	
 	    mAdapter = new ListAdapter(getActivity(), PreferenceManager.getDefaultSharedPreferences(this.getActivity().getBaseContext()).getBoolean("enableAnimations", true));
@@ -506,7 +506,7 @@ public class FragmentSites extends SherlockListFragment implements LoaderManager
 	}
 	
 	@Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		container.setBackgroundResource(R.drawable.applicationbg);
+		container.setBackgroundResource(0);
 		return super.onCreateView(inflater, container, savedInstanceState);
 	}
 	

@@ -29,10 +29,12 @@ public class FragmentAdapter extends FragmentPagerAdapter {
 	public String getPageTitle(int position) {
 		switch (position) {
 		case 0:
-			return "TOOLS";
+			return "RKN";
 		case 1:
-			return "CHAT";
+			return "TOOLS";
 		case 2:
+			return "CHAT";
+		case 3:
 			return "FRIENDS";
 		}
 		return null;

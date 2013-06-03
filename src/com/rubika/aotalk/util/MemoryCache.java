@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 import android.graphics.Bitmap;
 
 public class MemoryCache {
-	private static final String APP_TAG = "--> The Leet ::MemoryCache";
+	private static final String APP_TAG = "--> The Leet :: MemoryCache";
     
     private Map<String, Bitmap> cache = Collections.synchronizedMap(new LinkedHashMap<String, Bitmap>(10,1.5f,true)); //Last argument true for LRU ordering
     private long size = 0; //current allocated size
@@ -30,7 +30,6 @@ public class MemoryCache {
                 return null;
             }
             
-            //NullPointerException sometimes happen here http://code.google.com/p/osmdroid/issues/detail?id=78 
             return cache.get(id);
         } catch(NullPointerException ex) {
             Logging.log(APP_TAG, ex.getMessage());
@@ -75,7 +74,6 @@ public class MemoryCache {
 
     public void clear() {
         try{
-            //NullPointerException sometimes happen here http://code.google.com/p/osmdroid/issues/detail?id=78 
             cache.clear();
             size = 0;
         } catch (NullPointerException ex) {

@@ -10,8 +10,8 @@ android:orientation="horizontal"
 	android:layout_width="wrap_content"
 	android:layout_height="fill_parent"
 	android:gravity="center_vertical|left"
-	android:textSize="17dip"
+	android:textSize="17sp"
 	android:textColor="#000000"
-	android:padding="12dip"
+	android:padding="12sp"
 	/>	
 </LinearLayout>

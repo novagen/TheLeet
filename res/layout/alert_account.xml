@@ -29,14 +29,6 @@ android:gravity="center"
 	android:textAppearance="?android:attr/textAppearanceMedium"
 	android:hint="@string/password"
 	/>
-	<Spinner 
-	android:id="@+id/server"
-	android:layout_width="fill_parent"
-	android:layout_height="wrap_content"
-	android:entries="@array/servers"
-	android:entryValues="@array/servers_values"
-	android:prompt="@string/select_server"
-	/>
 	<CheckBox 
 	android:id="@+id/savepassword"
 	android:layout_width="fill_parent"

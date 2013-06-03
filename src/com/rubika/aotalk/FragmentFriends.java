@@ -24,7 +24,7 @@ import com.rubika.aotalk.util.Logging;
 import com.rubika.aotalk.util.Statics;
 
 public class FragmentFriends extends SherlockFragment {
-	private static final String APP_TAG = "--> The Leet ::FragmentFriends";
+	private static final String APP_TAG = "--> The Leet :: FragmentFriends";
 
 	static FragmentFriends newInstance() {
 		FragmentFriends f = new FragmentFriends();
@@ -75,8 +75,8 @@ public class FragmentFriends extends SherlockFragment {
 								AOTalk.currentTargetCharacter = friend.getName();
 								AOTalk.currentTargetChannel = "";
 
-								AOTalk.actionBar.setSelectedNavigationItem(0);
-								AOTalk.fragmentPager.setCurrentItem(1);
+								AOTalk.bar.setSelectedNavigationItem(0);
+								AOTalk.fragmentPager.setCurrentItem(2);
 																
 								AOTalk.setServiceTargets();
 								
@@ -84,7 +84,7 @@ public class FragmentFriends extends SherlockFragment {
 							}
 							
 							if (item == 1) {
-								AOTalk.whoIs(friend.getName(), AOTalk.currentServerID, false);								
+								AOTalk.whoIs(friend.getName(), false);								
 							}
 							
 							if (item == 2) {

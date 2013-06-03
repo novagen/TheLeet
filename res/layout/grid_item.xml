@@ -21,9 +21,6 @@
 		android:gravity="center_horizontal"
 		android:textColor="@color/mainwhite"
 		android:textSize="14sp"
-		android:shadowColor="@color/textshadow"
-		android:shadowDx="1"
-		android:shadowDy="1"
-		android:shadowRadius="3"
+    	style="@style/TextShadow"
 		/>
 </LinearLayout>

@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout 
 xmlns:android="http://schemas.android.com/apk/res/android"
+style="?attr/listItemStyle"
 android:id="@+id/messagepost"
 android:orientation="vertical"
 android:layout_width="fill_parent"
 android:layout_height="wrap_content"
-android:background="@drawable/listbg"
 >
 	<RelativeLayout 
+	style="?attr/listTextHeaderStyle"
 	android:layout_width="fill_parent"
 	android:layout_height="wrap_content"
 	android:orientation="horizontal"
@@ -15,19 +16,14 @@ android:background="@drawable/listbg"
 	android:padding="7sp"
 	>
 		<TextView
+		style="?attr/listTextMainSmallStyle"
 		android:id="@+id/from"
 		android:layout_width="wrap_content"
 	    android:layout_height="wrap_content"
-		android:textColor="@color/mainwhite"
 		android:textStyle="bold"
-		android:textSize="12sp"
 		android:maxLines="1"
 		android:ellipsize="marquee"
 		android:singleLine="true"
-		android:shadowColor="@color/textshadow"
-		android:shadowDx="1"
-		android:shadowDy="1"
-		android:shadowRadius="3"
 		android:layout_alignParentLeft="true"
 		/>
 		<TextView
@@ -40,27 +36,19 @@ android:background="@drawable/listbg"
 		android:maxLines="1"
 		android:ellipsize="marquee"
 		android:singleLine="true"
-		android:shadowColor="@color/textshadow"
-		android:shadowDx="1"
-		android:shadowDy="1"
-		android:shadowRadius="3"
 		android:gravity="right"
 		android:layout_alignParentRight="true"
+    	style="@style/TextShadow"
 		/>
 	</RelativeLayout>
 	<TextView 
+	style="?attr/listTextMainStyle"
 	android:id="@+id/message"
 	android:layout_width="fill_parent"
     android:layout_height="wrap_content"
-	android:textColor="@color/mainwhite"
 	android:lineSpacingExtra="2dip"
 	android:textColorLink="@color/link"
-	android:textSize="13sp"
 	android:padding="7sp"
-	android:shadowColor="@color/textshadow"
-	android:shadowDx="1"
-	android:shadowDy="1"
-	android:shadowRadius="3"
 	android:background="@drawable/channel_button_background"
     />
 </LinearLayout>

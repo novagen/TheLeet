@@ -4,7 +4,7 @@ import java.io.File;
 import android.content.Context;
 
 public class FileCache {
-	private static final String APP_TAG = "--> The Leet ::FileCache";
+	private static final String APP_TAG = "--> The Leet :: FileCache";
     private File cacheDir;
     
     public FileCache(Context context){

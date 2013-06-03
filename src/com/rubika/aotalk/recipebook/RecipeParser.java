@@ -7,7 +7,7 @@ import com.rubika.aotalk.util.Logging;
 import com.rubika.aotalk.util.Statics;
 
 public class RecipeParser {
-	private static final String APP_TAG = "--> The Leet ::RecipeParser";
+	private static final String APP_TAG = "--> The Leet :: RecipeParser";
 	
 	public static String parse(String data) {
         Pattern pattern;

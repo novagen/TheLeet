@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" 
+	android:background="@android:color/transparent"
+    >
+    <LinearLayout
+		style="?attr/applicationFooterStyle"
+        android:id="@+id/buttonbox"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+	    android:orientation="vertical"
+	    android:layout_alignParentBottom="true"
+        >
+	    <Button
+	        android:id="@+id/close"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:text="@string/close" />
+	</LinearLayout>
+	<WebView
+	android:id="@+id/gspcalendar"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_above="@id/buttonbox"
+        />
+</RelativeLayout>

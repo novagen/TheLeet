@@ -7,4 +7,34 @@
         <attr name="image_width" format="integer" />
         <attr name="image_height" format="integer" />
     </declare-styleable>
+    
+    <declare-styleable name="com.rubika.aotalk.improvedtextview.ImprovedTextView">
+		<attr name="mtvOuterShadowColor" format="color"/>
+		<attr name="mtvOuterShadowRadius" format="float"/>
+		<attr name="mtvOuterShadowDx" format="float"/>
+		<attr name="mtvOuterShadowDy" format="float"/>
+		<attr name="mtvTypeface" format="string" />
+		<attr name="mtvBackground" format="reference|color"/>
+		<attr name="mtvStrokeWidth" format="float" />
+		<attr name="mtvStrokeMiter" format="float" />
+		<attr name="mtvStrokeColor" format="color" />
+		<attr name="mtvStrokeJoinStyle">
+		    <enum name="miter" value="0" />
+		    <enum name="bevel" value="1" />
+		    <enum name="round" value="2" />
+		</attr>
+	</declare-styleable>
+	
+    <declare-styleable name="Theme.AOTalkTheme">
+        <attr name="titlePageIndicatorStyle" format="reference" />
+        <attr name="applicationFooterStyle" format="reference" />
+        <attr name="listTextMainStyle" format="reference" />
+        <attr name="listTextMainLargeStyle" format="reference" />
+        <attr name="listTextMainSmallStyle" format="reference" />
+        <attr name="listTextSubStyle" format="reference" />
+        <attr name="listTextSubLargeStyle" format="reference" />
+        <attr name="listItemStyle" format="reference" />
+        <attr name="listItemSecondaryStyle" format="reference" />
+        <attr name="listTextHeaderStyle" format="reference" />
+	</declare-styleable>
 </resources>

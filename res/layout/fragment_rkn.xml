@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:layout_width="fill_parent"
+android:layout_height="fill_parent"
+>
+	<RelativeLayout
+	style="?attr/applicationFooterStyle"
+	android:id="@+id/inputbar"
+	android:layout_width="fill_parent"
+	android:layout_height="45sp"
+    android:layout_alignParentBottom="true"
+    android:padding="2sp"
+	>
+		<ImageButton 
+		android:id="@+id/addnote"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:src="@drawable/icon_edit"
+		android:layout_alignParentLeft="true"
+		android:background="@drawable/channel_button_background"
+		android:contentDescription="@string/set_channel"
+		android:layout_centerVertical="true"
+		android:gravity="center"
+    	android:padding="2sp"
+		/>
+		<ImageButton 
+		android:id="@+id/addpost"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:src="@drawable/icon_chat"
+		android:layout_toRightOf="@id/addnote"
+		android:background="@drawable/channel_button_background"
+		android:contentDescription="@string/set_channel"
+		android:layout_centerVertical="true"
+		android:gravity="center"
+    	android:padding="2sp"
+		/>
+		<ImageButton 
+		android:id="@+id/addcharacter"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:src="@drawable/icon_add"
+		android:layout_toRightOf="@id/addpost"
+		android:background="@drawable/channel_button_background"
+		android:contentDescription="@string/set_channel"
+		android:layout_centerVertical="true"
+		android:gravity="center"
+    	android:padding="2sp"
+		/>
+	</RelativeLayout>
+    <ListView
+	android:id="@+id/postlist"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:stackFromBottom="true"
+    android:transcriptMode="alwaysScroll"
+    android:scrollingCache="false"
+    android:layout_above="@id/inputbar"
+    android:fastScrollEnabled="true"
+	/>
+    <RelativeLayout
+    android:id="@+id/header"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:layout_alignParentLeft="true"
+    android:layout_alignParentTop="true"
+    android:background="#333333"
+    >
+    </RelativeLayout>
+    <RelativeLayout
+    android:id="@+id/overlay"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:layout_alignParentLeft="true"
+    android:layout_alignParentTop="true"
+    android:background="#CC000000"
+    android:visibility="gone"
+    >
+    	<LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:orientation="vertical"
+		>
+   		<TextView
+		android:id="@+id/notloggedin"
+		android:text="You must be logged in to RKN to use this"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        />
+		<Button 
+		android:id="@+id/rknlogin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Log in"
+		/>
+		</LinearLayout>
+    </RelativeLayout>
+
+</RelativeLayout>

@@ -2,43 +2,43 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
     android:id="@+id/connect"
-    android:icon="@drawable/ic_menu_rotate"
+    android:icon="@drawable/icon_rotate"
     android:title="@string/connect" 
     android:showAsAction="ifRoom"
     />
     <item
     android:id="@+id/aou"
-    android:icon="@drawable/ic_menu_compass"
+    android:icon="@drawable/icon_directions"
     android:title="@string/ao_universe" 
     android:showAsAction="never"
     />
     <item
     android:id="@+id/atlas"
-    android:icon="@drawable/ic_menu_mylocation"
+    android:icon="@drawable/icon_location"
     android:title="@string/map" 
     android:showAsAction="never"
     />
     <item
     android:id="@+id/market"
-    android:icon="@drawable/ic_menu_view"
+    android:icon="@drawable/icon_star"
     android:title="@string/market_monitor" 
     android:showAsAction="never"
     />
     <item
     android:id="@+id/aorb"
-    android:icon="@drawable/ic_menu_star"
+    android:icon="@drawable/icon_labels"
     android:title="@string/recipebook" 
     android:showAsAction="never"
     />
     <item
     android:id="@+id/tower"
-    android:icon="@drawable/ic_menu_star"
+    android:icon="@drawable/icon_bightness"
     android:title="@string/towerwars" 
     android:showAsAction="never"
     />
     <item
     android:id="@+id/preferences"
-    android:icon="@drawable/ic_menu_preferences"
+    android:icon="@drawable/icon_settings"
     android:title="@string/preferences" 
     android:showAsAction="never"
     />

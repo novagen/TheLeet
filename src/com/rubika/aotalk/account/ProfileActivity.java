@@ -4,27 +4,30 @@ import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
+import com.google.analytics.tracking.android.EasyTracker;
 import com.rubika.aotalk.R;
+import com.rubika.aotalk.util.Logging;
 
 import android.database.Cursor;
 import android.os.Bundle;
 import android.widget.TextView;
 
 public class ProfileActivity extends SherlockActivity {
-	/** Called when the activity is first created. */
+	protected static final String APP_TAG   = "--> The Leet :: ProfileActivity";
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		//super.setTheme(R.style.Theme_AOTalkTheme_Light);
+
 		setContentView(R.layout.account_profile);
 
         final ActionBar bar = getSupportActionBar();
         
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
 		
 		if (getIntent().getData() != null) {
-			//Cursor cursor = managedQuery(getIntent().getData(), null, null, null, null);
 			Cursor cursor = getContentResolver().query(getIntent().getData(), null, null, null, null);
 			
 			if (cursor.moveToNext()) {
@@ -42,6 +45,28 @@ public class ProfileActivity extends SherlockActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         return super.onCreateOptionsMenu(menu);
+    }
+    
+    @Override
+    protected void onStart() {
+    	super.onStart();
+    	
+    	try {
+        	EasyTracker.getInstance().activityStart(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
+    }
+    
+    @Override
+    protected void onStop() {
+    	super.onStop();
+
+    	try {
+            EasyTracker.getInstance().activityStop(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
     }
     
 	@Override

@@ -21,29 +21,60 @@ package com.rubika.aotalk;
 import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.view.MenuItem;
+import com.google.analytics.tracking.android.EasyTracker;
+import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.RKNet;
 
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.WebView;
 
 public class Help extends SherlockActivity {
+	protected static final String APP_TAG   = "--> The Leet :: Help";
+
 	public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+		//super.setTheme(R.style.Theme_AOTalkTheme_Light);
         
         setContentView(R.layout.activity_help);
         
         final ActionBar bar = getSupportActionBar();
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
+
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
                 
         WebView webView = (WebView) findViewById(R.id.webview);
         webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
-        webView.setBackgroundColor(getResources().getColor(R.color.actbg));
+        webView.setBackgroundColor(0);
         
-        String url = "http://109.74.0.178/help.html";
-        webView.loadUrl(url);
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
+			((View)webView.getParent()).setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+		}
+        
+        webView.loadUrl(RKNet.RKNET_HELP_PATH);
 	}
+	
+    @Override
+    protected void onStart() {
+    	super.onStart();
+    	
+    	try {
+        	EasyTracker.getInstance().activityStart(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
+    }
+    
+    @Override
+    protected void onStop() {
+    	super.onStop();
+
+    	try {
+            EasyTracker.getInstance().activityStop(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
+    }
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {

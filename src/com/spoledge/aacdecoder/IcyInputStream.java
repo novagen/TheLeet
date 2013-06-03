@@ -30,7 +30,7 @@ import com.rubika.aotalk.util.Logging;
  * This is an InputStream which allows to fetch Icecast/Shoutcast metadata from.
  */
 public class IcyInputStream extends FilterInputStream {
-	private static final String APP_TAG = "--> The Leet ::IcyInputStream";
+	private static final String APP_TAG = "--> The Leet :: IcyInputStream";
 
 
     ////////////////////////////////////////////////////////////////////////////

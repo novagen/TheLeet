@@ -3,20 +3,27 @@
 xmlns:android="http://schemas.android.com/apk/res/android"
 android:layout_width="fill_parent"
 android:layout_height="fill_parent"
+android:background="@android:color/transparent"
 >
-  	<Button
-  	android:id="@+id/close"
+   	<LinearLayout
+	style="?attr/applicationFooterStyle"
+  	android:id="@+id/buttons"
 	android:layout_width="fill_parent"
 	android:layout_height="wrap_content"
 	android:layout_alignParentBottom="true"
-	android:text="@string/close"
-  	/>
+   	>
+	  	<Button
+	  	android:id="@+id/close"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:text="@string/close"
+	  	/>
+  	</LinearLayout>
     <WebView
 	android:id="@+id/web"
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
-	android:background="@android:color/black"
 	android:layout_alignParentTop="true"
-	android:layout_above="@id/close"
+	android:layout_above="@id/buttons"
 	/>
 </RelativeLayout>

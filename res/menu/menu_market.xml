@@ -3,12 +3,12 @@
 	<item 
 	android:id="@+id/update"
 	android:showAsAction="ifRoom"
-	android:icon="@drawable/ic_menu_refresh"
+	android:icon="@drawable/icon_refresh"
 	android:title="@string/update"
 	/>
     <item
     android:id="@+id/preferences"
-    android:icon="@drawable/ic_menu_preferences"
+    android:icon="@drawable/icon_settings"
     android:title="@string/preferences" 
     android:showAsAction="never"
     />

@@ -1,18 +1,14 @@
 package com.rubika.aotalk.item;
 
-import ao.protocol.DimensionAddress;
-
 public class Account {
 	private String username;
 	private String password;
-	private DimensionAddress server;
 	private boolean autoconnect;
 	private int id;
 	
-	public Account(String username, String password, DimensionAddress server, boolean autoconnect, int id) {
+	public Account(String username, String password, boolean autoconnect, int id) {
 		this.username = username;
 		this.password = password;
-		this.server = server;
 		this.autoconnect = autoconnect;
 		this.id = id;
 	}
@@ -31,14 +27,6 @@ public class Account {
 	
 	public void setPassword(String password) {
 		this.password = password;
-	}
-	
-	public DimensionAddress getServer() {
-		return server;
-	}
-	
-	public void setServer(DimensionAddress server) {
-		this.server = server;
 	}
 	
 	public boolean getAutoconnect() {

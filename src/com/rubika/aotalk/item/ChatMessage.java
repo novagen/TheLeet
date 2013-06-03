@@ -27,9 +27,7 @@ public class ChatMessage {
     private String character;
     private String channel;
     private long id;
-    private int server;
     private boolean doAnimation = true;
-	//private Bitmap iconimage;
 	private String icon;
     
     // Constructor for the ChatMessage class
@@ -37,14 +35,13 @@ public class ChatMessage {
     }
     
     // Constructor for the ChatMessage class
-    public ChatMessage(long timestamp, String message, String character, String channel, int id, int server) {
+    public ChatMessage(long timestamp, String message, String character, String channel, int id) {
 	    super();
 	    this.message   = message;
 	    this.timestamp = timestamp;
 	    this.character = character;
 	    this.channel   = channel;
 	    this.id 	   = id;
-    	this.server    = server;
     }
     
     // Getter and setter methods for all the fields.
@@ -88,31 +85,29 @@ public class ChatMessage {
 		this.channel = channel;
 	}
     
-    public int getType() {
-    	int type = ChatParser.TYPE_GROUP_MESSAGE;
+	public int getType() {
+		return getType(this.channel);
+	}
+	
+    public static int getType(String channel) {
+    	int type = ChatParser.MESSAGE_TYPE_GROUP;
         
-	    if (channel.equals(Statics.CHANNEL_PRIVATE)) {
-	    	type = ChatParser.TYPE_PG_MESSAGE;
-	    } else if (channel.equals(Statics.CHANNEL_SYSTEM)) {
-	    	type = ChatParser.TYPE_SYSTEM_MESSAGE;
-	    } else if (channel.equals(Statics.CHANNEL_PM)) {
-	    	type = ChatParser.TYPE_PRIVATE_MESSAGE;
-	    } else if (channel.equals(Statics.CHANNEL_FRIEND)) {
-	    	type = ChatParser.TYPE_FRIEND_MESSAGE;
-	    } else if (channel.equals(Statics.CHANNEL_APPLICATION)) {
-	    	type = ChatParser.TYPE_CLIENT_MESSAGE;
+	    if (channel != null) {
+	    	if (channel.equals(Statics.CHANNEL_PRIVATE)) {
+		    	type = ChatParser.MESSAGE_TYPE_PG;
+		    } else if (channel.equals(Statics.CHANNEL_SYSTEM)) {
+		    	type = ChatParser.MESSAGE_TYPE_SYSTEM;
+		    } else if (channel.equals(Statics.CHANNEL_PM)) {
+		    	type = ChatParser.MESSAGE_TYPE_PRIVATE;
+		    } else if (channel.equals(Statics.CHANNEL_FRIEND)) {
+		    	type = ChatParser.MESSAGE_TYPE_FRIEND;
+		    } else if (channel.equals(Statics.CHANNEL_APPLICATION)) {
+		    	type = ChatParser.MESSAGE_TYPE_CLIENT;
+		    }
 	    }
-        
+	    
     	return type;
     }
-    
-    public int getServer() {
-        return server;
-    }
-
-	public void setServer(int server) {
-		this.server = server;
-	}
 	
 	public boolean showAnimation() {
 		return this.doAnimation;
@@ -129,14 +124,4 @@ public class ChatMessage {
 	public void setIcon(String icon) {
 		this.icon = icon;
 	}
-	
-	/*
-	public void setIconBitmap(Bitmap bitmap) {
-		this.iconimage = bitmap;
-	}
-	
-	public Bitmap getIconBitmap() {
-		return this.iconimage;
-	}
-	*/
 }

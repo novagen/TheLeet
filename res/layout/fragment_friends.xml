@@ -5,18 +5,18 @@ android:layout_width="fill_parent"
 android:layout_height="fill_parent"
 >
 	<RelativeLayout
+	style="?attr/applicationFooterStyle"
 	android:id="@+id/inputbar"
 	android:layout_width="fill_parent"
 	android:layout_height="45sp"
     android:layout_alignParentBottom="true"
-    android:background="@drawable/footbg"
     android:padding="2sp"
 	>
 		<ImageButton 
 		android:id="@+id/add_friend"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:src="@drawable/ic_menu_invite"
+		android:src="@drawable/icon_add"
 		android:layout_alignParentLeft="true"
 		android:background="@drawable/channel_button_background"
 		android:contentDescription="@string/set_channel"

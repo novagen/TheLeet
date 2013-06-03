@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -38,12 +39,15 @@ import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.view.Window;
+import com.google.analytics.tracking.android.EasyTracker;
+import com.google.analytics.tracking.android.Tracker;
 import com.rubika.aotalk.Preferences;
 import com.rubika.aotalk.R;
 import com.rubika.aotalk.adapter.MarketMessageAdapter;
 import com.rubika.aotalk.item.MarketMessage;
 import com.rubika.aotalk.util.ChatParser;
 import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.RKNet;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -58,7 +62,7 @@ import android.widget.TextView;
 import android.widget.AdapterView.OnItemLongClickListener;
 
 public class Market extends SherlockActivity {
-	protected static final String APP_TAG = "--> AOTalk::Market";
+	protected static final String APP_TAG = "--> The Leet :: Market";
 	
 	private ListView marketlist;
 	private List<MarketMessage> marketposts;
@@ -67,15 +71,10 @@ public class Market extends SherlockActivity {
 	private SharedPreferences settings;
 	private TextView status;
 	
-	private static String SERVER = "1";
 	public static String MARKET_INTERVAL = "10";
 	private static boolean UPDATE = true;
 	private String resultData;
 	
-	private String mode;
-	private String order;
-	private String time; 	
-	private String server;
 	private String limit;
 	private String url;
 	
@@ -93,10 +92,13 @@ public class Market extends SherlockActivity {
 	private JSONObject json_data;
 	
     private Handler handler = new Handler();
+    private static Tracker tracker;
 	
 	public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+		//super.setTheme(R.style.Theme_AOTalkTheme_Light);
+
+		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         
         settings = PreferenceManager.getDefaultSharedPreferences(this);
         
@@ -104,7 +106,6 @@ public class Market extends SherlockActivity {
 
         final ActionBar bar = getSupportActionBar();
         
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
 
@@ -129,6 +130,9 @@ public class Market extends SherlockActivity {
 	    		return false;
 			}
         });
+        
+        EasyTracker.getInstance().setContext(this);
+        tracker = EasyTracker.getTracker();
 
         handler.post(update);
 	}
@@ -179,19 +183,13 @@ public class Market extends SherlockActivity {
 	
 	private Runnable setDone = new Runnable() {
 		public void run() {
-			String statustext = "";
+			String statustext = getString(R.string.auto_update) + ": ";
 			setSupportProgressBarIndeterminateVisibility(Boolean.FALSE);
 						
-			if(settings.getString("server", SERVER).equals("1")) {
-				statustext = "Atlantean";
-			} else if(settings.getString("server", SERVER).equals("2")) {
-				statustext = "Rimor";
-			} else {
-				statustext = "TestLive";
-			}
-			
 			if(settings.getBoolean("marketautoupdate", UPDATE)) {
-				statustext += " (Auto)";
+				statustext += getString(R.string.on);
+			} else {
+				statustext += getString(R.string.off);
 			}
 			
 			status.setText(statustext);
@@ -199,24 +197,20 @@ public class Market extends SherlockActivity {
 	};
 
     private String getMarketData() {    	
-    	mode = "?mode=json";
-    	order = "&order=desc";
-    	time = "&time=" + lastfetch; 	
-    	server = "&server=" + (Integer.parseInt(settings.getString("server", SERVER)) - 1);
-    	
+        long loadTime = System.currentTimeMillis();
+        
     	limit = "";
     	if(lastfetch == 0) {
     		limit = "&limit=50";
     	}
     	
-    	url = "http://109.74.0.178/market.php" + 
-		mode +
-    	limit + 
-		order +
-		time +
-		server;
+    	url = String.format(
+    			Locale.getDefault(), 
+    			RKNet.RKNET_MARKET_PATH, 
+    			lastfetch,
+    			limit
+    		);
     	
-    	//http post
     	try{
     		httpclient = new DefaultHttpClient();
 	        httppost = new HttpPost(url);
@@ -225,7 +219,6 @@ public class Market extends SherlockActivity {
 	        entity = response.getEntity();
 	        is = entity.getContent();
 	        
-	    	//convert response to string
 	    	try{
 	    		reader = new BufferedReader(new InputStreamReader(is, "iso-8859-1"), 8);
     	        sb = new StringBuilder();
@@ -236,6 +229,8 @@ public class Market extends SherlockActivity {
     	        }
     	        
     	        is.close();
+    	        
+            	tracker.sendTiming("Loading", System.currentTimeMillis() - loadTime, "Market", null);
     	 
     	        return sb.toString();
 	    	} catch(Exception e){
@@ -284,8 +279,7 @@ public class Market extends SherlockActivity {
 		                
 		                MarketMessage message = new MarketMessage(
 		                		json_data.getLong("time"),
-		                		ChatParser.parse(json_data.getString("message"),
-		                		ChatParser.TYPE_PLAIN_MESSAGE), 
+		                		ChatParser.parse(json_data.getString("message"), ChatParser.MESSAGE_TYPE_PLAIN), 
 		                		json_data.getString("player"), 
 		                		side
 			                );
@@ -323,15 +317,32 @@ public class Market extends SherlockActivity {
         
     	handler.removeCallbacks(update);
 	}
+        
+    @Override
+    protected void onDestroy() {
+    	super.onDestroy();
+    }
+    
+    @Override
+    protected void onStart() {
+    	super.onStart();
+    	
+    	try {
+        	EasyTracker.getInstance().activityStart(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
+    }
     
     @Override
     protected void onStop() {
     	super.onStop();
-    }
-    
-    @Override
-    protected void onDestroy() {
-    	super.onDestroy();
+
+    	try {
+            EasyTracker.getInstance().activityStop(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
     }
     
     @Override

@@ -8,6 +8,8 @@ public class TheLeet extends Application {
 
 	public void onCreate() {
 		super.onCreate();
+		//super.setTheme(R.style.Theme_AOTalkTheme_Light);
+		
 		TheLeet.context = getApplicationContext();
 	}
 

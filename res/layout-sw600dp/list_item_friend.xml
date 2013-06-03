@@ -41,12 +41,9 @@ android:background="@drawable/listbg"
     android:layout_height="wrap_content" 
 	android:layout_toRightOf="@id/icon"
 	android:layout_toLeftOf="@id/aospeak"
-	android:shadowColor="@color/textshadow"
-	android:shadowDx="1"
-	android:shadowDy="1"
-	android:shadowRadius="3"
 	android:paddingLeft="15sp"
 	android:paddingRight="10sp"
 	android:layout_centerVertical="true"
+    style="@style/TextShadow"
     />
 </RelativeLayout>

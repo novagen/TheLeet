@@ -7,6 +7,7 @@ import java.util.List;
 import com.rubika.aotalk.item.Friend;
 import com.rubika.aotalk.util.ImageLoader;
 import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.Statics;
 import com.rubika.aotalk.R;
 import com.rubika.aotalk.TheLeet;
 
@@ -23,7 +24,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 public class FriendAdapter extends ArrayAdapter<Friend> {
-	private static final String APP_TAG = "--> The Leet ::FriendAdapter";
+	private static final String APP_TAG = "--> The Leet :: FriendAdapter";
 
 	private boolean iconsEnabled;
 	private SharedPreferences settings;
@@ -138,9 +139,9 @@ public class FriendAdapter extends ArrayAdapter<Friend> {
         
         if (iconsEnabled && settings.getBoolean("enableFaces", true)) {
     		if (getItem(position).getIcon() != null) {
-    			imageLoader.DisplayImage("http://people.anarchy-online.com/character/photos/" + getItem(position).getIcon(), i);
+    			imageLoader.DisplayImage(Statics.PHOTO_PATH + getItem(position).getIcon(), i);
     		} else {
-    			i.setImageDrawable(TheLeet.getContext().getResources().getDrawable(R.drawable.ic_notification));
+    			i.setImageDrawable(TheLeet.getContext().getResources().getDrawable(R.drawable.ic_notification_old));
     		}
 	        
 	    	i.setVisibility(View.VISIBLE);

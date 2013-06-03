@@ -23,28 +23,28 @@ package org.mcsoxford.rss;
  */
 final class Resources {
 
-  /* Hide constructor */
-  private Resources() {}
+	/* Hide constructor */
+	private Resources() {}
 
-  /**
-   * Closes stream and suppresses IO faults.
-   * 
-   * @return {@code null} if stream has been successfully closed,
-   *         {@link java.io.IOException} otherwise
-   */
-  static java.io.IOException closeQuietly(java.io.Closeable stream) {
-    if (stream == null) {
-      return null;
-    }
+	/**
+	 * Closes stream and suppresses IO faults.
+	 * 
+	 * @return {@code null} if stream has been successfully closed,
+	 *         {@link java.io.IOException} otherwise
+	 */
+	static java.io.IOException closeQuietly(java.io.Closeable stream) {
+		if (stream == null) {
+			return null;
+		}
 
-    try {
-      stream.close();
-    } catch (java.io.IOException e) {
-      return e;
-    }
+		try {
+			stream.close();
+		} catch (java.io.IOException e) {
+			return e;
+		}
 
-    return null;
-  }
+		return null;
+	}
 
 }
 

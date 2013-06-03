@@ -50,7 +50,7 @@ import com.rubika.aotalk.util.Logging;
  * </pre>
  */
 public class BufferReader implements Runnable {
-	private static final String APP_TAG = "--> The Leet ::BufferReader";
+	private static final String APP_TAG = "--> The Leet :: BufferReader";
 
     public static class Buffer {
         private byte[] data;
@@ -140,14 +140,14 @@ public class BufferReader implements Runnable {
         int total = 0;
 
         while (!stopped) {
-            Buffer buffer = buffers[ indexMine ];
+            Buffer buffer = buffers[indexMine];
             total = 0;
 
             if (cap != buffer.data.length) {
                 Logging.log(APP_TAG, "run() capacity changed: " + buffer.data.length + " -> " + cap);
 
-                buffers[ indexMine ] = buffer = null;
-                buffers[ indexMine ] = buffer = new Buffer( cap );
+                buffers[indexMine] = buffer = null;
+                buffers[indexMine] = buffer = new Buffer( cap );
             }
 
             while (!stopped && total < cap) {
@@ -170,9 +170,13 @@ public class BufferReader implements Runnable {
                 int indexNew = (indexMine + 1) % buffers.length;
 
                 while (!stopped && indexNew == indexBlocked) {
-                    Logging.log(APP_TAG, "run() waiting....");
-                    try { wait(); } catch (InterruptedException e) {}
-                    Logging.log(APP_TAG, "run() awaken");
+                    //Logging.log(APP_TAG, "run() waiting....");
+                    try {
+                    	wait();
+                    } catch (InterruptedException e) {
+                        Logging.log(APP_TAG, e.getMessage());
+                    }
+                    //Logging.log(APP_TAG, "run() awaken");
                 }
 
                 indexMine = indexNew;
@@ -210,9 +214,13 @@ public class BufferReader implements Runnable {
         int indexNew = (indexBlocked + 1) % buffers.length;
 
         while (!stopped && indexNew == indexMine) {
-            Logging.log(APP_TAG, "next() waiting....");
-            try { wait(); } catch (InterruptedException e) {}
-            Logging.log(APP_TAG, "next() awaken");
+            //Logging.log(APP_TAG, "next() waiting....");
+            try { 
+            	wait(); 
+            } catch (InterruptedException e) {
+            	Logging.log(APP_TAG, e.getMessage());
+            }
+            //Logging.log(APP_TAG, "next() awaken");
         }
 
         if (indexNew == indexMine) return null;
@@ -221,7 +229,7 @@ public class BufferReader implements Runnable {
 
         notify();
 
-        return buffers[ indexBlocked ]; 
+        return buffers[indexBlocked]; 
     }
 
 }

@@ -12,11 +12,12 @@ public class AccountPreferences extends SherlockActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		//super.setTheme(R.style.Theme_AOTalkTheme_Light);
+
 		setContentView(R.layout.activity_account);
 
         final ActionBar bar = getSupportActionBar();
         
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
 	}

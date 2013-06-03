@@ -1,5 +1,7 @@
 package com.rubika.aotalk.aou;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Vector;
 
@@ -8,9 +10,10 @@ import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.app.SherlockListFragment;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
-import com.rubika.aotalk.AOUFragmentAdapter;
+import com.google.analytics.tracking.android.EasyTracker;
 import com.rubika.aotalk.Preferences;
 import com.rubika.aotalk.R;
+import com.rubika.aotalk.util.Logging;
 import com.viewpagerindicator.TitlePageIndicator;
 
 import android.content.Context;
@@ -18,38 +21,84 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
 import android.view.View;
 
 public class AOU extends SherlockFragmentActivity implements ViewPager.OnPageChangeListener {
-	protected static final String APPTAG = "--> AOTalk::AOU";
+	private static final String APP_TAG = "--> The Leet :: AOU";
 	private static Context context;
 	public static ViewPager fragmentPager;
 	private static TitlePageIndicator titleIndicator;
 	private static List<SherlockListFragment> fragments;
 	private static SharedPreferences settings;
+	public static boolean isTablet = false;
+	private String searchString = null;
 	
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+		//super.setTheme(R.style.Theme_AOTalkTheme_Light);
         
-        setContentView(R.layout.main);
+        setContentView(R.layout.aou);
         
         settings = PreferenceManager.getDefaultSharedPreferences(this);
         context = this;
         
+        Intent intent = getIntent();
+        Bundle extras = intent.getExtras();
+
+        if (extras != null) {
+        	searchString = extras.getString("text");
+        	
+        	try {
+				searchString = URLEncoder.encode(searchString, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+        	
+        	Logging.log(APP_TAG, "got extras text: " + searchString);
+        }
+        
+        if (getIntent().getData() != null) {
+	        if(getIntent().getData().toString().startsWith("gitem://")) {
+	        	searchString = getIntent().getData().toString().replace("gitem://", "");
+	        	
+	        	try {
+					searchString = URLEncoder.encode(searchString, "UTF-8");
+				} catch (UnsupportedEncodingException e) {
+					e.printStackTrace();
+				}
+	        	
+	        	Logging.log(APP_TAG, "got intent text: " + searchString);
+	        }
+        }
+        
+        if (searchString != null) {
+        	setTitle(getString(R.string.search_results));
+        }
+       
+        EasyTracker.getInstance().setContext(this);
+        
         final ActionBar bar = getSupportActionBar();
         
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
         
 		fragments = new Vector<SherlockListFragment>();
-        fragments.add(FragmentNews.newInstance());
-        fragments.add(FragmentGuides.newInstance());
-        fragments.add(FragmentCalendar.newInstance());
+		
+        if (searchString == null) {
+        	fragments.add(FragmentNews.newInstance(this));
+        }
         
-        AOUFragmentAdapter fragmentAdapter = new AOUFragmentAdapter(super.getSupportFragmentManager(), fragments);
+        fragments.add(FragmentGuides.newInstance(this, searchString));
+        
+        if (searchString == null) {
+        	fragments.add(FragmentCalendar.newInstance(this));
+        }
+        
+        FragmentAdapter fragmentAdapter = new FragmentAdapter(super.getSupportFragmentManager(), fragments);
 
         fragmentPager = (ViewPager) findViewById(R.id.fragmentpager);
         fragmentPager.setAdapter(fragmentAdapter);
@@ -60,8 +109,60 @@ public class AOU extends SherlockFragmentActivity implements ViewPager.OnPageCha
         titleIndicator.setViewPager(fragmentPager);
         
         setTitleIndicator();
+        
+        if (findViewById(R.id.datafragment) != null) {
+        	isTablet = true;
+        }
     }
-    
+	
+	public void loadFragment(Intent intent, int type) {
+    	FragmentManager fm = getSupportFragmentManager();
+    	FragmentTransaction ft = fm.beginTransaction();
+    	
+    	switch(type) {
+    	case 1:
+    		ft.replace(R.id.datafragment, ActivityNews.DataFragment.newInstance(
+    				this,
+	    			intent.getExtras().getString("title"),
+	    			intent.getExtras().getString("text"),
+	    			intent.getExtras().getString("date"),
+	    			intent.getExtras().getString("link")
+	    		));
+    		break;
+    	case 2:
+    		ft.replace(R.id.datafragment, ActivityGuide.DataFragment.newInstance(
+    				this,
+        			intent.getExtras().getString("title"),
+        			intent.getExtras().getString("id")
+        		));
+    		break;
+    	case 3:
+    		ft.replace(R.id.datafragment, ActivityCalendar.DataFragment.newInstance(
+    				this,
+        			intent.getExtras().getString("title"),
+        			intent.getExtras().getString("text"),
+        			intent.getExtras().getString("date"),
+        			intent.getExtras().getString("link")
+        		));
+    		break;
+    	}
+    	
+    	ft.commit();
+	}
+	
+	public void unloadFragment() {
+    	FragmentManager fm = getSupportFragmentManager();
+    	FragmentTransaction ft = fm.beginTransaction();
+    	
+    	if (fm.findFragmentById(0) != null) {
+    		ft.remove(fm.findFragmentById(0));
+    	} else {
+    		fm.popBackStack();
+    	}
+    	
+    	ft.commit();
+	}
+   
     private static void setTitleIndicator() {
         if (settings.getBoolean("hideTitles", false)) {
         	titleIndicator.setVisibility(View.GONE);
@@ -88,6 +189,28 @@ public class AOU extends SherlockFragmentActivity implements ViewPager.OnPageCha
         setTitleIndicator();
    }
     
+    @Override
+    protected void onStart() {
+    	super.onStart();
+    	
+    	try {
+        	EasyTracker.getInstance().activityStart(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
+    }
+    
+    @Override
+    protected void onStop() {
+    	super.onStop();
+
+    	try {
+            EasyTracker.getInstance().activityStop(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
+    }
+   
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getSupportMenuInflater().inflate(R.menu.menu_aou, menu);

@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.rubika.aotalk.item.Account;
 import com.rubika.aotalk.item.ChatMessage;
-import com.rubika.aotalk.util.ChatParser;
 import com.rubika.aotalk.util.Logging;
 import com.rubika.aotalk.util.Statics;
 import com.rubika.aotalk.util.WidgetController;
@@ -16,10 +15,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
-import ao.protocol.DimensionAddress;
 
 public class DatabaseHandler extends SQLiteOpenHelper {
-	private static final String APP_TAG = "--> The Leet ::DatabaseHandler";
+	private static final String APP_TAG = "--> The Leet :: DatabaseHandler";
 
 	private static final int DATABASE_VERSION = 5;
 	private static final String DATABASE_NAME = "aotalk";
@@ -35,17 +33,14 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 	private static final String KEY_MESSAGE_CHANNEL = "channelid";
 	private static final String KEY_MESSAGE_USER = "toid";
 	private static final String KEY_MESSAGE_TIME = "timewhen";
-	private static final String KEY_MESSAGE_SERVER = "server";
 
     private static final String KEY_ACCOUNT_USERNAME = "username";
     private static final String KEY_ACCOUNT_PASSWORD = "password";
-    private static final String KEY_ACCOUNT_SERVER = "server";
     private static final String KEY_ACCOUNT_AUTO = "autoconnect";
     private static final String KEY_ACCOUNT_CHARACTER = "character";
 
     private static final String KEY_CHARACTER_NAME = "name";
     private static final String KEY_CHARACTER_IMAGE = "image";
-    private static final String KEY_CHARACTER_SERVER = "server";
     
     private static final String CREATE_MESSAGE_TABLE = "CREATE TABLE "
 	    + TABLE_MESSAGE_NAME + "("
@@ -54,8 +49,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		+ KEY_MESSAGE_FROM + " TEXT," 
 		+ KEY_MESSAGE_CHANNEL + " TEXT," 
 		+ KEY_MESSAGE_USER + " TEXT," 
-		+ KEY_MESSAGE_TIME + " REAL," 
-		+ KEY_MESSAGE_SERVER + " REAL" 
+		+ KEY_MESSAGE_TIME + " REAL" 
 		+ ")";
 	
     private static final String CREATE_ACCOUNT_TABLE = "CREATE TABLE "
@@ -63,7 +57,6 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 	    + KEY_ID + " INTEGER PRIMARY KEY,"
 	    + KEY_ACCOUNT_USERNAME + " TEXT,"
 	    + KEY_ACCOUNT_PASSWORD + " TEXT,"
-	    + KEY_ACCOUNT_SERVER + " INTEGER,"
 	    + KEY_ACCOUNT_AUTO + " INTEGER,"
 	    + KEY_ACCOUNT_CHARACTER + " INTEGER"
 		+ ")";
@@ -72,8 +65,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 	    + TABLE_CHARACTER_NAME + "("
 	    + KEY_ID + " INTEGER PRIMARY KEY,"
 	    + KEY_CHARACTER_NAME + " TEXT,"
-	    + KEY_CHARACTER_IMAGE + " TEXT,"
-	    + KEY_CHARACTER_SERVER + " INTEGER"
+	    + KEY_CHARACTER_IMAGE + " TEXT"
 		+ ")";
     
     private Context context;
@@ -139,7 +131,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		}
 	}
 	
-	public void addPost(String message, String from, String channel, int user, int server) {
+	public void addPost(String message, String from, String channel, int user) {
 		synchronized(this) {
 			try {
 				SQLiteDatabase db = this.getWritableDatabase();
@@ -150,25 +142,10 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			    values.put(KEY_MESSAGE_CHANNEL, channel);
 			    values.put(KEY_MESSAGE_USER, user);
 			    values.put(KEY_MESSAGE_TIME, System.currentTimeMillis());
-			    values.put(KEY_MESSAGE_SERVER, server);
 		
 			    db.insert(TABLE_MESSAGE_NAME, null, values);
-			    
-			    int type = ChatParser.TYPE_GROUP_MESSAGE;
-			    
-			    if (channel.equals(Statics.CHANNEL_PRIVATE)) {
-			    	type = ChatParser.TYPE_PG_MESSAGE;
-			    }
-			    
-			    if (channel.equals(Statics.CHANNEL_SYSTEM)) {
-			    	type = ChatParser.TYPE_SYSTEM_MESSAGE;
-			    }
-			    
-			    if (channel.equals(Statics.CHANNEL_PM)) {
-			    	type = ChatParser.TYPE_PRIVATE_MESSAGE;
-			    }
-			    
-			    WidgetController.setText(message, type, context);
+			    			    
+			    WidgetController.setText(message, ChatMessage.getType(channel), context);
 			    WidgetController.setClearText(message, from, channel, context);
 			    
 			    db.close();
@@ -196,8 +173,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			        			cursor.getString(cursor.getColumnIndex(KEY_MESSAGE_MESSAGE)),
 			        			cursor.getString(cursor.getColumnIndex(KEY_MESSAGE_FROM)),
 			        			cursor.getString(cursor.getColumnIndex(KEY_MESSAGE_CHANNEL)),
-			        			cursor.getInt(cursor.getColumnIndex(KEY_ID)),
-			        			cursor.getInt(cursor.getColumnIndex(KEY_MESSAGE_SERVER))
+			        			cursor.getInt(cursor.getColumnIndex(KEY_ID))
 			        		)
 			        	);
 			        } while (cursor.moveToNext());
@@ -215,7 +191,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		}
 	}
 	
-	public List<ChatMessage> getAllPostsForUser(int userid, int server, String channel) {
+	public List<ChatMessage> getAllPostsForUser(int userid, String channel) {
 		synchronized(this) {
 			try {
 				SQLiteDatabase db = this.getReadableDatabase();
@@ -226,9 +202,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			    if (channel == Statics.CHANNEL_MAIN) {
 				    cursor = db.query(
 				    		TABLE_MESSAGE_NAME,
-				    		new String[] { KEY_ID, KEY_MESSAGE_MESSAGE, KEY_MESSAGE_FROM, KEY_MESSAGE_CHANNEL, KEY_MESSAGE_USER, KEY_MESSAGE_TIME, KEY_MESSAGE_SERVER },
-				    		KEY_MESSAGE_USER + " = ? AND " + KEY_MESSAGE_SERVER + " = ?",
-				    		new String[] { String.valueOf(userid), String.valueOf(server) },
+				    		new String[] { KEY_ID, KEY_MESSAGE_MESSAGE, KEY_MESSAGE_FROM, KEY_MESSAGE_CHANNEL, KEY_MESSAGE_USER, KEY_MESSAGE_TIME },
+				    		KEY_MESSAGE_USER + " = ?",
+				    		new String[] { String.valueOf(userid) },
 				    		null,
 				    		null,
 				    		KEY_ID + " ASC",
@@ -237,9 +213,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			    } else {
 				    cursor = db.query(
 				    		TABLE_MESSAGE_NAME,
-				    		new String[] { KEY_ID, KEY_MESSAGE_MESSAGE, KEY_MESSAGE_FROM, KEY_MESSAGE_CHANNEL, KEY_MESSAGE_USER, KEY_MESSAGE_TIME, KEY_MESSAGE_SERVER },
-				    		KEY_MESSAGE_USER + " = ? AND " + KEY_MESSAGE_SERVER + " = ? AND " + KEY_MESSAGE_CHANNEL + " = ?",
-				    		new String[] { String.valueOf(userid), String.valueOf(server), String.valueOf(channel) },
+				    		new String[] { KEY_ID, KEY_MESSAGE_MESSAGE, KEY_MESSAGE_FROM, KEY_MESSAGE_CHANNEL, KEY_MESSAGE_USER, KEY_MESSAGE_TIME },
+				    		KEY_MESSAGE_USER + " = ? AND " + KEY_MESSAGE_CHANNEL + " = ?",
+				    		new String[] { String.valueOf(userid), String.valueOf(channel) },
 				    		null,
 				    		null,
 				    		KEY_ID + " ASC",
@@ -255,8 +231,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			        			cursor.getString(cursor.getColumnIndex(KEY_MESSAGE_MESSAGE)).replace("''", "'"),
 			        			cursor.getString(cursor.getColumnIndex(KEY_MESSAGE_FROM)),
 			        			cursor.getString(cursor.getColumnIndex(KEY_MESSAGE_CHANNEL)),
-			        			cursor.getInt(cursor.getColumnIndex(KEY_ID)),
-			        			cursor.getInt(cursor.getColumnIndex(KEY_MESSAGE_SERVER))
+			        			cursor.getInt(cursor.getColumnIndex(KEY_ID))
 			        		)
 			        	);
 			        } while (cursor.moveToNext());
@@ -274,7 +249,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		}
 	}
 	
-	public List<ChatMessage> getNewPostsForUser(int userid, long postid, int server, String channel) {
+	public List<ChatMessage> getNewPostsForUser(int userid, long postid, String channel) {
 		synchronized(this) {
 			try {
 				SQLiteDatabase db = this.getReadableDatabase();
@@ -285,9 +260,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			    if (channel == Statics.CHANNEL_MAIN) {
 				    cursor = db.query(
 				    		TABLE_MESSAGE_NAME,
-				    		new String[] { KEY_ID, KEY_MESSAGE_MESSAGE, KEY_MESSAGE_FROM, KEY_MESSAGE_CHANNEL, KEY_MESSAGE_USER, KEY_MESSAGE_TIME, KEY_MESSAGE_SERVER },
-				    		KEY_MESSAGE_USER + " = ? AND " + KEY_ID + " > ? AND " + KEY_MESSAGE_SERVER + " = ? ",
-				    		new String[] { String.valueOf(userid), String.valueOf(postid), String.valueOf(server) },
+				    		new String[] { KEY_ID, KEY_MESSAGE_MESSAGE, KEY_MESSAGE_FROM, KEY_MESSAGE_CHANNEL, KEY_MESSAGE_USER, KEY_MESSAGE_TIME },
+				    		KEY_MESSAGE_USER + " = ? AND " + KEY_ID + " > ? ",
+				    		new String[] { String.valueOf(userid), String.valueOf(postid) },
 				    		null,
 				    		null,
 				    		KEY_ID + " ASC",
@@ -296,9 +271,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			    } else {
 				    cursor = db.query(
 				    		TABLE_MESSAGE_NAME,
-				    		new String[] { KEY_ID, KEY_MESSAGE_MESSAGE, KEY_MESSAGE_FROM, KEY_MESSAGE_CHANNEL, KEY_MESSAGE_USER, KEY_MESSAGE_TIME, KEY_MESSAGE_SERVER },
-				    		KEY_MESSAGE_USER + " = ? AND " + KEY_ID + " > ? AND " + KEY_MESSAGE_SERVER + " = ? AND " + KEY_MESSAGE_CHANNEL + " = ?",
-				    		new String[] { String.valueOf(userid), String.valueOf(postid), String.valueOf(server), String.valueOf(channel) },
+				    		new String[] { KEY_ID, KEY_MESSAGE_MESSAGE, KEY_MESSAGE_FROM, KEY_MESSAGE_CHANNEL, KEY_MESSAGE_USER, KEY_MESSAGE_TIME },
+				    		KEY_MESSAGE_USER + " = ? AND " + KEY_ID + " > ? AND " + KEY_MESSAGE_CHANNEL + " = ?",
+				    		new String[] { String.valueOf(userid), String.valueOf(postid), String.valueOf(channel) },
 				    		null,
 				    		null,
 				    		KEY_ID + " ASC",
@@ -315,8 +290,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 				        			cursor.getString(cursor.getColumnIndex(KEY_MESSAGE_MESSAGE)).replace("''", "'"),
 				        			cursor.getString(cursor.getColumnIndex(KEY_MESSAGE_FROM)),
 				        			cursor.getString(cursor.getColumnIndex(KEY_MESSAGE_CHANNEL)),
-				        			cursor.getInt(cursor.getColumnIndex(KEY_ID)),
-				        			cursor.getInt(cursor.getColumnIndex(KEY_MESSAGE_SERVER))
+				        			cursor.getInt(cursor.getColumnIndex(KEY_ID))
 			        		)
 			        	);
 			        } while (cursor.moveToNext());
@@ -343,7 +317,6 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			    
 			    values.put(KEY_ACCOUNT_USERNAME, account.getUsername());
 			    values.put(KEY_ACCOUNT_PASSWORD, account.getPassword());
-			    values.put(KEY_ACCOUNT_SERVER, account.getServer().getID());
 			    values.put(KEY_ACCOUNT_AUTO, (account.getAutoconnect() == true)? 1:0);
 			 
 			    db.insert(TABLE_ACCOUNT_NAME, null, values);
@@ -363,7 +336,6 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			    
 			    values.put(KEY_ACCOUNT_USERNAME, account.getUsername());
 			    values.put(KEY_ACCOUNT_PASSWORD, account.getPassword());
-			    values.put(KEY_ACCOUNT_SERVER, account.getServer().getID());
 			    values.put(KEY_ACCOUNT_AUTO, (account.getAutoconnect() == true)? 1:0);
 			 
 			    db.update(TABLE_ACCOUNT_NAME, values, KEY_ID + " = ?", new String[] { String.valueOf(account.getID()) });
@@ -400,26 +372,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			    if (cursor != null && cursor.getCount() > 0) {
 				    if (cursor.moveToFirst()) {
 				        do {
-				    	    DimensionAddress server;
-				    	    
-				    	    switch (cursor.getInt(cursor.getColumnIndex(KEY_ACCOUNT_SERVER))) {
-				    	    case 1:
-				    	    	server = DimensionAddress.RK1;
-				    	    	break;
-				    	    case 2:
-				    	    	server = DimensionAddress.RK2;
-				    	    	break;
-				    	    case 0:
-				    	    	server = DimensionAddress.TEST;
-				    	    	break;
-				    	    default:
-				    	    	server = DimensionAddress.RK1;	    	
-				    	    }
-			
 				        	Account account = new Account(
 				            		cursor.getString(cursor.getColumnIndex(KEY_ACCOUNT_USERNAME)),
 				            		cursor.getString(cursor.getColumnIndex(KEY_ACCOUNT_PASSWORD)),
-				            		server,
 				            		(cursor.getInt(cursor.getColumnIndex(KEY_ACCOUNT_AUTO)) != 0),
 				            		cursor.getInt(cursor.getColumnIndex(KEY_ID))
 				            	);
@@ -453,7 +408,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 				
 				Cursor cursor = db.query(
 			    		TABLE_ACCOUNT_NAME, 
-			    		new String[] { KEY_ID, KEY_ACCOUNT_USERNAME, KEY_ACCOUNT_PASSWORD, KEY_ACCOUNT_SERVER, KEY_ACCOUNT_AUTO }, 
+			    		new String[] { KEY_ID, KEY_ACCOUNT_USERNAME, KEY_ACCOUNT_PASSWORD, KEY_ACCOUNT_AUTO }, 
 			    		KEY_ID + "=?", 
 			    		new String[] { String.valueOf(id) },
 			    		null,
@@ -464,27 +419,10 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			    
 			    if (cursor != null && cursor.getCount() > 0) {
 			        cursor.moveToFirst();
-			 
-				    DimensionAddress server;
-				    
-				    switch (cursor.getInt(cursor.getColumnIndex(KEY_ACCOUNT_SERVER))) {
-				    case 1:
-				    	server = DimensionAddress.RK1;
-				    	break;
-				    case 2:
-				    	server = DimensionAddress.RK2;
-				    	break;
-				    case 0:
-				    	server = DimensionAddress.TEST;
-				    	break;
-				    default:
-				    	server = DimensionAddress.RK1;	    	
-				    }
-				    
+
 				    Account account = new Account(
 				    		cursor.getString(cursor.getColumnIndex(KEY_ACCOUNT_USERNAME)),
 				    		cursor.getString(cursor.getColumnIndex(KEY_ACCOUNT_PASSWORD)),
-				    		server,
 				            (cursor.getInt(cursor.getColumnIndex(KEY_ACCOUNT_AUTO)) != 0),
 				            cursor.getInt(cursor.getColumnIndex(KEY_ID))
 				    	);
@@ -507,7 +445,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		}
 	}
 	
-	public void addCharacterData(String name, String image, int server) {
+	public void addCharacterData(String name, String image) {
 		synchronized(this) {
 			try {
 				SQLiteDatabase db = this.getWritableDatabase();
@@ -527,12 +465,11 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			    
 			    values.put(KEY_CHARACTER_NAME, name);
 			    values.put(KEY_CHARACTER_IMAGE, image);
-			    values.put(KEY_CHARACTER_SERVER, server);
 			    
 			    if (cursor == null || cursor.getCount() == 0) {
 				    db.insert(TABLE_CHARACTER_NAME, null, values);
 			    } else {
-			    	db.update(TABLE_CHARACTER_NAME, values, KEY_CHARACTER_NAME + " = ? AND " + KEY_CHARACTER_SERVER + " = ?", new String[] { name,  String.valueOf(server) });
+			    	db.update(TABLE_CHARACTER_NAME, values, KEY_CHARACTER_NAME + " = ?", new String[] { name });
 			    }
 			    
 			    cursor.close();
@@ -543,8 +480,10 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 		}
 	}
 	
-	public String getCharacterImage(String name, int server) {
+	public String getCharacterImage(String name) {
 		synchronized(this) {
+			String image = null;
+			
 			try {
 				SQLiteDatabase db = this.getWritableDatabase(); 
 				
@@ -559,26 +498,21 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 			    		null
 			    	);
 			    
-			    if (cursor != null && cursor.getCount() > 0) {
-			        cursor.moveToFirst();
-			        
-			        String image = cursor.getString(cursor.getColumnIndex(KEY_CHARACTER_IMAGE));
-			        
+			    try {
+					if (cursor != null && cursor.getCount() > 0) {
+				        cursor.moveToFirst();
+				        image = cursor.getString(cursor.getColumnIndex(KEY_CHARACTER_IMAGE));
+				    }
+			    } finally {
 				    cursor.close();
-					db.close();
-					
-				    return image;
-			    } else {
-				    cursor.close();
-					db.close();
-					
-			    	return null;
 			    }
+			    
+				db.close();
 			} catch (SQLiteException e) {
 				Logging.log(APP_TAG, e.getMessage());
 			}
 			
-			return null;
+			return image;
 		}
 	}
 }

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent" >
+    android:layout_height="fill_parent"
+	android:background="@android:color/transparent"
+    >
 
     <RelativeLayout
         android:id="@+id/qlbox"
@@ -29,6 +31,7 @@
     </RelativeLayout>
 
     <LinearLayout
+		style="?attr/applicationFooterStyle"
         android:id="@+id/buttons"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
@@ -36,7 +39,6 @@
         android:weightSum="4"
         android:baselineAligned="false"
         android:gravity="right"
-        android:background="@drawable/footbg"
         >
 	
 	    <LinearLayout
@@ -53,7 +55,7 @@
 	            android:layout_width="0sp"
 	            android:layout_height="wrap_content"
 	            android:layout_weight="1"
-	            android:drawableLeft="@drawable/ic_menu_compass"
+	            android:drawableLeft="@drawable/icon_directions"
 	            android:textSize="14sp"
 	            android:text="@string/find_guides" />
 	
@@ -62,7 +64,7 @@
 	            android:layout_width="0sp"
 	            android:layout_height="wrap_content"
 	            android:layout_weight="1"
-	            android:drawableLeft="@drawable/ic_menu_star"
+	            android:drawableLeft="@drawable/icon_labels"
 	            android:textSize="14sp"
 	            android:text="@string/find_recipes" />
 	        	
@@ -73,6 +75,7 @@
 	        android:layout_width="0dp"
 	        android:layout_height="wrap_content"
 	        android:text="@string/close"
+			android:visibility="gone"
 	        android:layout_weight="1" />
 	    
     </LinearLayout>
@@ -83,6 +86,6 @@
         android:layout_height="fill_parent"
         android:layout_above="@id/buttons"
         android:layout_below="@id/qlbox"
-        android:background="@android:color/black" />
+        />
 
 </RelativeLayout>

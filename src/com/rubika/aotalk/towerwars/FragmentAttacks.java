@@ -67,7 +67,7 @@ import android.widget.TextView;
  * Demonstration of the implementation of a custom Loader.
  */
 public class FragmentAttacks extends SherlockListFragment implements LoaderManager.LoaderCallbacks<List<TowerAttack>> {
-	private static final String APP_TAG = "--> The Leet ::FragmentAttacks";
+	private static final String APP_TAG = "--> The Leet :: FragmentAttacks";
 	private ListAdapter mAdapter;
 
 	public static FragmentAttacks newInstance() {
@@ -128,13 +128,12 @@ public class FragmentAttacks extends SherlockListFragment implements LoaderManag
     	private JSONObject json_data;
     	
         private List<TowerAttack> dataList;
-        private Context context;
         
         final InterestingConfigChanges mLastConfig = new InterestingConfigChanges();
       
         public ListLoader(Context context) {
             super(context);
-            this.context = context;
+            //this.context = context;
             // Retrieve the package manager for later use; note we don't
             // use 'context' directly but instead the save global application
             // context returned by getContext().
@@ -145,7 +144,7 @@ public class FragmentAttacks extends SherlockListFragment implements LoaderManag
 
 	        try{
 	    		httpclient = new DefaultHttpClient();
-		        httpget = new HttpGet(String.format(Statics.TOWER_WARS_ATTACKS, PreferenceManager.getDefaultSharedPreferences(context).getString("server", "1")));
+		        httpget = new HttpGet(Statics.TOWER_WARS_ATTACKS);
 		        	        
 		        response = httpclient.execute(httpget);
 		        entity = response.getEntity();
@@ -386,14 +385,9 @@ public class FragmentAttacks extends SherlockListFragment implements LoaderManag
    @Override public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         
-        // Give some text to display if there is no data.  In a real
-        // application this would come from a resource.
-        //setEmptyText(getString(R.string.no_Sites));
-
-        // We have a menu item to show in action bar.
+        setEmptyText(getString(R.string.no_attacks));
         setHasOptionsMenu(true);
 
-        // Create an empty adapter we will use to display the loaded data.
         mAdapter = new ListAdapter(getActivity(), PreferenceManager.getDefaultSharedPreferences(this.getActivity().getBaseContext()).getBoolean("enableAnimations", true));
         setListAdapter(mAdapter);
         
@@ -410,7 +404,7 @@ public class FragmentAttacks extends SherlockListFragment implements LoaderManag
     }
     
     @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-    	container.setBackgroundResource(R.drawable.applicationbg);
+    	container.setBackgroundResource(0);
     	return super.onCreateView(inflater, container, savedInstanceState);
     }
 

@@ -40,7 +40,7 @@ import com.rubika.aotalk.util.Logging;
  * </pre>
  */
 public class AACPlayer {
-	private static final String APP_TAG = "--> The Leet ::AACPlayer";
+	private static final String APP_TAG = "--> The Leet :: AACPlayer";
 
     /**
      * The default expected bitrate.
@@ -325,14 +325,12 @@ public class AACPlayer {
 
     /**
      * Plays a stream synchronously.
-     * This is the implementation method calle by every play() and playAsync() methods.
+     * This is the implementation method called by every play() and playAsync() methods.
      * @param is the input stream
      * @param expectedKBitSecRate the expected average bitrate in kbit/sec
      */
     protected void playImpl( InputStream is, int expectedKBitSecRate ) throws Exception {
-        BufferReader reader = new BufferReader(
-                                        computeInputBufferSize( expectedKBitSecRate, decodeBufferCapacityMs ),
-                                        is );
+        BufferReader reader = new BufferReader(computeInputBufferSize( expectedKBitSecRate, decodeBufferCapacityMs ), is );
         new Thread( reader ).start();
 
         PCMFeed pcmfeed = null;
@@ -377,7 +375,7 @@ public class AACPlayer {
                 profSamples += nsamp;
                 profCount++;
 
-                Logging.log(APP_TAG, "play(): decoded " + nsamp + " samples");
+                //Logging.log(APP_TAG, "play(): decoded " + nsamp + " samples");
 
                 if (nsamp == 0 || stopped) break;
                 if (!pcmfeed.feed( decodeBuffer, nsamp ) || stopped) break;

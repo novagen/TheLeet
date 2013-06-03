@@ -19,9 +19,9 @@
 package com.rubika.aotalk.adapter;
 
 import java.util.List;
+import java.util.Locale;
 
 import com.rubika.aotalk.item.ChatMessage;
-import com.rubika.aotalk.ui.colorpicker.ColorPickerPreference;
 import com.rubika.aotalk.util.ChatParser;
 import com.rubika.aotalk.util.ImageLoader;
 import com.rubika.aotalk.util.Logging;
@@ -46,15 +46,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
-	protected static final String APP_TAG  = "--> The Leet ::ChatMessageAdapter";
-	private SharedPreferences settings;
-	
-	private int COLOR_APP;
-	private int COLOR_SYS;
-	private int COLOR_PRV;
-	private int COLOR_GRP;
-	private int COLOR_ORG;
-	private int COLOR_FRN;
+	protected static final String APP_TAG  = "--> The Leet :: ChatMessageAdapter";
+	private static SharedPreferences settings;
 	
     private boolean animationEnabled;
     private ImageLoader imageLoader; 
@@ -69,12 +62,9 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
     public View getView(final int position, View convertView, ViewGroup viewGroup) {
         ChatMessage entry = getItem(position);
         
-        COLOR_APP = settings.getInt("color_app", Statics.COLOR_ORG_APP);
-    	COLOR_SYS = settings.getInt("color_system", Statics.COLOR_ORG_SYS);
-    	COLOR_PRV = settings.getInt("color_tell", Statics.COLOR_ORG_PRV);
-    	COLOR_GRP = settings.getInt("color_group", Statics.COLOR_ORG_GRP);
-    	COLOR_ORG = settings.getInt("color_org", Statics.COLOR_ORG_ORG);
-    	COLOR_FRN = settings.getInt("color_frn", Statics.COLOR_ORG_FRN);
+		boolean enableTimestamp = settings.getBoolean("showTimestamp", true);
+		boolean enableFaces = settings.getBoolean("enableFaces", true);
+		boolean enableAnimations = settings.getBoolean("enableAnimations", true);
 
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -84,33 +74,9 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
         TextView t = (TextView) convertView.findViewById(R.id.message);
         
         String text = entry.getMessage().replaceFirst("] 0:", "]");
-    	String color = ColorPickerPreference.convertToARGB(COLOR_GRP);
-       
-		switch(entry.getType()) {
-		case ChatParser.TYPE_SYSTEM_MESSAGE:
-			color = ColorPickerPreference.convertToARGB(COLOR_SYS);
-			break;
-		case ChatParser.TYPE_PRIVATE_MESSAGE:
-			color = ColorPickerPreference.convertToARGB(COLOR_PRV);
-			break;
-		case ChatParser.TYPE_CLIENT_MESSAGE:
-			color = ColorPickerPreference.convertToARGB(COLOR_APP);
-			break;
-		case ChatParser.TYPE_GROUP_MESSAGE:
-			color = ColorPickerPreference.convertToARGB(COLOR_GRP);
-			break;
-		case ChatParser.TYPE_ORG_MESSAGE:
-			color = ColorPickerPreference.convertToARGB(COLOR_ORG);
-			break;
-		case ChatParser.TYPE_FRIEND_MESSAGE:
-			color = ColorPickerPreference.convertToARGB(COLOR_FRN);
-			break;
-		}
-
-        text = "<font color=\"#" + color.substring(2) + "\">" + text + "</font>";
         
-        if (settings.getBoolean("showTimestamp", true)) {
-        	if (settings.getBoolean("enableFaces", true)) {
+        if (enableTimestamp) {
+        	if (enableFaces) {
         		text = ChatParser.getFormattedTimeFromLong(entry.getTimestamp()) + "<br />" + text;
         	} else {
         		text = ChatParser.getFormattedTimeFromLong(entry.getTimestamp()) + " " + text;
@@ -118,6 +84,7 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
         }
 				
         t.setText(Html.fromHtml(text));
+        t.setTextColor(getColor(entry));
         t.setMovementMethod(LinkMovementMethod.getInstance());
         
         ImageView i1 = (ImageView)convertView.findViewById(R.id.icon);
@@ -125,15 +92,15 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
         LinearLayout h1 = (LinearLayout)convertView.findViewById(R.id.iconholder);
         LinearLayout h2 = (LinearLayout)convertView.findViewById(R.id.iconholder2);
                 
-        if (settings.getBoolean("enableFaces", true)) {
+        if (enableFaces) {
         	if (entry.getCharacter() != null && (entry.getMessage().startsWith("to [") || entry.getCharacter().equals(AOTalk.currentCharacterName))) {
     	        i1.setImageBitmap(null);
         		
         		if (getItem(position).getIcon() != null) {
-        			imageLoader.DisplayImage("http://people.anarchy-online.com/character/photos/" + getItem(position).getIcon(), i2);
+        			imageLoader.DisplayImage(Statics.PHOTO_PATH + getItem(position).getIcon(), i2);
         		} else {
         			Logging.log(APP_TAG, "Image is null");
-        			i2.setImageDrawable(TheLeet.getContext().getResources().getDrawable(R.drawable.ic_notification));
+        			i2.setImageDrawable(TheLeet.getContext().getResources().getDrawable(R.drawable.ic_notification_old));
         		}
 
     	        h1.setVisibility(View.GONE);
@@ -142,10 +109,10 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
     	        i2.setImageBitmap(null);
     	        
         		if (getItem(position).getIcon() != null) {
-        			imageLoader.DisplayImage("http://people.anarchy-online.com/character/photos/" + getItem(position).getIcon(), i1);
+        			imageLoader.DisplayImage(Statics.PHOTO_PATH + getItem(position).getIcon(), i1);
         		} else {
         			Logging.log(APP_TAG, "Image is null");
-        			i1.setImageDrawable(TheLeet.getContext().getResources().getDrawable(R.drawable.ic_notification));
+        			i1.setImageDrawable(TheLeet.getContext().getResources().getDrawable(R.drawable.ic_notification_old));
         		}
 
     	        h1.setVisibility(View.VISIBLE);
@@ -156,8 +123,8 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
         	h2.setVisibility(View.GONE);
         }
                 
-		if (entry.showAnimation() && animationEnabled && settings.getBoolean("enableAnimations", true)) {
-	        Animation animation = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF, (float)0.5, Animation.RELATIVE_TO_SELF, (float)1); 
+		if (entry.showAnimation() && animationEnabled && enableAnimations) {
+	        Animation animation = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 1f); 
 	        
 			animation.setDuration(200);
 			animation.setFillAfter(true);
@@ -169,5 +136,58 @@ public class ChatMessageAdapter extends ArrayAdapter<ChatMessage> {
 		}
 		
         return convertView;
+    }
+    
+    private static int getColor(ChatMessage entry) {
+		int colorInt;
+		
+    	switch(entry.getType()) {
+		case ChatParser.MESSAGE_TYPE_SYSTEM:
+			colorInt = settings.getInt("color_system", Statics.COLOR_ORG_SYS);
+			break;
+		case ChatParser.MESSAGE_TYPE_PRIVATE:
+			colorInt = settings.getInt("color_prv", Statics.COLOR_ORG_PRV);
+			break;
+		case ChatParser.MESSAGE_TYPE_CLIENT:
+			colorInt = settings.getInt("color_app", Statics.COLOR_ORG_APP);
+			break;
+		case ChatParser.MESSAGE_TYPE_GROUP:
+			if (isOrgChannel(entry.getChannel())) {
+				colorInt = settings.getInt("color_ocn", Statics.COLOR_ORG_OCN);
+			} else {
+				colorInt = settings.getInt("color_group", Statics.COLOR_ORG_GRP);
+			}
+
+			break;
+		case ChatParser.MESSAGE_TYPE_FRIEND:
+			colorInt = settings.getInt("color_frn", Statics.COLOR_ORG_FRN);
+			break;
+		default:
+			colorInt = settings.getInt("color_group", Statics.COLOR_ORG_GRP);
+			break;
+		}
+   	
+    	return colorInt;
+    }
+    
+    private static boolean isOrgChannel(String channel) {
+		boolean isOrg = false;
+		String mainorg = settings.getString("mainorg", "");
+		
+		if (mainorg.equals("")) {
+			mainorg = "clan (name unknown)";
+		} else {
+			mainorg = "clan (name unknown)," + mainorg;
+		}
+		
+		String[] orgs = mainorg.split(",");
+		
+		for (int i = 0; i < orgs.length; i++) {
+			if (channel.trim().toLowerCase(Locale.getDefault()).equals(orgs[i].trim().toLowerCase(Locale.getDefault()))) {
+				isOrg = true;
+			}
+		}
+		
+		return isOrg;
     }
 }

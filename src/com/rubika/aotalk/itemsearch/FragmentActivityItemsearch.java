@@ -26,6 +26,9 @@ import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.app.SherlockListFragment;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
+import com.google.analytics.tracking.android.EasyTracker;
+import com.google.analytics.tracking.android.Tracker;
+import com.rubika.aotalk.AOTalk;
 import com.rubika.aotalk.R;
 import com.rubika.aotalk.TheLeet;
 import com.rubika.aotalk.item.Item;
@@ -57,7 +60,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 public class FragmentActivityItemsearch extends SherlockFragmentActivity {
-	private static final String APP_TAG = "--> The Leet ::FragmentActivityItemSearch";
+	private static final String APP_TAG = "--> The Leet :: FragmentActivityItemSearch";
+    private static Tracker tracker;
 
 	public FragmentActivityItemsearch() {
 	}
@@ -65,6 +69,10 @@ public class FragmentActivityItemsearch extends SherlockFragmentActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+		//super.setTheme(R.style.Theme_AOTalkTheme_Light);
+        
+        EasyTracker.getInstance().setContext(this);
+        tracker = EasyTracker.getTracker();
 
         FragmentManager fm = getSupportFragmentManager();
 
@@ -107,6 +115,7 @@ public class FragmentActivityItemsearch extends SherlockFragmentActivity {
     	
         @Override public List<Item> loadInBackground() {
 	        List<Item> items = new ArrayList<Item>();
+	        long loadTime = System.currentTimeMillis();
         	
         	String xml = null;
             Document doc = null;
@@ -116,7 +125,7 @@ public class FragmentActivityItemsearch extends SherlockFragmentActivity {
             	searchString = "";
             }
             
-            String url = String.format(ItemSearch.SEARCH_URL, searchString);
+            String url = String.format(Statics.CIDB_SEARCH_URL, searchString);
         	 
             try {
                 DefaultHttpClient httpClient = new DefaultHttpClient();
@@ -176,6 +185,15 @@ public class FragmentActivityItemsearch extends SherlockFragmentActivity {
             	item.setIconBitmap(ImageCache.getImage(TheLeet.getContext(), item.getIcon(), Statics.ICON_PATH, ImageCache.getCacheDirectory(TheLeet.getContext().getPackageName(), "icons"), CompressFormat.PNG));
             }
 
+            if (items != null && items.size() > 0) {
+            	if (tracker == null) {
+            		EasyTracker.getInstance().setContext(AOTalk.getContext());
+                    tracker = EasyTracker.getTracker();
+            	}
+            	
+            	tracker.sendTiming("Loading", System.currentTimeMillis() - loadTime, "Item search", null);
+            }
+            
             return items;
         }
         
@@ -335,7 +353,7 @@ public class FragmentActivityItemsearch extends SherlockFragmentActivity {
         }
         
         @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        	container.setBackgroundResource(R.drawable.applicationbg);
+        	container.setBackgroundResource(0);
         	return super.onCreateView(inflater, container, savedInstanceState);
         }
 

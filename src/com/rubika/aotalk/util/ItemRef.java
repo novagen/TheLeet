@@ -44,12 +44,20 @@ import org.w3c.dom.Text;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import com.google.analytics.tracking.android.EasyTracker;
+import com.google.analytics.tracking.android.Tracker;
+import com.rubika.aotalk.AOTalk;
+
 public class ItemRef {
-	protected static final String APP_TAG = "--> AOTalk::ItemRef";
+	protected static final String APP_TAG = "--> The Leet :: ItemRef";
 	private String retval = "";
 	
 	public List<Object> getData(String lowId, String highId, String ql) {
         List<Object> result = new ArrayList<Object>();
+        
+        EasyTracker.getInstance().setContext(AOTalk.getContext());
+        Tracker tracker = EasyTracker.getTracker();
+        long loadTime = System.currentTimeMillis();
 
         String xml = null;
         Document doc = null;
@@ -70,7 +78,7 @@ public class ItemRef {
         int lowQL = 0;
         int highQL = 0;
 
-        String xyphosUrl = String.format("http://itemxml.xyphos.com/?id=%s&ql=%s", lowId, ql);
+        String xyphosUrl = String.format(Statics.XYPHOS_ITEM_QL_URL, lowId, ql);
         Logging.log(APP_TAG, xyphosUrl);
         
         try {
@@ -471,8 +479,17 @@ public class ItemRef {
         result.add(retval);
         result.add(lowQL);
         result.add(highQL);
-        result.add(Integer.parseInt(level));
+        try {
+        	result.add(Integer.parseInt(level));
+        } catch(NumberFormatException e)  {
+        	Logging.log(APP_TAG, e.getMessage());
+        	result.add(0);
+        }
         result.add(name);
+        
+        if (retval != null && retval.length() > 0) {
+        	tracker.sendTiming("Loading", System.currentTimeMillis() - loadTime, "Item", null);
+        }
         
 		return result;
 	}

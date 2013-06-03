@@ -5,6 +5,7 @@ android:layout_width="fill_parent"
 android:layout_height="fill_parent"
 >
    	<LinearLayout
+	style="?attr/applicationFooterStyle"
   	android:id="@+id/buttons"
 	android:layout_width="fill_parent"
 	android:layout_height="wrap_content"
@@ -33,7 +34,7 @@ android:layout_height="fill_parent"
 	android:layout_height="fill_parent"
 	android:layout_alignParentTop="true"
 	android:layout_above="@id/buttons"
-	android:background="@drawable/applicationbg"
+	android:background="@android:color/transparent"
 	>
 		<RelativeLayout 
 		android:layout_width="match_parent"
@@ -49,10 +50,7 @@ android:layout_height="fill_parent"
 		    android:layout_height="wrap_content" 
 		    android:layout_alignParentLeft="true"
 		    android:layout_alignParentTop="true"
-			android:shadowColor="@color/textshadow"
-			android:shadowDx="1"
-			android:shadowDy="1"
-			android:shadowRadius="3"
+    		style="@style/TextShadow"
 		    />
 		    <TextView
 		    android:id="@+id/text"
@@ -63,11 +61,8 @@ android:layout_height="fill_parent"
 		    android:layout_height="wrap_content" 
 		    android:layout_below="@id/date"
 		    android:layout_marginTop="10sp"
-			android:shadowColor="@color/textshadow"
-			android:shadowDx="1"
-			android:shadowDy="1"
-			android:shadowRadius="3"
 			android:textColorLink="@color/link"
+    		style="@style/TextShadow"
 		    />
 		</RelativeLayout>
 	</ScrollView>

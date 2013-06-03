@@ -33,7 +33,7 @@ import com.rubika.aotalk.util.Logging;
  * </pre>
  */
 public class MP3Player extends AACPlayer {
-	private static final String APP_TAG = "--> The Leet ::MP3Player";
+	private static final String APP_TAG = "--> The Leet :: MP3Player";
 
 
     ////////////////////////////////////////////////////////////////////////////

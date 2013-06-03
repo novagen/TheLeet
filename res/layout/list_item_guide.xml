@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView 
+<RelativeLayout 
 xmlns:android="http://schemas.android.com/apk/res/android"
-android:id="@+id/text"
-android:layout_gravity="center_vertical"
-android:layout_width="fill_parent"
-android:layout_height="fill_parent" 
-android:textColor="@color/mainwhite"
-android:textSize="13sp"
-android:padding="5sp"
-android:drawablePadding="5sp"
-android:gravity="center_vertical"
-android:shadowColor="@color/textshadow"
-android:shadowDx="1"
-android:shadowDy="1"
-android:shadowRadius="3"
-android:background="@drawable/listbg"
-/>
+style="?attr/listItemStyle"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+>
+	<TextView 
+	style="?attr/listTextMainStyle"
+	android:id="@+id/text"
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content" 
+	android:padding="5sp"
+	android:drawablePadding="5sp"
+	android:gravity="center_vertical"
+	android:background="@drawable/listbg"
+	/>
+</RelativeLayout>

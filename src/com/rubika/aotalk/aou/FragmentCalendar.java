@@ -47,6 +47,9 @@ import org.xml.sax.SAXException;
 import com.actionbarsherlock.app.SherlockListFragment;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
+import com.google.analytics.tracking.android.EasyTracker;
+import com.google.analytics.tracking.android.Tracker;
+import com.rubika.aotalk.AOTalk;
 import com.rubika.aotalk.R;
 import com.rubika.aotalk.item.AouCalendar;
 import com.rubika.aotalk.util.Logging;
@@ -73,17 +76,23 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 public class FragmentCalendar extends SherlockListFragment implements LoaderManager.LoaderCallbacks<List<AouCalendar>> {
-	private static final String APP_TAG = "--> The Leet ::FragmentCalendar";
+	private static final String APP_TAG = "--> The Leet :: FragmentCalendar";
     private ListAdapter mAdapter;
+    private static Tracker tracker;
+    private static AOU aou;
 	
-	public static FragmentCalendar newInstance() {
+	public static FragmentCalendar newInstance(AOU a) {
 		FragmentCalendar f = new FragmentCalendar();
+		aou = a;
         return f;
     }
 
     @Override
 	public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        EasyTracker.getInstance().setContext(AOTalk.getContext());
+        tracker = EasyTracker.getTracker();
     }
     
     /**
@@ -128,7 +137,9 @@ public class FragmentCalendar extends SherlockListFragment implements LoaderMana
         }
     	
         @Override public List<AouCalendar> loadInBackground() {
-	        List<AouCalendar> items = new ArrayList<AouCalendar>();
+	        long loadTime = System.currentTimeMillis();
+	        
+        	List<AouCalendar> items = new ArrayList<AouCalendar>();
         	
         	String xml = null;
             Document doc = null;
@@ -182,26 +193,21 @@ public class FragmentCalendar extends SherlockListFragment implements LoaderMana
 		                //if (Long.parseLong(date_from) > System.currentTimeMillis() || Long.parseLong(date_to) > System.currentTimeMillis()) {
 		                	date_from = df.format(new Date(Long.parseLong(date_from) * 1000));
 		                
-			                String server = e.getAttribute("dimension");
-			                if (server.equals("0")) {
-			                	server = "Global";
-			                } else if (server.equals("1")) {
-			                	server = "Atlantean";
-			                } else if (server.equals("2")) {
-			                	server = "Rimor";
-			                }
-			                			                
 			                String title = Html.fromHtml(getValue(e, "subject").replace("<![", "").replace("]]>", "").trim()).toString();
 			                String desc  = Html.fromHtml(getValue(e, "message").replace("<![", "").replace("]]>", "").replace("\n", "<br />").trim()).toString();
 			                String topic = e.getAttribute("topic_id");
 			                
-			                AouCalendar entry = new AouCalendar(title, desc, date_from, server, topic);
+			                AouCalendar entry = new AouCalendar(title, desc, date_from, topic);
 			                items.add(entry);
 		                //}
 	                }
 	            }
             }
 			
+            if (items.size() > 0) {
+            	tracker.sendTiming("Loading", System.currentTimeMillis() - loadTime, "AOU Calendar", null);
+            }
+            
 			return items;
         }
         
@@ -346,7 +352,6 @@ public class FragmentCalendar extends SherlockListFragment implements LoaderMana
             
             ((TextView) convertView.findViewById(R.id.text)).setText(item.getLabel());
             ((TextView) convertView.findViewById(R.id.date)).setText(item.getTime());
-            ((TextView) convertView.findViewById(R.id.server)).setText(item.getServer());
 
             if (animationEnabled) {
                 Animation animation = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF, (float)0, Animation.RELATIVE_TO_SELF, (float)0.5); 
@@ -365,30 +370,22 @@ public class FragmentCalendar extends SherlockListFragment implements LoaderMana
     @Override public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        // Give some text to display if there is no data.  In a real
-        // application this would come from a resource.
         setEmptyText(getString(R.string.no_calendar));
-
-        // We have a menu item to show in action bar.
         setHasOptionsMenu(true);
 
-        // Create an empty adapter we will use to display the loaded data.
         mAdapter = new ListAdapter(getActivity(), PreferenceManager.getDefaultSharedPreferences(this.getActivity().getBaseContext()).getBoolean("enableAnimations", true));
         setListAdapter(mAdapter);
 
         getListView().setScrollingCacheEnabled(false);
         getListView().setDividerHeight(0);
 
-        // Start out with a progress indicator.
         setListShown(false);
 
-        // Prepare the loader.  Either re-connect with an existing one,
-        // or start a new one.
         getLoaderManager().initLoader(0, null, this);
     }
     
     @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-    	container.setBackgroundResource(R.drawable.applicationbg);
+    	container.setBackgroundResource(0);
     	return super.onCreateView(inflater, container, savedInstanceState);
     }
 
@@ -400,11 +397,14 @@ public class FragmentCalendar extends SherlockListFragment implements LoaderMana
 		intent.setClass(mAdapter.getContext(), ActivityCalendar.class);
 		intent.putExtra("title", mAdapter.getItem(position).getLabel());
 		intent.putExtra("date", mAdapter.getItem(position).getTime());
-		intent.putExtra("server", mAdapter.getItem(position).getServer());
 		intent.putExtra("text", mAdapter.getItem(position).getDescription());
 		intent.putExtra("link", "http://www.ao-universe.com/forum/viewtopic.php?t=" + mAdapter.getItem(position).getTopic());
 		
-		mAdapter.getContext().startActivity(intent);
+		if (AOU.isTablet) {
+			aou.loadFragment(intent, 3);
+		} else {
+			mAdapter.getContext().startActivity(intent);
+		}
     }
 
     @Override public Loader<List<AouCalendar>> onCreateLoader(int id, Bundle args) {

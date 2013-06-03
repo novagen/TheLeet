@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout 
 xmlns:android="http://schemas.android.com/apk/res/android"
+style="?attr/listItemStyle"
 android:layout_width="match_parent"
 android:layout_height="wrap_content"
 android:padding="10sp"
-android:background="@drawable/listbg"
 >
     <ImageView 
     android:id="@+id/icon"
@@ -15,17 +15,11 @@ android:background="@drawable/listbg"
 	android:adjustViewBounds="true"
     />
     <TextView
+	style="?attr/listTextMainStyle"
     android:id="@+id/text"
-    android:textSize="13sp"
-    android:textColor="@color/mainwhite"
-    android:layout_gravity="center_vertical"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content" 
 	android:layout_toRightOf="@id/icon"
-	android:shadowColor="@color/textshadow"
-	android:shadowDx="1"
-	android:shadowDy="1"
-	android:shadowRadius="3"
 	android:paddingLeft="10sp"
 	android:paddingRight="10sp"
 	android:layout_centerVertical="true"

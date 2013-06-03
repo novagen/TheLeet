@@ -14,13 +14,13 @@ import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.app.SherlockListFragment;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
+import com.google.analytics.tracking.android.EasyTracker;
 import com.rubika.aotalk.Preferences;
 import com.rubika.aotalk.R;
 import com.rubika.aotalk.util.Logging;
 
 public class ItemSearch extends SherlockFragmentActivity {
-	protected static final String APP_TAG = "--> AOTalk::ItemSearch";
-	public static final String SEARCH_URL = "http://cidb.botsharp.net/?bot=aotalk&output=xml&version=1.2&search=%s";
+	protected static final String APP_TAG = "--> The Leet :: ItemSearch";
 
 	private static Context context;
 	public String searchString = null;
@@ -28,6 +28,7 @@ public class ItemSearch extends SherlockFragmentActivity {
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+		//super.setTheme(R.style.Theme_AOTalkTheme_Light);
         
         context = this;
         
@@ -62,7 +63,6 @@ public class ItemSearch extends SherlockFragmentActivity {
        
         final ActionBar bar = getSupportActionBar();
         
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
         bar.setDisplayHomeAsUpEnabled(true);
         
@@ -76,6 +76,28 @@ public class ItemSearch extends SherlockFragmentActivity {
     @Override
     protected void onResume() {
     	super.onResume();
+    }
+    
+    @Override
+    protected void onStart() {
+    	super.onStart();
+    	
+    	try {
+        	EasyTracker.getInstance().activityStart(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
+    }
+    
+    @Override
+    protected void onStop() {
+    	super.onStop();
+
+    	try {
+            EasyTracker.getInstance().activityStop(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
     }
     
     @Override

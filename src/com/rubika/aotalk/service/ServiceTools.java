@@ -32,13 +32,17 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import com.google.analytics.tracking.android.EasyTracker;
+import com.google.analytics.tracking.android.Tracker;
 import com.rubika.aotalk.AOTalk;
 import com.rubika.aotalk.R;
+import com.rubika.aotalk.database.DatabaseHandler;
 import com.rubika.aotalk.util.ImageCache;
 import com.rubika.aotalk.util.ImageTools;
 import com.rubika.aotalk.util.Logging;
 import com.rubika.aotalk.util.Statics;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -46,10 +50,11 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
 public class ServiceTools {
-	private static final String APP_TAG = "--> The Leet ::ServiceTools";
+	private static final String APP_TAG = "--> The Leet :: ServiceTools";
 
-	public static Bitmap getUserImage(int serverId, String charName, Context context) {
-		String dataurl = String.format(Statics.BASE_CHAR_URL, serverId, charName);
+	@SuppressLint("InlinedApi")
+	public static Bitmap getUserImage(String charName, Context context) {
+		String dataurl = String.format(Locale.getDefault(), Statics.CHAR_PATH, charName);
 		Bitmap currentUserImage = null;
 		
 		Logging.log(APP_TAG, "Character url: " + dataurl);
@@ -60,8 +65,8 @@ public class ServiceTools {
 
 		String imageName = null;
 		
-		if (charName != null && ClientService.databaseHandler != null) {
-			imageName = ClientService.databaseHandler.getCharacterImage(charName, serverId);
+		if (charName != null) {
+			imageName = DatabaseHandler.getInstance(context).getCharacterImage(charName);
 		}
 		
 		if (imageName == null) {
@@ -99,13 +104,27 @@ public class ServiceTools {
 		File cacheDir = ImageCache.getCacheDirectory(ClientService.getContext().getPackageName(), "photos");
 		
 		if (imageName != null) {
-			ClientService.databaseHandler.addCharacterData(charName, imageName, serverId);
+			DatabaseHandler.getInstance(context).addCharacterData(charName, imageName);
+			
+			int height = 32;
+			int width = 32;
+			
+			if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
+				height = context.getResources().getDimensionPixelSize(android.R.dimen.notification_large_icon_height);
+				width = context.getResources().getDimensionPixelSize(android.R.dimen.notification_large_icon_width);
+			}
 			
 			currentUserImage = ImageTools.cropImage(
 				ImageTools.resizeImage(
-					ImageCache.getImage(ClientService.getContext(), imageName, "http://people.anarchy-online.com/character/photos/", cacheDir, Bitmap.CompressFormat.JPEG),
-					(int)Math.round(context.getResources().getDimensionPixelSize(android.R.dimen.notification_large_icon_height) * 1.5), 
-					context.getResources().getDimensionPixelSize(android.R.dimen.notification_large_icon_width)
+					ImageCache.getImage(
+						ClientService.getContext(), 
+						imageName, 
+						Statics.PHOTO_PATH, 
+						cacheDir, 
+						Bitmap.CompressFormat.JPEG
+					),
+					(int)Math.round(height * 1.5), 
+					width
 				), 
 				context
 			);
@@ -114,7 +133,7 @@ public class ServiceTools {
 		if (currentUserImage != null) {
 			return currentUserImage;
 		} else {
-			return ((BitmapDrawable)context.getResources().getDrawable(R.drawable.ic_notification)).getBitmap();
+			return ((BitmapDrawable)context.getResources().getDrawable(R.drawable.leet)).getBitmap();
 		}
 	}
 	
@@ -145,13 +164,13 @@ public class ServiceTools {
 		return sb.toString();
 	}
 	
-	public static String getUserImageName(Context context, String name, int server) {
+	public static String getUserImageName(Context context, String name) {
 		String path = null;
 		
-		path = AOTalk.databaseHandler.getCharacterImage(name, server);
+		path = AOTalk.databaseHandler.getCharacterImage(name);
 		
 		if (path == null || path.equals("0")) {
-			List<String> userData = ServiceTools.getUserData(context, name, server);
+			List<String> userData = ServiceTools.getUserData(context, name);
 			
     		if (userData != null && !userData.isEmpty() && userData.get(2) != null) {
 	    		path = userData.get(2);
@@ -161,10 +180,14 @@ public class ServiceTools {
 		return path;
 	}
 	
-	public static List<String> getUserData(Context context, String username, int server) {
-		String dataurl = String.format(Locale.US, Statics.BASE_CHAR_URL, server, username);
+	public static List<String> getUserData(Context context, String username) {
+		String dataurl = String.format(Locale.US, Statics.CHAR_PATH, username);
 		String charInfo = "";
 		String charName = "";
+		
+        EasyTracker.getInstance().setContext(context);
+        Tracker tracker = EasyTracker.getTracker();
+        long loadTime = System.currentTimeMillis();
 		
 		List<String> charData = new ArrayList<String>();
 		
@@ -359,10 +382,14 @@ public class ServiceTools {
 			imageName = "0";
 		} else {
 			Logging.log(APP_TAG, "found image name: " + imageName);
-			ClientService.databaseHandler.addCharacterData(username, imageName, server);
+			DatabaseHandler.getInstance(context).addCharacterData(username, imageName);
 		}
 		
 		charData.add(imageName);
+		
+		if (charInfo != null && charInfo.length() > 0) {
+        	tracker.sendTiming("Loading", System.currentTimeMillis() - loadTime, "Character", null);
+		}
 		
 		return charData;
 	}

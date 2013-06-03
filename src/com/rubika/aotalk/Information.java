@@ -25,7 +25,9 @@ import java.util.regex.Pattern;
 import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.view.MenuItem;
-import com.rubika.aotalk.aou.GuideSearch;
+import com.google.analytics.tracking.android.EasyTracker;
+import com.google.analytics.tracking.android.Tracker;
+import com.rubika.aotalk.aou.AOU;
 import com.rubika.aotalk.item.ChatMessage;
 import com.rubika.aotalk.recipebook.RecipeBook;
 import com.rubika.aotalk.service.ClientService;
@@ -33,6 +35,7 @@ import com.rubika.aotalk.util.ItemRef;
 import com.rubika.aotalk.util.Logging;
 import com.rubika.aotalk.util.Statics;
 
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -57,10 +60,12 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
 public class Information extends SherlockActivity {
-	protected static final String APP_TAG    = "--> The Leet ::ShowInfo";
+	protected static final String APP_TAG   = "--> The Leet :: ShowInfo";
 	protected static final String CMD_START = "/start";
 	protected static final String CMD_TELL  = "/tell";
 	protected static final String CMD_CC    = "/cc";
+	protected static final String CMD_CLOSE = "/close";
+	protected static final String CMD_TEXT = "/text";
 	
 	protected static final String CC_ADD = "addbuddy";
 	protected static final String CC_REM = "rembuddy";
@@ -112,7 +117,7 @@ public class Information extends SherlockActivity {
     	guides.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
-				Intent intent = new Intent(context, GuideSearch.class);
+				Intent intent = new Intent(context, AOU.class);
 				intent.putExtra("text", itemname);
 				startActivity(intent);
 			}
@@ -205,18 +210,27 @@ public class Information extends SherlockActivity {
     private int lowQL = 0;
     private int currentQL = 0;
     private Context context;
+    private static Tracker tracker;
     
-    @Override
+    @SuppressLint("NewApi")
+	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_information);
+		//super.setTheme(R.style.Theme_AOTalkTheme_Light);
+
+		setContentView(R.layout.activity_information);
+
+        EasyTracker.getInstance().setContext(this);
+        tracker = EasyTracker.getTracker();
                 
         context = this;
         
         final ActionBar bar = getSupportActionBar();
-		bar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
-        bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
-        bar.setDisplayHomeAsUpEnabled(true);
+
+        if (bar != null) {
+	        bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
+	        bar.setDisplayHomeAsUpEnabled(true);
+        }
         
         bindService();
         
@@ -227,11 +241,15 @@ public class Information extends SherlockActivity {
         qlbox = (RelativeLayout) findViewById(R.id.qlbox);
         seeker = (SeekBar) findViewById(R.id.seeker);
         currentql = (TextView) findViewById(R.id.currentql);
-        
+       
         info = (WebView) findViewById(R.id.web);
         info.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
         info.setBackgroundColor(0);
         info.setVisibility(View.INVISIBLE);
+        
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
+			((View)info.getParent()).setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+		}
         
         info.setWebViewClient(new WebViewClient() {  
             @Override
@@ -245,7 +263,9 @@ public class Information extends SherlockActivity {
 			        	chatcmd = matcher.group(1).trim();
 			        }
 	    	        
-	    	        if(chatcmd.equals(CMD_START)) {
+	    	        if(chatcmd.equals(CMD_CLOSE)) {
+	    	        	finish();
+	    	        } else if(chatcmd.equals(CMD_START)) {
 						pattern = Pattern.compile("chatcmd://(.*?) (.*)");
 						matcher = pattern.matcher(Uri.decode(url));
 				        
@@ -267,7 +287,7 @@ public class Information extends SherlockActivity {
 				        }
 	    	        	
 	    	        	if(target != null && message != null) {
-	    	        		ChatMessage chatMessage = new ChatMessage(System.currentTimeMillis(), message, target, "", 0, 0);
+	    	        		ChatMessage chatMessage = new ChatMessage(System.currentTimeMillis(), message, target, "", 0);
 	    	        		
 	    	        		Message message = Message.obtain(null, Statics.MESSAGE_SEND);
 	    		            message.arg1 = 1;
@@ -282,6 +302,15 @@ public class Information extends SherlockActivity {
 							
 		    	        	finish();
 						}
+	    	        } else if(chatcmd.equals(CMD_TEXT)) {
+	    	        	pattern = Pattern.compile("chatcmd://(.*?) (.*?)");
+						matcher = pattern.matcher(Uri.decode(url));
+				        
+						while(matcher.find()) {
+							message = matcher.group(2).trim();
+				        }
+
+						Logging.toast(context, message);
 	    	        } else if(chatcmd.equals(CMD_CC)) {
 	    	        	pattern = Pattern.compile("chatcmd://(.*?) (.*?) (.*)");
 						matcher = pattern.matcher(Uri.decode(url));
@@ -318,7 +347,7 @@ public class Information extends SherlockActivity {
 	    		    	info.setVisibility(View.VISIBLE);
 	    	        }
 	    		} else if (url.startsWith("gitem://")) {
-					intent = new Intent(Information.this, GuideSearch.class);
+					intent = new Intent(Information.this, AOU.class);
 					intent.putExtra("text", url.replace("gitem://", ""));
 					intent.setData(Uri.parse(url));
 					startActivity(intent);
@@ -336,7 +365,6 @@ public class Information extends SherlockActivity {
 				return true;
             }
         });
-        
         
         //Show text data in webview
         if(
@@ -378,6 +406,7 @@ public class Information extends SherlockActivity {
 	        }
 	        
 	        text = text.replace("--------------------------------------------------------------", "<hr />");
+	        text = text.replace("<font color=#000000>", "<font class=\"noshadow\" color=#3a3a3a>");
 	        
 	        Logging.log(APP_TAG, text);
 	        
@@ -411,6 +440,8 @@ public class Information extends SherlockActivity {
 		                highQL = (Integer) result.get(2);
 		                currentQL = (Integer) result.get(3);
 		                itemname = (String) result.get(4);
+		                
+		        		tracker.sendEvent("Xyphos", "Item", (String) result.get(4), 0L);
 	            	}
 	            	
 	                resultHandler.post(outputResult);
@@ -449,6 +480,28 @@ public class Information extends SherlockActivity {
     protected void onPause() {
     	super.onPause();
         unbindService();
+    }
+    
+    @Override
+    protected void onStart() {
+    	super.onStart();
+    	
+    	try {
+        	EasyTracker.getInstance().activityStart(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
+    }
+    
+    @Override
+    protected void onStop() {
+    	super.onStop();
+
+    	try {
+            EasyTracker.getInstance().activityStop(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
     }
     
     private boolean serviceIsBound = false;

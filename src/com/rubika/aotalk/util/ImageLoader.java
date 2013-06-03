@@ -34,7 +34,7 @@ public class ImageLoader {
         executorService = Executors.newFixedThreadPool(5);
     }
     
-    final int stub_id = R.drawable.ic_notification;
+    final int stub_id = R.drawable.ic_notification_old;
     
     public void DisplayImage(String url, ImageView imageView)
     {

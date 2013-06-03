@@ -38,7 +38,7 @@ import android.util.Log;
 
 @SuppressLint("UseSparseArrays")
 public class ItemValues {
-	private static final String APP_TAG = "--> The Leet ::ItemValues";
+	private static final String APP_TAG = "--> The Leet :: ItemValues";
 
 	private static Map<Integer, String> expansionList = new HashMap<Integer, String>() {
 		private static final long serialVersionUID = 1L;
@@ -2122,7 +2122,7 @@ public class ItemValues {
 
         try {
             DefaultHttpClient httpClient = new DefaultHttpClient();
-            HttpPost httpPost = new HttpPost(String.format("http://itemxml.xyphos.com/?id=%s", id));
+            HttpPost httpPost = new HttpPost(String.format(Statics.XYPHOS_ITEM_URL, id));
             HttpResponse httpResponse = httpClient.execute(httpPost);
             HttpEntity httpEntity = httpResponse.getEntity();
             xml = EntityUtils.toString(httpEntity);
@@ -2214,7 +2214,10 @@ public class ItemValues {
         JSONObject json = new JSONObject();
         
         try {
-            HttpPost post = new HttpPost(String.format("http://109.74.0.178/nano.php?id=%d", id));
+            /**
+             * TODO
+             */
+        	HttpPost post = new HttpPost(String.format("http://109.74.0.178/nano.php?id=%d", id));
             post.setHeader("Content-Type", "application/json; charset=utf-8");
             
             json.put("platformType", "android");

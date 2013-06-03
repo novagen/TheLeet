@@ -14,11 +14,11 @@
         >
     
 	    <RelativeLayout
+			style="?attr/applicationFooterStyle"
 	        android:id="@+id/inputbar"
 	        android:layout_width="fill_parent"
 	        android:layout_height="45sp"
 	        android:layout_alignParentBottom="true"
-	        android:background="@drawable/footbg"
 	        android:padding="2sp" >
 	
 	        <ImageButton
@@ -31,7 +31,7 @@
 	            android:contentDescription="@string/set_channel"
 	            android:gravity="center"
 	            android:padding="2sp"
-	            android:src="@drawable/ic_menu_allfriends" />
+	            android:src="@drawable/icon_friends" />
 	
 	        <EditText
 	            android:id="@+id/input"

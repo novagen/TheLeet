@@ -55,6 +55,5 @@ public class SyncAdapterService extends Service {
 	}
 	
 	private static void performSync(Context context, Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) throws OperationCanceledException {
-		Log.d(TAG, "performSync");
 	}
 }

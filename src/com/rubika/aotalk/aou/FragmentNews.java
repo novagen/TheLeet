@@ -32,6 +32,9 @@ import org.mcsoxford.rss.RSSReaderException;
 import com.actionbarsherlock.app.SherlockListFragment;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
+import com.google.analytics.tracking.android.EasyTracker;
+import com.google.analytics.tracking.android.Tracker;
+import com.rubika.aotalk.AOTalk;
 import com.rubika.aotalk.R;
 import com.rubika.aotalk.item.AouNews;
 import com.rubika.aotalk.util.Logging;
@@ -57,17 +60,23 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 public class FragmentNews extends SherlockListFragment implements LoaderManager.LoaderCallbacks<List<AouNews>> {
-	private static final String APP_TAG = "--> The Leet ::FragmentNews";
+	private static final String APP_TAG = "--> The Leet :: FragmentNews";
 	private ListAdapter mAdapter;
+    private static Tracker tracker;
+    private static AOU aou;
 	
-	public static FragmentNews newInstance() {
+	public static FragmentNews newInstance(AOU a) {
 		FragmentNews f = new FragmentNews();
+		aou = a;
         return f;
     }
 
     @Override
 	public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        EasyTracker.getInstance().setContext(AOTalk.getContext());
+        tracker = EasyTracker.getTracker();
     }
     
     /**
@@ -116,6 +125,8 @@ public class FragmentNews extends SherlockListFragment implements LoaderManager.
         }
     	
         @Override public List<AouNews> loadInBackground() {
+	        long loadTime = System.currentTimeMillis();
+	        
 	        RSSReader reader = new RSSReader();
 	        List<AouNews> items = new ArrayList<AouNews>();
 	        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
@@ -157,7 +168,12 @@ public class FragmentNews extends SherlockListFragment implements LoaderManager.
 			reader.close();
 			reader = null;
 			
-			return items;
+			
+            if (items.size() > 0) {
+            	tracker.sendTiming("Loading", System.currentTimeMillis() - loadTime, "AOU News", null);
+            }
+
+            return items;
         }
         
         @Override public void deliverResult(List<AouNews> news) {
@@ -301,7 +317,7 @@ public class FragmentNews extends SherlockListFragment implements LoaderManager.
         
         // Give some text to display if there is no data.  In a real
         // application this would come from a resource.
-        //setEmptyText(getString(R.string.no_news));
+        setEmptyText(getString(R.string.no_news));
 
         // We have a menu item to show in action bar.
         setHasOptionsMenu(true);
@@ -322,7 +338,7 @@ public class FragmentNews extends SherlockListFragment implements LoaderManager.
     }
     
     @Override public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-    	container.setBackgroundResource(R.drawable.applicationbg);
+    	container.setBackgroundResource(0);
     	return super.onCreateView(inflater, container, savedInstanceState);
     }
 
@@ -337,7 +353,11 @@ public class FragmentNews extends SherlockListFragment implements LoaderManager.
 		intent.putExtra("text", mAdapter.getItem(position).getDesc());
 		intent.putExtra("link", mAdapter.getItem(position).getLink());
 		
-		mAdapter.getContext().startActivity(intent);
+		if (AOU.isTablet) {
+			aou.loadFragment(intent, 1);
+		} else {
+			mAdapter.getContext().startActivity(intent);
+		}
     }
 
     @Override public Loader<List<AouNews>> onCreateLoader(int id, Bundle args) {

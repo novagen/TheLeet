@@ -39,6 +39,8 @@ import android.util.Log;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import com.rubika.aotalk.util.Statics;
+
 /**
  * Skeleton for application-specific {@link IntentService}s responsible for
  * handling communication from Google Cloud Messaging service.
@@ -61,7 +63,7 @@ public abstract class GCMBaseIntentService extends IntentService {
     // Java lock used to synchronize access to sWakelock
     private static final Object LOCK = GCMBaseIntentService.class;
 
-    private final String[] mSenderIds;
+    private String[] mSenderIds;
 
     // instance counter
     private static int sCounter = 0;
@@ -121,8 +123,10 @@ public abstract class GCMBaseIntentService extends IntentService {
      * @throws IllegalStateException if sender id was not set on constructor.
      */
     protected String[] getSenderIds(Context context) {
-        if (mSenderIds == null) {
-            throw new IllegalStateException("sender id not set on constructor");
+    	if (mSenderIds == null) {
+            //throw new IllegalStateException("sender id not set on constructor");
+            mSenderIds = new String[0];
+    		mSenderIds[0] = Statics.GCMSenderID;
         }
         return mSenderIds;
     }

@@ -36,7 +36,7 @@ import com.rubika.aotalk.util.Logging;
  * </pre>
  */
 public class MultiPlayer extends AACPlayer {
-	private static final String APP_TAG = "--> The Leet ::MultiPlayer";
+	private static final String APP_TAG = "--> The Leet :: MultiPlayer";
 
 
     ////////////////////////////////////////////////////////////////////////////

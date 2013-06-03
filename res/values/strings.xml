@@ -37,6 +37,7 @@
 	<string name="edit">Edit</string>
 	<string name="delete">Delete</string>
 	<string name="delete_account">Delete account</string>
+	<string name="messages">Messages</string>
 	<string name="confirm_delete_account">Are you sure you want to delete the account?</string>
 	<string name="set_channel">Set channel</string>
 	<string name="reconnect_timeout" formatted="false">Could not reconnect in %s seconds. Giving up.</string>
@@ -54,7 +55,9 @@
 	<string name="removed_from_buddy_list" formatted="false">%s removed from your buddy list</string>
 	<string name="not_add_yourself">You can not add yourself as a friend</string>
 	<string name="preferences">Settings</string>
-    <string name="no_news">Could not find any news</string>
+    <string name="no_attacks">Could not find any attack history</string>
+	<string name="no_sites">Could not find any sites</string>
+	<string name="no_news">Could not find any news</string>
     <string name="no_items">Could not find any items</string>
     <string name="no_calendar">Could not find any calendar events</string>
     <string name="no_guides">Could not find any guides</string>
@@ -120,8 +123,12 @@
 	<string name="enable_notifications_info">Show notification when receiving a private message</string>
 	<string name="enable_notifications_info_on">Show notification when receiving a private message</string>
 	<string name="enable_notifications_info_off">Don\'t show notification when receiving a private message</string>
+	<string name="enable_tower_notifications_info_on">Show notification when a tower site is attacked</string>
+	<string name="enable_tower_notifications_info_off">Don\'t show notification when a tower site is attacked</string>
 	<string name="notification_sound">Notification sound</string>
 	<string name="notification_sound_info">Set the sound to play when receiving a private message</string>
+	<string name="tower_notification_sound">Notification sound for tower wars</string>
+	<string name="tower_notification_sound_info">Set the sound to play when receiving a tower wars notification</string>
 	<string name="not_connected">You are not connected</string>
 	<string name="gsp">GridStream Productions</string>
 	<string name="gsp2">A service of loudcity.net</string>
@@ -148,7 +155,7 @@
 	<string name="you_were_invited" formatted="false">You have been invited to the channel %s</string>
 	<string name="you_were_invited_to_channel" formatted="false">You have been invited to %s\'s private channel. Do you wish to join?</string>
 	<string name="general">General</string>
-	<string name="search">Search</string>
+	<string name="user_interface">User interface</string>
 	<string name="widget_clear">By Novagen</string>
 	<string name="connection_error">Unable to connect to the server</string>
 	<string name="dialog_color_picker">Color Picker</string>
@@ -166,8 +173,10 @@
 	<string name="color_prv_info">Select color for private messages</string>
 	<string name="color_grp">Group</string>
 	<string name="color_grp_info">Select color for group messages</string>
-	<string name="color_org">Org</string>
-	<string name="color_org_info">Select color for org messages</string>
+	<string name="color_org">Org broadcast</string>
+	<string name="color_org_info">Select color for org boadcast messages</string>
+	<string name="color_ocn">Org channel</string>
+	<string name="color_ocn_info">Select color for org channel messages</string>
 	<string name="color_frn">Friend</string>
 	<string name="color_frn_info">Select color for friend log on / log off messages</string>
 	<string name="color_oth">Other</string>
@@ -198,6 +207,8 @@
 	<string name="enable_faces_info_off">Faces are disabled in chat and friends list</string>
 	<string name="select_search">Select what to search for</string>
 	<string name="search_results">Search results</string>
+	<string name="select_sites">Select sites</string>
+	<string name="saving_sites">Saving tower sites</string>
 	<string name="searchinf">Searching</string>
 	<string name="show_timestamps">Enable timestamps</string>
 	<string name="show_timestamps_info">Show timestamps in chat messages</string>
@@ -208,12 +219,57 @@
 	<string name="search_not_empty">Search can not be empty</string>
 	<string name="account_mime">vnd.android.cursor.item/vnd.com.rubika.aotalk.profile</string>
     <string name="account_type">com.rubika.aotalk.account</string>
-    <string name="authenticating">Authenticating</string>
+    <string name="authenticating">Authenticating&#8230;</string>
     <string name="unsupported_version">Your Android version does not support this function.\n\nAndroid 2.2 or higher is required.</string>
-    <string name="tower_attack_notifications">Tower attack watcher</string>
-    <string name="tower_attack_notifications_info">Select tower sites to watch</string>
+    <string name="tower_attack_notifications">Monitor sites</string>
+    <string name="tower_attack_notifications_info">Select tower sites you want to get notifications for.\n\nThis requires a rubi-ka.net account.</string>
     <string name="keep_screen_on">Keep screen on</string>
     <string name="keep_screen_on_info_on">Screen will remain on</string>
     <string name="keep_screen_on_info_off">Screen will turn off</string>
     <string name="account_not_found">Could not access account</string>
+    <string name="email_address">E-mail address</string>
+    <string name="select_all">All</string>
+    <string name="select_none">None</string>
+    <string name="save">Save</string>
+    <string name="mute_dnet">Ignore Dnet and Neutnet</string>
+    <string name="mute_dnet_info_on">Messages from Dnet and Neutnet will be ignored</string>
+    <string name="mute_dnet_info_off">Messages from Dnet and Neutnet will not be ignored</string>
+    <string name="dnet_as_channel">Dnet and Neutnet as channels</string>
+    <string name="dnet_as_channel_info_on">Dnet and Neutnet will be treated as channels</string>
+    <string name="dnet_as_channel_info_off">Dnet and Neutnet will not be treated as channels</string>
+    <string name="enable_music_vibrations">Vibrate to the music</string>
+    <string name="enable_music_vibrations_info_on">Vibrations are enabled</string>
+    <string name="enable_music_vibrations_info_off">Vibrations are disabled</string>
+    <string name="enable_sounds">Enable sounds</string>
+    <string name="enable_sounds_info_on">Sounds are enabled</string>
+    <string name="enable_sounds_info_off">Sounds are disabled</string>
+    <string name="equipment">Equipment</string>
+    <string name="max_accounts_reached">You already have a Rubi-Ka Network account connected to your phone</string>
+    <string name="enable_notification_vibration">Vibrate on notifcations</string>
+    <string name="enable_notification_vibration_info_on">Vibrations are enabled</string>
+    <string name="enable_notification_vibration_info_off">Vibrations are disabled</string>  
+    <string name="enable_notification_led">Flash LED on notifcations</string>
+    <string name="enable_notification_led_info_on">LED is enabled</string>
+    <string name="enable_notification_led_info_off">LED is disabled</string>  
+    <string name="gsp_is_playing">GridStream is playing</string>
+    <string name="is_running" formatted="false">%s is running</string>
+    <string name="enable_music_visualizer">Enable music visualizer</string>
+    <string name="enable_music_visualizer_info_on">Music visualizer is enabled</string>
+    <string name="enable_music_visualizer_info_off">Music visualizer is disabled</string>
+    <string name="auto_update">Auto update</string>
+    <string name="on">On</string>
+    <string name="off">Off</string>
+    <string name="main_org">Organizations</string>
+    <string name="main_org_info">Enter your organizations, separated by comma\nUsed to identify org channels</string>
+    <string name="preload_maps">Preload maps</string>
+    <string name="preload_maps_info">Download all map tiles</string>
+    <string name="preload_maps_dialog">It\'s recommended that you are connected by WiFi before you continue as there is about 40mb of data that will be downloaded.\n\nAre you sure you want to continue?</string>
+    <string name="msg_to">Message to</string>
+    <string name="copied_to_clipboard">Message text copied</string>
+    <string name="donate">Donate</string>
+    <string name="donate_info">Make a donation, this will NOT give you any benefits. But you will help me keep \'The Leet\' going!</string>
+    <string name="dashclockdescription">Show \'The Leet\' status</string>
+    <string name="accessibilityservice_description">TODO</string>
+    <string name="aoumarkers">Locations from AOU</string>
+    <string name="rknmarkers">Locations from RKN</string>
 </resources>

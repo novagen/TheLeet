@@ -10,7 +10,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 
 public class ImageTools {
-	private static final String APP_TAG = "--> The Leet ::ImageTools";
+	private static final String APP_TAG = "--> The Leet :: ImageTools";
 	
 	public static Bitmap repleceIntervalColor(Bitmap bitmap,int redStart,int redEnd,int greenStart, int greenEnd,int blueStart, int blueEnd,int colorNew) {
 	    if (bitmap != null) {

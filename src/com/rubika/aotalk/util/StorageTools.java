@@ -1,7 +1,7 @@
 package com.rubika.aotalk.util;
 
 public class StorageTools {
-	//private static final String APP_TAG = "--> The Leet ::StorageTools";
+	//private static final String APP_TAG = "--> The Leet :: StorageTools";
 
 	public static boolean isExternalStorageAvailable() {
         return android.os.Environment.getExternalStorageState().equals(

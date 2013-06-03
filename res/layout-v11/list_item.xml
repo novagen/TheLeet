@@ -13,9 +13,6 @@ android:orientation="horizontal"
 	android:textSize="16dip"
 	android:textColor="@color/mainwhite"
 	android:padding="12dip"
-	android:shadowColor="@color/textshadow"
-	android:shadowDx="1"
-	android:shadowDy="1"
-	android:shadowRadius="3"
+    style="@style/TextShadow"
 	/>	
 </LinearLayout>

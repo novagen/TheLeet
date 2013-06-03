@@ -1,10 +1,33 @@
 package com.rubika.aotalk;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.Vector;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.accounts.AccountManager;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -18,9 +41,10 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -28,6 +52,7 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.support.v4.view.ViewPager;
+import android.telephony.TelephonyManager;
 import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -42,7 +67,6 @@ import android.widget.ImageButton;
 import android.widget.Spinner;
 import ao.misc.NameFormat;
 import ao.protocol.CharacterInfo;
-import ao.protocol.DimensionAddress;
 import ao.protocol.packets.toclient.CharacterListPacket;
 
 import com.actionbarsherlock.app.ActionBar;
@@ -52,6 +76,9 @@ import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.view.Window;
+import com.google.analytics.tracking.android.EasyTracker;
+import com.google.analytics.tracking.android.GoogleAnalytics;
+import com.google.analytics.tracking.android.Tracker;
 import com.google.android.gcm.GCMRegistrar;
 import com.rubika.aotalk.adapter.ChannelAdapter;
 import com.rubika.aotalk.adapter.CharacterAdapter;
@@ -59,13 +86,13 @@ import com.rubika.aotalk.adapter.ChatMessageAdapter;
 import com.rubika.aotalk.adapter.FriendAdapter;
 import com.rubika.aotalk.adapter.GridAdapter;
 import com.rubika.aotalk.aou.AOU;
-import com.rubika.aotalk.aou.GuideSearch;
 import com.rubika.aotalk.database.DatabaseHandler;
 import com.rubika.aotalk.item.Account;
 import com.rubika.aotalk.item.Channel;
 import com.rubika.aotalk.item.Character;
 import com.rubika.aotalk.item.ChatMessage;
 import com.rubika.aotalk.item.Friend;
+import com.rubika.aotalk.item.RKNAccount;
 import com.rubika.aotalk.item.Tool;
 import com.rubika.aotalk.itemsearch.ItemSearch;
 import com.rubika.aotalk.map.Map;
@@ -75,12 +102,13 @@ import com.rubika.aotalk.service.ClientService;
 import com.rubika.aotalk.service.ServiceTools;
 import com.rubika.aotalk.towerwars.Towerwars;
 import com.rubika.aotalk.util.Logging;
+import com.rubika.aotalk.util.RKNet;
 import com.rubika.aotalk.util.Statics;
+import com.rubika.aotalk.util.StorageTools;
 import com.viewpagerindicator.TitlePageIndicator;
 
 public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPageChangeListener, OnSharedPreferenceChangeListener {
 	private static final String APP_TAG = "--> The Leet";
-	private static final String GCMSenderID = "585330927990";
 
 	public static Messenger service = null;
 	private static Context context;
@@ -95,21 +123,20 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	private static int selectedAccountToManage = 0;
 	private static List<SherlockFragment> fragments;
 	private static String GCMRegistrationId = null;
+    private static Tracker tracker;
 
-	private static ImageButton play;
 	public static boolean isPlaying = false;
 
 	public static String currentTargetChannel = "";
 	public static String currentTargetCharacter = "";
 	private static int currentUserID = 0;
-	public static int currentServerID = 0;
 	public static String currentCharacterName = "";
 	private static String currentShowChannel = Statics.CHANNEL_MAIN;
 	
 	private static SharedPreferences settings;
 	public static SharedPreferences.Editor editor;
 	
-	public static ActionBar actionBar;
+	public static ActionBar bar;
 	public static ViewPager fragmentPager;
 	private static TitlePageIndicator titleIndicator;
 	
@@ -202,7 +229,6 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	                break;
 	            case Statics.MESSAGE_REGISTERED:
 	    			currentUserID = message.arg1;
-	    			currentServerID = message.arg2;
 	    			
 	    			List<Object> registerData = (ArrayList<Object>) message.obj;
 	    	        
@@ -224,10 +250,10 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	    	        updateInputHint();
 	    	        updateConnectionButton();
 	    	        handleInvitations((List<Channel>)registerData.get(7));
-	            	updatePlayerTrack();
+	            	updatePlayer();
 	    	        
 	    	        if (channelList.size() > 0 && settings.getBoolean("showChatWhenOnline", true)) {
-						fragmentPager.setCurrentItem(1);
+						fragmentPager.setCurrentItem(2);
 	    	        }
 	    	        
 	                break;
@@ -235,11 +261,10 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	    	        hideLoader();
 	    	        
 					if (channelList.size() > 0 && settings.getBoolean("showChatWhenOnline", true)) {
-						fragmentPager.setCurrentItem(1);
+						fragmentPager.setCurrentItem(2);
 					}
 					
 	    			currentUserID = message.arg1;
-	    			currentServerID = message.arg2;
 	    			
 	    			List<Object> startedData = (ArrayList<Object>) message.obj;
 	    			
@@ -334,8 +359,12 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 
 	                break;
 	            case Statics.MESSAGE_PLAYER_TRACK:
-	            	currentTrack = (String) message.obj;
-	            	updatePlayerTrack();
+	    	        List<Object> playerData = (ArrayList<Object>) message.obj;
+
+	    	        isPlaying = (Boolean)playerData.get(0);
+	            	currentTrack = (String) playerData.get(1);
+	            	
+	            	updatePlayer();
 	            	
 	            	break;
 	            case Statics.MESSAGE_PRIVATE_INVITATION:
@@ -460,20 +489,10 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	}
 	
 	private static void updatePlayer() {
-		if (isPlaying) {
-        	Logging.log(APP_TAG, "Player started");
-        	play.setImageResource(R.drawable.ic_menu_stop);
-		} else {
-        	Logging.log(APP_TAG, "Player stopped");
-        	play.setImageResource(R.drawable.ic_menu_play);			
-		}
-	}
-	
-	private static void updatePlayerTrack() {
-    	FragmentTools fragment = (FragmentTools)fragments.get(0);
+    	FragmentTools fragment = (FragmentTools)fragments.get(1);
 
-    	if (fragment != null && currentTrack != null) {
-    		fragment.updateTitle(currentTrack);
+    	if (fragment != null) {
+    		fragment.updatePlayer(isPlaying, currentTrack);
     	}
 	}
 	
@@ -551,12 +570,12 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 				if (currentTargetChannel.length() > 0) {
 					for (Channel channel : tempList) {
 			        	if (channel.getName().equals(currentTargetChannel)) {
-				        	chatMessage = new ChatMessage(System.currentTimeMillis(), tell, "", channel.getName(), 0, 0);
+				        	chatMessage = new ChatMessage(System.currentTimeMillis(), tell, "", channel.getName(), 0);
 				        	break;
 			        	}
 			        }
 				} else if (currentTargetCharacter.length() > 0) {
-		        	chatMessage = new ChatMessage(System.currentTimeMillis(), tell, currentTargetCharacter, "", 0, 0);			
+		        	chatMessage = new ChatMessage(System.currentTimeMillis(), tell, currentTargetCharacter, "", 0);			
 				}
 		        
 				if (chatMessage != null) {
@@ -576,16 +595,16 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		}
 	}
 	
-	public static void whoIs(final String name, final int server, final boolean manual) {
+	public static void whoIs(final String name, final boolean manual) {
 		((SherlockFragmentActivity) AOTalk.getActivity()).setSupportProgressBarIndeterminateVisibility(Boolean.TRUE);
 		
-        if (settings.getBoolean("whoisFromWeb", true) || manual) {
+        //if (settings.getBoolean("whoisFromWeb", true) || manual) {
 			new Thread(new Runnable() { 
 	            public void run(){
 					Message msg = Message.obtain();
 					msg.what = 0;
 					
-					List<String> whoisData = ServiceTools.getUserData(context, name, server);
+					List<String> whoisData = ServiceTools.getUserData(context, name);
 	
 					if (whoisData == null) {
 						whoisData = new ArrayList<String>();
@@ -599,7 +618,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 					whoIsHandler.sendMessage(msg);
 				}
 			}).start();
-        } else {
+        /*} else {
 			ChatMessage chatMessage = new ChatMessage(
 					System.currentTimeMillis(),
 					String.format(Statics.WHOIS_MESSAGE, name),
@@ -620,7 +639,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 				Logging.log(APP_TAG, e.getMessage());
 			}
         	
-        }
+        }*/
 	}
 	
 	private static Handler whoIsHandler = new Handler() {
@@ -630,7 +649,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 			List<String> whoisData = (ArrayList<String>) msg.obj;
 			
 			if (whoisData.get(0).equals("")) {
-				if (settings.getBoolean("whoisFallbackToBot", true) && online && msg.arg1 != 1) {
+				/*if (settings.getBoolean("whoisFallbackToBot", true) && online && msg.arg1 != 1) {
 					ChatMessage chatMessage = new ChatMessage(
 							System.currentTimeMillis(),
 							String.format(Statics.WHOIS_MESSAGE, whoisData.get(2)),
@@ -650,15 +669,16 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 					} catch (RemoteException e) {
 						Logging.log(APP_TAG, e.getMessage());
 					}
-				} else {
-					showWhoIs(context.getString(R.string.no_char_data), context.getString(R.string.no_char_title));
-				}
+				} else {*/
+				showWhoIs(context.getString(R.string.no_char_data), context.getString(R.string.no_char_title));
+				//}
 			} else {
 				showWhoIs(whoisData.get(1), whoisData.get(0));
 			}
 		}
 	};
 	
+	@SuppressLint("NewApi")
 	private static void showWhoIs(String message, String name) {
 		((SherlockFragmentActivity) activity).setSupportProgressBarIndeterminateVisibility(Boolean.FALSE);
 		
@@ -684,11 +704,15 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		final AlertDialog dialog = builder.create();
 
 		final WebView webView = (WebView) layout.findViewById(R.id.whois);
-		webView.setBackgroundColor(Color.parseColor("#000000"));
+		webView.setBackgroundColor(0);
 		webView.loadData(Uri.encode(Statics.HTML_START
 			+ message
 			+ Statics.HTML_END), "text/html", "UTF-8"
 		);
+        
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
+			((View)webView.getParent()).setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+		}
 		
 		WebViewClient webClient = new WebViewClient() {
 			@Override
@@ -720,26 +744,38 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
             	if (search.getText().toString().length() > 0) {
 	            	switch(spinner.getSelectedItemPosition()) {
 					case 0:
+						tracker.sendEvent("Seach", "Character", search.getText().toString().replace(" ", "-"), 0L);
+
 						if (channelList.size() <= 1 && !settings.getBoolean("whoisFromWeb", true)) {
 							Logging.toast(context, getString(R.string.not_connected));
 						} else {
-		            		whoIs(NameFormat.format(search.getText().toString().replace(" ", "-")), Integer.parseInt(settings.getString("server", "1")), true);
+		            		whoIs(NameFormat.format(search.getText().toString().replace(" ", "-")), true);
 						}
+						
 						break;
 					case 1:
+						tracker.sendEvent("Seach", "Item", search.getText().toString().trim(), 0L);
+
 						intent = new Intent(context, ItemSearch.class);
 						intent.putExtra("name", search.getText().toString().trim());
 						startActivity(intent);
+						
 						break;
 					case 2:
-						intent = new Intent(context, GuideSearch.class);
+						tracker.sendEvent("Seach", "Guide", search.getText().toString().trim(), 0L);
+
+						intent = new Intent(context, AOU.class);
 						intent.putExtra("text", search.getText().toString().trim());
 						startActivity(intent);
+						
 						break;
 					case 3:
+						tracker.sendEvent("Seach", "Recipe", search.getText().toString().trim(), 0L);
+
 						intent = new Intent(context, RecipeBook.class);
 						intent.putExtra("text", search.getText().toString().trim());
 						startActivity(intent);
+						
 						break;
 					default:
 	            	}
@@ -828,7 +864,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		}
 		
 		Logging.log(APP_TAG, "Setting channel to " + navigationItem);
-		actionBar.setSelectedNavigationItem(navigationItem);
+		bar.setSelectedNavigationItem(navigationItem);
 	}
 	
 	private synchronized static void updateFriendList() {
@@ -859,7 +895,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		            {
 						@Override
 						public void run() {
-							String imageName = ServiceTools.getUserImageName(context, friend.getName(), currentServerID);
+							String imageName = ServiceTools.getUserImageName(context, friend.getName());
 		                	
 							friend.setIcon(imageName);
 		                	
@@ -889,14 +925,12 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	    	if (currentUserID != 0 && messageAdapter.getCount() == 0) {
 	    		newMessages = databaseHandler.getAllPostsForUser(
 		    			currentUserID, 
-		    			currentServerID, 
 		    			currentShowChannel
 		    		);
 	    	} else {
 	    		newMessages = databaseHandler.getNewPostsForUser(
 	    			currentUserID, 
 	    			messageAdapter.getItem(messageAdapter.getCount() - 1).getId(), 
-	    			currentServerID, 
 	    			currentShowChannel
 	    		);
 	    		animate = true;
@@ -916,9 +950,9 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 				                    	String imageName = null;
 				                    	
 				                    	if (message.getChannel().equals(Statics.CHANNEL_PM) && message.getMessage().contains("to [")) {
-				                    		imageName = ServiceTools.getUserImageName(context, currentCharacterName, currentServerID);
+				                    		imageName = ServiceTools.getUserImageName(context, currentCharacterName);
 				                    	} else {
-				                    		imageName = ServiceTools.getUserImageName(context, message.getCharacter(), currentServerID);
+				                    		imageName = ServiceTools.getUserImageName(context, message.getCharacter());
 				                    	}
 				                    	
 				                    	message.setIcon(imageName);
@@ -962,7 +996,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		Logging.log(APP_TAG, "currentUserID: " + currentUserID + ", adapter size: " + messageAdapter.getCount());
 	}
 
-	private static void updateInputHint() {
+	public static void updateInputHint() {
 	    boolean hintIsSet = false;
 	    
 	    List<Channel> tempList = new ArrayList<Channel>();
@@ -973,35 +1007,37 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	    	tempList.addAll(privateList);
 	    }
 	    
-	    Logging.log(APP_TAG, "currentTargetChannel: '" + currentTargetChannel + "', currentTargetCharacter: '" + currentTargetCharacter + "'" + ", listsize: " + tempList.size());
+	    FragmentChat fragment = (FragmentChat)fragments.get(2);
+	    
+	    //Logging.log(APP_TAG, "currentTargetChannel: '" + currentTargetChannel + "', currentTargetCharacter: '" + currentTargetCharacter + "'" + ", listsize: " + tempList.size());
 	    
 		if (currentTargetChannel.equals("") && currentTargetCharacter.equals("") && online) {
 	    	if (currentShowChannel.equals(Statics.CHANNEL_PM)) {
-	    		((EditText) getActivity().findViewById(R.id.input)).setHint(getActivity().getString(R.string.select_character));
+	    		fragment.setHint(getActivity().getString(R.string.select_character));
 	    	} else {
-	    		((EditText) getActivity().findViewById(R.id.input)).setHint(getActivity().getString(R.string.select_channel));
+	    		fragment.setHint(getActivity().getString(R.string.select_channel));
 	    	}
 		} else if (!online) {
-        	((EditText) getActivity().findViewById(R.id.input)).setHint(getActivity().getString(R.string.disconnected));
+			fragment.setHint(getActivity().getString(R.string.disconnected));
 		} else {
 			if (!currentTargetChannel.equals("")) {
 				if (tempList.size() > 0) {
 		        	for (Channel channel : tempList) {
 		        		if (channel.getName().equals(currentTargetChannel)) {
-		    				((EditText) getActivity().findViewById(R.id.input)).setHint(channel.getName());
+		        			fragment.setHint(channel.getName());
 		    				hintIsSet = true;
 		    				break;
 		        		}
 		        	}
 		        	
 		        	if (!hintIsSet) {
-		            	((EditText) getActivity().findViewById(R.id.input)).setHint(getActivity().getString(R.string.select_channel));
+		        		fragment.setHint(getActivity().getString(R.string.select_channel));
 		            }
 		        }
 			}
 			
 			if (!currentTargetCharacter.equals("")) {
-				((EditText) getActivity().findViewById(R.id.input)).setHint(String.format(getActivity().getString(R.string.tell), currentTargetCharacter));
+				fragment.setHint(String.format(getActivity().getString(R.string.tell), currentTargetCharacter));
 			}
 	    }
 	}
@@ -1019,17 +1055,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		listItems[0] = getActivity().getString(R.string.add_account);
 		
 		for (int i = 0; i < numberOfAccounts; i++) {
-			String serverName = "";
-			if (accounts.get(i).getServer() == DimensionAddress.RK1) {
-				serverName = "RK1";
-			}
-			if (accounts.get(i).getServer() == DimensionAddress.RK2) {
-				serverName = "RK2";
-			}
-			if (accounts.get(i).getServer() == DimensionAddress.TEST) {
-				serverName = "Test";
-			}
-			listItems[i + 1] = serverName + " - " + accounts.get(i).getUsername();
+			listItems[i + 1] = accounts.get(i).getUsername();
 		}
 	
 		AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -1091,17 +1117,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		final CharSequence[] listItems = new CharSequence[numberOfAccounts];
 		
 		for (int i = 0; i < numberOfAccounts; i++) {
-			String serverName = "";
-			if (accounts.get(i).getServer() == DimensionAddress.RK1) {
-				serverName = "RK1";
-			}
-			if (accounts.get(i).getServer() == DimensionAddress.RK2) {
-				serverName = "RK2";
-			}
-			if (accounts.get(i).getServer() == DimensionAddress.TEST) {
-				serverName = "Test";
-			}
-			listItems[i] = serverName + " - " + accounts.get(i).getUsername();
+			listItems[i] = accounts.get(i).getUsername();
 		}
 	
 		AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -1122,7 +1138,9 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 				builder.setPositiveButton(context.getString(R.string.ok), new OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						databaseHandler.deleteAccount(accounts.get(selectedAccountToManage));
+						if (accounts != null && accounts.get(selectedAccountToManage) != null) {
+							DatabaseHandler.getInstance(context).deleteAccount(accounts.get(selectedAccountToManage));
+						}
 						manageAccount();
 					}
 				});
@@ -1164,7 +1182,6 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		LayoutInflater inflater = (LayoutInflater) context.getSystemService(LAYOUT_INFLATER_SERVICE);
 		
 		final View layout = inflater.inflate(R.layout.alert_account, null);
-		final Spinner spinner = (Spinner) layout.findViewById(R.id.server);
 		
 		AlertDialog.Builder builder = new AlertDialog.Builder(context);
 		builder.setTitle(context.getResources().getString(R.string.login_title));
@@ -1182,25 +1199,9 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	
 							new Thread() {
 								public void run() {
-									DimensionAddress server;
-	
-									switch(spinner.getSelectedItemPosition()) {
-										case 0:
-											server = DimensionAddress.RK1;
-											break;
-										case 1:
-											server = DimensionAddress.RK2;
-											break;
-										case 2:
-											server = DimensionAddress.TEST;
-											break;
-										default:
-											server = DimensionAddress.RK1;
-									}
 									Account account = new Account(
 											((EditText) layout.findViewById(R.id.username)).getText().toString(),
 											((EditText) layout.findViewById(R.id.password)).getText().toString(),
-											server,
 											false,
 											0
 									);
@@ -1248,19 +1249,6 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		((EditText) layout.findViewById(R.id.username)).setText(account.getUsername());
 		((EditText) layout.findViewById(R.id.password)).setText(account.getPassword());
 		
-		int spinnerSelection = 0;
-		if (account.getServer() == DimensionAddress.RK1) {
-			spinnerSelection = 0;
-		}
-		if (account.getServer() == DimensionAddress.RK2) {
-			spinnerSelection = 1;
-		}
-		if (account.getServer() == DimensionAddress.TEST) {
-			spinnerSelection = 2;
-		}
-
-		((Spinner) layout.findViewById(R.id.server)).setSelection(spinnerSelection);
-		
 		AlertDialog.Builder builder = new AlertDialog.Builder(context);
 		builder.setTitle(context.getResources().getString(R.string.login_title));
 		builder.setView(layout);
@@ -1273,25 +1261,8 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 						&&
 						((EditText) layout.findViewById(R.id.password)).getText().toString().length() > 0
 					) {
-						DimensionAddress server;
-						
-						switch(((Spinner) layout.findViewById(R.id.server)).getSelectedItemPosition()) {
-							case 0:
-								server = DimensionAddress.RK1;
-								break;
-							case 1:
-								server = DimensionAddress.RK2;
-								break;
-							case 2:
-								server = DimensionAddress.TEST;
-								break;
-							default:
-								server = DimensionAddress.RK1;
-						}
-						
 						account.setUsername(((EditText) layout.findViewById(R.id.username)).getText().toString());
 						account.setPassword(((EditText) layout.findViewById(R.id.password)).getText().toString());
-						account.setServer(server);
 						
 						databaseHandler.updateAccount(account);
 						manageAccount();
@@ -1592,7 +1563,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	private List<Tool> getToolItems() {
 		List<Tool> toolList = new ArrayList<Tool>();
 		
-		toolList.add(new Tool(getString(R.string.connect), R.drawable.icon_refresh, new View.OnClickListener() {
+		toolList.add(new Tool(getString(R.string.connect), R.drawable.grid_icon_refresh, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				try {
@@ -1605,14 +1576,14 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 			}
 		}));
 
-		toolList.add(new Tool(getString(R.string.search), R.drawable.icon_search, new View.OnClickListener() {
+		toolList.add(new Tool(getString(R.string.search), R.drawable.grid_icon_search, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				search();
 			}
 		}));
 		
-		toolList.add(new Tool(getString(R.string.market_monitor), R.drawable.icon_shopping, new View.OnClickListener() {
+		toolList.add(new Tool(getString(R.string.market_monitor), R.drawable.grid_icon_shopping, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(context, Market.class);
@@ -1620,7 +1591,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 			}
 		}));
 		
-		toolList.add(new Tool(getString(R.string.ao_universe), R.drawable.icon_puzzle, new View.OnClickListener() {
+		toolList.add(new Tool(getString(R.string.ao_universe), R.drawable.grid_icon_puzzle, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(context, AOU.class);
@@ -1628,7 +1599,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 			}
 		}));
 		
-		toolList.add(new Tool(getString(R.string.recipebook), R.drawable.icon_books, new View.OnClickListener() {
+		toolList.add(new Tool(getString(R.string.recipebook), R.drawable.grid_icon_books, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(context, RecipeBook.class);
@@ -1636,7 +1607,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 			}
 		}));
 
-		toolList.add(new Tool(getString(R.string.towerwars), R.drawable.icon_chess, new View.OnClickListener() {
+		toolList.add(new Tool(getString(R.string.towerwars), R.drawable.grid_icon_chess, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(context, Towerwars.class);
@@ -1645,7 +1616,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		}));
 		
 
-		toolList.add(new Tool(getString(R.string.map), R.drawable.icon_globe, new View.OnClickListener() {
+		toolList.add(new Tool(getString(R.string.map), R.drawable.grid_icon_globe, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(context, Map.class);
@@ -1653,7 +1624,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 			}
 		}));
 
-		toolList.add(new Tool(getString(R.string.preferences), R.drawable.icon_process, new View.OnClickListener() {
+		toolList.add(new Tool(getString(R.string.preferences), R.drawable.grid_icon_process, new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Intent intent = new Intent(context, Preferences.class);
@@ -1671,6 +1642,19 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 	public static Activity getActivity() {
 		return activity;
 	}
+	
+	public static String getDeviceIdentifier() {
+		final TelephonyManager tm = (TelephonyManager) AOTalk.getContext().getSystemService(Context.TELEPHONY_SERVICE);
+	    final String tmDevice, tmSerial, androidId;
+	    
+	    tmDevice = "" + tm.getDeviceId();
+	    tmSerial = "" + tm.getSimSerialNumber();
+	    androidId = "" + android.provider.Settings.Secure.getString(AOTalk.getContext().getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
+
+	    UUID deviceUuid = new UUID(androidId.hashCode(), ((long)tmDevice.hashCode() << 32) | tmSerial.hashCode());
+	    
+	    return deviceUuid.toString();
+	}
 		
 	public static String getGCMRegistrationId() {
 		return GCMRegistrationId;
@@ -1684,7 +1668,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 			GCMRegistrationId = GCMRegistrar.getRegistrationId(context);
 			
 			if (GCMRegistrationId == null || GCMRegistrationId.equals("")) {
-				GCMRegistrar.register(context, GCMSenderID);
+				GCMRegistrar.register(context, Statics.GCMSenderID);
 			} else {
 				Logging.log(APP_TAG, "Already registered");
 			}
@@ -1702,22 +1686,269 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 			Logging.log(APP_TAG, "Unsupported Android version");
 		}
 	}
+	
+    public class CheckRKNetAccount extends AsyncTask<Void, Void, String> {
+    	private AccountManager accountManager;
+    	private android.accounts.Account[] accounts;
+    	private RKNAccount rknetaccount = null;
+
+        @Override    
+        protected void onPreExecute() {
+        }
+
+        @Override 
+		protected void onPostExecute(String result) {
+	     }
+
+		@Override
+		protected String doInBackground(Void... params) {			
+	        long loadTime = System.currentTimeMillis();
+	    	
+			HttpClient httpclient;
+			HttpPost httppost;
+	        
+	    	HttpResponse response;
+	    	HttpEntity entity;
+	    	InputStream is;
+	    	BufferedReader reader;
+	    	StringBuilder sb;
+	    	String line;
+	    	String resultData;
+	    	JSONObject json_data;
+	    	
+	        accountManager = AccountManager.get(context);
+			accounts = accountManager.getAccountsByType(context.getString(R.string.account_type));
+	    		    	
+			if (accounts.length > 0) {
+				try {
+		    		httpclient = new DefaultHttpClient();
+			        httppost = new HttpPost(RKNet.getApiAccountPath(RKNet.RKNET_ACCOUNT_LOGIN));
+	
+			        JSONObject j = new JSONObject();
+			        
+			        j.put("Username", accounts[0].name);
+			        j.put("Password", accountManager.getPassword(accounts[0]));
+			        			        
+			        httppost.setEntity(new StringEntity(j.toString()));
+			        httppost.setHeader("Accept", "application/json");
+			        httppost.setHeader("Content-type", "application/json");
+			        
+			        response = httpclient.execute(httppost);
+			        entity = response.getEntity();
+			        is = entity.getContent();
+			        
+			    	try {
+			    		reader = new BufferedReader(new InputStreamReader(is, "iso-8859-1"), 8);
+		    	        sb = new StringBuilder();
+		    	        line = null;
+		    	        
+		    	        while ((line = reader.readLine()) != null) {
+		    	        	sb.append(line + "\n");
+		    	        }
+		    	        
+		    	        is.close();
+		    	 
+		    	        resultData = sb.toString();
+			    	} catch(Exception e){
+			    	    Logging.log(APP_TAG, "Error converting result " + e.toString());
+			    	    resultData = null;
+			    	}
+		    	} catch(Exception e){
+		    		Logging.log(APP_TAG, "Error in http connection " + e.toString());
+		    		resultData = null;
+		    	}
+	
+		    	try {
+		    		if(resultData != null) {
+		    			resultData = resultData.substring(0, resultData.lastIndexOf("}")).replace("{\"d\":", "");
+			    		
+		    			if((!resultData.startsWith("null"))) {
+		    				json_data = new JSONObject(resultData);
+		    				
+		    				rknetaccount = new RKNAccount(
+		                		json_data.getInt("Id"),
+		                		json_data.getString("Username"),
+		                		json_data.getString("Password")
+			                );
+		    				
+		    				JSONArray registrations = json_data.getJSONArray("Registrations");
+		    				
+		    				boolean isRegistered = false;
+		    				
+		    				for(int i = 0; i < registrations.length(); i++){
+		    					 JSONObject reg = registrations.getJSONObject(i);
+		    					 if (reg.getString("Key").equals(AOTalk.getGCMRegistrationId())) {
+		    						 isRegistered = true;
+		    					 }
+		    				}
+		    				
+		    				if (!isRegistered && AOTalk.getGCMRegistrationId() != null && !AOTalk.getGCMRegistrationId().equals("")) {
+		    					Logging.log(APP_TAG, "Device not registered");
+		    					
+		    		    		try{
+		    			    		httpclient = new DefaultHttpClient();
+		    				        httppost = new HttpPost(RKNet.getApiAccountPath(RKNet.RKNET_ACCOUNT_SETKEYS));
+		    		
+		    				        JSONObject j = new JSONObject();
+		    				        j.put("AccountId", rknetaccount.getAccountId());
+		    				        j.put("Key", AOTalk.getGCMRegistrationId());
+		    				        j.put("UUID", AOTalk.getDeviceIdentifier());
+		    				        
+		    				        Logging.log(APP_TAG, j.toString(1));
+
+		    				        httppost.setEntity(new StringEntity(j.toString()));
+		    				        httppost.setHeader("Accept", "application/json");
+		    				        httppost.setHeader("Content-type", "application/json");
+		    				        
+		    				        response = httpclient.execute(httppost);
+		    				        entity = response.getEntity();
+		    				        is = entity.getContent();
+		    				        
+		    				    	try{
+		    				    		reader = new BufferedReader(new InputStreamReader(is, "iso-8859-1"), 8);
+		    			    	        sb = new StringBuilder();
+		    			    	        line = null;
+		    			    	        
+		    			    	        while ((line = reader.readLine()) != null) {
+		    			    	        	sb.append(line + "\n");
+		    			    	        }
+		    			    	        
+		    			    	        is.close();
+		    			    	 
+		    			    	        resultData = sb.toString();
+		    				    	} catch(Exception e){
+		    				    	    Logging.log(APP_TAG, "Error converting result " + e.toString());
+		    				    	    resultData = null;
+		    				    	}
+		    			    	} catch(Exception e){
+		    			    		Logging.log(APP_TAG, "Error in http connection " + e.toString());
+		    			    		resultData = null;
+		    			    	}
+		    				} else {
+		    					Logging.log(APP_TAG, "Device already registered");
+		    				}
+			    		}
+		    			
+		            	tracker.sendTiming("Loading", System.currentTimeMillis() - loadTime, "Check account data", null);
+		    		}
+		    	} catch(JSONException e){
+		    		Logging.log(APP_TAG, "Error parsing data " + e.toString());
+		    	}
+			}
+			
+			return null;
+		}
+	};
+	
+	private void checkIfSoundsExists() {
+		int filesAdded = 0;
+		
+		ArrayList<Integer> listId = new ArrayList<Integer>();
+		ArrayList<String> listName = new ArrayList<String>();
+		
+		Field[] fields = R.raw.class.getFields();
+		
+		for(Field f : fields) {
+			try {
+				listId.add(f.getInt(null));
+				listName.add(f.getName());
+			} catch (IllegalArgumentException e) {
+				Logging.log(APP_TAG, e.getMessage());
+			} catch (IllegalAccessException e) {
+				Logging.log(APP_TAG, e.getMessage());
+			}
+		}
+		
+		if (StorageTools.isExternalStorageAvailable() && !StorageTools.isExternalStorageReadOnly()) {
+			for (int i = 0; i < listId.size(); i++) {
+				File f = new File(
+						android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + 
+						File.separator + "Notifications" + 
+						File.separator + listName.get(i) + ".mp3"
+					);
+				
+				if (!f.exists()) {
+					BufferedOutputStream stream;
+					
+					try {
+						stream = new BufferedOutputStream((new FileOutputStream(f)));
+						BufferedInputStream reader = new BufferedInputStream(getResources().openRawResource(listId.get(i)));
+						
+						byte[] buff = new byte[32 * 1024];
+						int len;
+						
+						while( (len = reader.read(buff)) > 0 ){
+							stream.write(buff,0,len);
+						}
+						
+						stream.flush();
+						stream.close();
+						
+						filesAdded++;
+						Logging.log(APP_TAG, String.format("Added %s to the memory card", listName.get(i)));
+					} catch (FileNotFoundException e) {
+						Logging.log(APP_TAG, e.getMessage());
+					} catch (IOException e) {
+						Logging.log(APP_TAG, e.getMessage());
+					}
+				}
+			}
+		}
+		
+		if (filesAdded > 0) {
+			sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED, Uri.parse("file://" + Environment.getExternalStorageDirectory() + File.separator + "Notifications")));
+			Logging.log(APP_TAG, "Broadcasting media update");
+		}
+	}
 
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+		//super.setTheme(R.style.Theme_AOTalkTheme_Light);
 
+        checkIfSoundsExists();
+        
         context = this;
         activity = this;
+        
+        EasyTracker.getInstance().setContext(this);
+        tracker = EasyTracker.getTracker();
 		
         gcmRegister(context);
         
         settings = PreferenceManager.getDefaultSharedPreferences(this);
         editor = settings.edit();
         
-        if (settings.getBoolean("firstRun", true)) {
+        if (settings.getBoolean("runAfterMerge", true)) {
+        	List<Account> accounts = DatabaseHandler.getInstance(this).getAllAccounts();
+        	List<Account> keep = new ArrayList<Account>();
+        	
+        	if (accounts != null) {
+            	boolean keepAccount = true;
+            	
+	        	for (Account account : accounts) {
+	        		for (Account a : keep) {
+	        			if (account.getUsername().equals(a.getUsername())) {
+	        				keepAccount = false;
+	        			}
+	        		}
+	        		
+	        		if (keepAccount) {
+	        			keep.add(account);
+	        		}
+	        	}
+	        	
+	        	for (Account account : accounts) {
+	        		if (!keep.contains(account)) {
+	            		DatabaseHandler.getInstance(this).updateAccount(account);
+	        		} else {
+	        			DatabaseHandler.getInstance(this).deleteAccount(account);       			
+	        		}
+	        	}  
+        	}
+        	
         	editor.clear();
-        	editor.putBoolean("firstRun", false);
+        	editor.putBoolean("runAfterMerge", false);
         	editor.commit();
         }
         
@@ -1733,12 +1964,11 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		channelAdapter = new ChannelAdapter(this, R.id.messagelist, currentChannels);
 		channelAdapter.add(new Channel(getString(R.string.app_name), 0, true, false));
 				
-		actionBar = getSupportActionBar();
+		bar = getSupportActionBar();
 		
-		actionBar.setBackgroundDrawable(getResources().getDrawable(R.drawable.abbg));
-		actionBar.setDisplayShowTitleEnabled(false);
-		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);		
-		actionBar.setListNavigationCallbacks(channelAdapter, new OnNavigationListener() {
+		bar.setDisplayShowTitleEnabled(false);
+		bar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);		
+		bar.setListNavigationCallbacks(channelAdapter, new OnNavigationListener() {
 			@Override
 			public boolean onNavigationItemSelected(int itemPosition , long itemId) {
 				messageAdapter.clear();
@@ -1773,10 +2003,12 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 					}
 				}
 				
-				if (itemPosition > 1) {
-					((ImageButton) findViewById(R.id.channel)).setVisibility(View.GONE);
-				} else {
-					((ImageButton) findViewById(R.id.channel)).setVisibility(View.VISIBLE);
+				if (findViewById(R.id.channel) != null) {
+					if (itemPosition > 1) {
+						((ImageButton) findViewById(R.id.channel)).setVisibility(View.GONE);
+					} else {
+						((ImageButton) findViewById(R.id.channel)).setVisibility(View.VISIBLE);
+					}
 				}
 				
 				setServiceTargets();
@@ -1798,6 +2030,7 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
 		gridAdapter = new GridAdapter(this, R.id.grid, getToolItems());
 
 		fragments = new Vector<SherlockFragment>();
+        fragments.add(FragmentRKN.newInstance());
         fragments.add(FragmentTools.newInstance());
         fragments.add(FragmentChat.newInstance());
        	
@@ -1812,12 +2045,15 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
         fragmentPager.setOnPageChangeListener(this);
         fragmentPager.setPageMargin(0);
         fragmentPager.setKeepScreenOn(settings.getBoolean("keepScreenOn", false));
+        fragmentPager.setCurrentItem(1);
 
         titleIndicator = (TitlePageIndicator)findViewById(R.id.titles);
         titleIndicator.setViewPager(fragmentPager);
 
         setTitleIndicator();
         bindService();
+        
+        new CheckRKNetAccount().execute();
     }
     
     private static void setTitleIndicator() {
@@ -1840,8 +2076,12 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
     	setTitleIndicator();
         bindService();
         
-        if (fragmentPager != null) {
-        	fragmentPager.setKeepScreenOn(settings.getBoolean("keepScreenOn", false));
+        if (settings != null) {
+	        if (fragmentPager != null) {
+	        	fragmentPager.setKeepScreenOn(settings.getBoolean("keepScreenOn", false));
+	        }
+        
+	        GoogleAnalytics.getInstance(this).setDebug(settings.getBoolean("enableDebug", false));
         }
         
         if (channelList.size() > 1) {
@@ -1861,6 +2101,28 @@ public class AOTalk extends SherlockFragmentActivity implements ViewPager.OnPage
     	super.onPause();
 
         unbindService();
+    }
+    
+    @Override
+    protected void onStart() {
+    	super.onStart();
+    	
+    	try {
+        	EasyTracker.getInstance().activityStart(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
+    }
+    
+    @Override
+    protected void onStop() {
+    	super.onStop();
+
+    	try {
+            EasyTracker.getInstance().activityStop(this);
+    	} catch (IllegalStateException e) {
+    		Logging.log(APP_TAG, e.getMessage());
+    	}
     }
     
 	@Override

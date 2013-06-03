@@ -17,7 +17,7 @@ import android.graphics.drawable.Drawable;
 import android.text.Html.ImageGetter;
 
 public class ImageDownload implements ImageGetter {
-	private static final String APP_TAG = "--> The Leet ::ImageDownload";
+	private static final String APP_TAG = "--> The Leet :: ImageDownload";
 
 	private long maximumAge = 86400000;
 

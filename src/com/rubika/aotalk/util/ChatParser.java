@@ -23,20 +23,20 @@ import java.util.Date;
 import java.util.Locale;
 
 public class ChatParser {
-	public final static int TYPE_SYSTEM_MESSAGE  = 0;
-	public final static int TYPE_PRIVATE_MESSAGE = 1;
-	public final static int TYPE_CLIENT_MESSAGE  = 2;
-	public final static int TYPE_GROUP_MESSAGE   = 3;
-	public final static int TYPE_PLAIN_MESSAGE   = 4;
-	public final static int TYPE_ORG_MESSAGE     = 5;
-	public final static int TYPE_PG_MESSAGE      = 6;
-	public final static int TYPE_FRIEND_MESSAGE  = 7;
+	public final static int MESSAGE_TYPE_SYSTEM		 = 0;
+	public final static int MESSAGE_TYPE_PRIVATE	 = 1;
+	public final static int MESSAGE_TYPE_CLIENT		 = 2;
+	public final static int MESSAGE_TYPE_GROUP		 = 3;
+	public final static int MESSAGE_TYPE_PLAIN		 = 4;
+	//public final static int MESSAGE_TYPE_ORG		 = 5;
+	public final static int MESSAGE_TYPE_PG			 = 6;
+	public final static int MESSAGE_TYPE_FRIEND		 = 7;
 	
 	public static String parse(String message, int type) {
 		String output = "";
 		
-		if(type != TYPE_PLAIN_MESSAGE) {
-			output += "<font color=#ffffff>" + getFormattedTime() + "</font> ";
+		if(type != MESSAGE_TYPE_PLAIN) {
+			output += getFormattedTime() + " ";
 		}
 		
 		output += message.replace("\n", "<br />");
@@ -45,14 +45,12 @@ public class ChatParser {
 	}
 	
     public static String getFormattedTime() {
-    	SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
-        Date date = new Date();
-        return "<b><font color=#ffffff>[" + dateFormat.format(date) + "]</font></b>";
+    	return getFormattedTimeFromLong(new Date().getTime());
     }
 	
     public static String getFormattedTimeFromLong(long datetime) {
     	SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
         Date date = new Date(datetime);
-        return "<b>[" + dateFormat.format(date) + "]</b>";
+        return "<b><font color=#ffffff>[" + dateFormat.format(date) + "]</font></b>";
     }
 }

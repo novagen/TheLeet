@@ -5,17 +5,18 @@ android:orientation="vertical"
 android:layout_width="fill_parent"
 android:layout_height="fill_parent"
 android:padding="10sp"
+android:background="@android:color/transparent"
 >
 	<TextView
 	android:layout_width="fill_parent" 
 	android:layout_height="wrap_content"
-	android:text="@string/username"
+	android:text="@string/email_address"
 	/>
 	<EditText
 	android:id="@+id/username"
 	android:layout_height="wrap_content"
 	android:layout_width="fill_parent"
-	android:inputType="textNoSuggestions"
+	android:inputType="textEmailAddress"
 	/>
 	<TextView
 	android:layout_width="fill_parent"
@@ -40,6 +41,7 @@ android:padding="10sp"
 		android:layout_alignParentLeft="true"
 		/>
 	    <TextView
+	    android:id="@+id/register"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_alignParentRight="true"
